@@ -1,0 +1,312 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Ticket,
+  Plus,
+  Search,
+  Filter,
+  AlertCircle,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Timer,
+  Camera,
+  ChevronRight,
+  User,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AppLayout } from "@/components/layout/AppLayout";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface TicketItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: "open" | "in_progress" | "waiting" | "resolved" | "closed";
+  priority: "low" | "normal" | "urgent";
+  createdAt: string;
+  updatedAt: string;
+  assignee?: string;
+  reporter: string;
+  commentsCount: number;
+  hasPhotos: boolean;
+}
+
+const sampleTickets: TicketItem[] = [
+  {
+    id: "T-2024-042",
+    title: "Fuite robinet cuisine",
+    description: "Fuite importante au niveau du robinet de la cuisine. L'eau coule en permanence même lorsque le robinet est fermé.",
+    category: "Plomberie",
+    status: "in_progress",
+    priority: "urgent",
+    createdAt: "18 déc. 2024",
+    updatedAt: "Aujourd'hui",
+    assignee: "Plomberie Martin",
+    reporter: "Marie Dupont",
+    commentsCount: 4,
+    hasPhotos: true,
+  },
+  {
+    id: "T-2024-041",
+    title: "Interphone ne fonctionne plus",
+    description: "L'interphone de l'appartement 12B ne sonne plus. Impossible de savoir quand quelqu'un sonne à la porte.",
+    category: "Électricité",
+    status: "waiting",
+    priority: "normal",
+    createdAt: "15 déc. 2024",
+    updatedAt: "Il y a 2 jours",
+    assignee: "Électricien Pro",
+    reporter: "Jean Martin",
+    commentsCount: 2,
+    hasPhotos: false,
+  },
+  {
+    id: "T-2024-040",
+    title: "Lumière parking sous-sol",
+    description: "La lumière du parking niveau -1 ne s'allume plus automatiquement à l'entrée.",
+    category: "Parties communes",
+    status: "open",
+    priority: "low",
+    createdAt: "12 déc. 2024",
+    updatedAt: "Il y a 5 jours",
+    reporter: "Sophie Bernard",
+    commentsCount: 0,
+    hasPhotos: false,
+  },
+  {
+    id: "T-2024-038",
+    title: "Fissure mur cage d'escalier",
+    description: "Une fissure est apparue sur le mur de la cage d'escalier au 3ème étage, côté fenêtre.",
+    category: "Structure",
+    status: "resolved",
+    priority: "normal",
+    createdAt: "5 déc. 2024",
+    updatedAt: "Il y a 1 semaine",
+    assignee: "Bâtiment Express",
+    reporter: "Pierre Lefebvre",
+    commentsCount: 6,
+    hasPhotos: true,
+  },
+];
+
+const statusConfig = {
+  open: { label: "Ouvert", icon: AlertCircle, color: "bg-kopro-amber/10 text-kopro-amber border-kopro-amber/20" },
+  in_progress: { label: "En cours", icon: Timer, color: "bg-kopro-teal/10 text-kopro-teal border-kopro-teal/20" },
+  waiting: { label: "En attente", icon: Clock, color: "bg-kopro-purple/10 text-kopro-purple border-kopro-purple/20" },
+  resolved: { label: "Résolu", icon: CheckCircle2, color: "bg-success/10 text-success border-success/20" },
+  closed: { label: "Fermé", icon: XCircle, color: "bg-muted text-muted-foreground border-border" },
+};
+
+const priorityConfig = {
+  low: { label: "Faible", color: "text-muted-foreground" },
+  normal: { label: "Normal", color: "text-foreground" },
+  urgent: { label: "Urgent", color: "text-destructive" },
+};
+
+export default function Tickets() {
+  const [user, setUser] = useState<any>(null);
+  const [tickets] = useState(sampleTickets);
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("kopro_user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      navigate("/auth");
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("kopro_user");
+    navigate("/auth");
+  };
+
+  const filterTickets = (status: string) => {
+    let filtered = tickets;
+    if (status !== "all") {
+      filtered = tickets.filter(t => t.status === status);
+    }
+    if (searchQuery) {
+      filtered = filtered.filter(t => 
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.id.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    return filtered;
+  };
+
+  if (!user) return null;
+
+  const isManager = user.role === "manager" || user.role === "admin";
+
+  return (
+    <AppLayout userRole={user.role} onLogout={handleLogout}>
+      <div className="space-y-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Incidents</h1>
+            <p className="text-muted-foreground mt-1">Signalements et suivi des interventions</p>
+          </div>
+          <Button onClick={() => navigate("/tickets/new")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau signalement
+          </Button>
+        </div>
+
+        {/* Stats Cards (Manager view) */}
+        {isManager && (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              { label: "Ouverts", count: 3, status: "open" },
+              { label: "En cours", count: 5, status: "in_progress" },
+              { label: "En attente", count: 2, status: "waiting" },
+              { label: "Résolus", count: 12, status: "resolved" },
+              { label: "Fermés", count: 45, status: "closed" },
+            ].map((stat) => {
+              const config = statusConfig[stat.status as keyof typeof statusConfig];
+              return (
+                <Card key={stat.status} className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <config.icon className={`h-4 w-4 ${config.color.split(" ")[1]}`} />
+                      <span className="text-xs text-muted-foreground">{stat.label}</span>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{stat.count}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par titre ou n° ticket..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select defaultValue="all">
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Catégorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes</SelectItem>
+              <SelectItem value="plomberie">Plomberie</SelectItem>
+              <SelectItem value="electricite">Électricité</SelectItem>
+              <SelectItem value="parties_communes">Parties communes</SelectItem>
+              <SelectItem value="structure">Structure</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">Tous</TabsTrigger>
+            <TabsTrigger value="open">Ouverts</TabsTrigger>
+            <TabsTrigger value="in_progress">En cours</TabsTrigger>
+            <TabsTrigger value="waiting">En attente</TabsTrigger>
+            <TabsTrigger value="resolved">Résolus</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab} className="mt-4">
+            <div className="space-y-3">
+              {filterTickets(activeTab).map((ticket) => {
+                const status = statusConfig[ticket.status];
+                const priority = priorityConfig[ticket.priority];
+                return (
+                  <Card 
+                    key={ticket.id} 
+                    className="shadow-soft hover:shadow-medium transition-all cursor-pointer group"
+                    onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        {/* Status Icon */}
+                        <div className={`w-10 h-10 rounded-xl ${status.color.split(" ")[0]} flex items-center justify-center shrink-0`}>
+                          <status.icon className={`h-5 w-5 ${status.color.split(" ")[1]}`} />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-mono text-muted-foreground">{ticket.id}</span>
+                                {ticket.priority === "urgent" && (
+                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Urgent</Badge>
+                                )}
+                                {ticket.hasPhotos && (
+                                  <Camera className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </div>
+                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                {ticket.title}
+                              </h3>
+                              <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                                {ticket.description}
+                              </p>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
+                          </div>
+
+                          {/* Meta */}
+                          <div className="flex items-center gap-4 mt-3 flex-wrap">
+                            <Badge variant="outline" className={status.color}>
+                              {status.label}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">{ticket.category}</Badge>
+                            {ticket.assignee && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <User className="h-3 w-3" />
+                                {ticket.assignee}
+                              </div>
+                            )}
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              Mis à jour {ticket.updatedAt}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
+              {filterTickets(activeTab).length === 0 && (
+                <Card className="shadow-soft">
+                  <CardContent className="p-8 text-center">
+                    <Ticket className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">Aucun incident trouvé</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AppLayout>
+  );
+}
