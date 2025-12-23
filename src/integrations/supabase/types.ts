@@ -516,9 +516,11 @@ export type Database = {
           door: string | null
           floor: number | null
           id: string
+          join_code: string | null
           lot_number: string
           notes: string | null
           owner_id: string | null
+          primary_resident_id: string | null
           residence_id: string
           rooms: number | null
           surface: number | null
@@ -532,9 +534,11 @@ export type Database = {
           door?: string | null
           floor?: number | null
           id?: string
+          join_code?: string | null
           lot_number: string
           notes?: string | null
           owner_id?: string | null
+          primary_resident_id?: string | null
           residence_id: string
           rooms?: number | null
           surface?: number | null
@@ -548,9 +552,11 @@ export type Database = {
           door?: string | null
           floor?: number | null
           id?: string
+          join_code?: string | null
           lot_number?: string
           notes?: string | null
           owner_id?: string | null
+          primary_resident_id?: string | null
           residence_id?: string
           rooms?: number | null
           surface?: number | null
@@ -955,50 +961,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "reservations_residence_id_fkey"
-            columns: ["residence_id"]
-            isOneToOne: false
-            referencedRelation: "residences"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      residence_invitations: {
-        Row: {
-          code: string
-          created_at: string
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          max_uses: number | null
-          residence_id: string
-          uses_count: number
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          residence_id: string
-          uses_count?: number
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          residence_id?: string
-          uses_count?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "residence_invitations_residence_id_fkey"
             columns: ["residence_id"]
             isOneToOne: false
             referencedRelation: "residences"
