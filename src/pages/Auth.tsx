@@ -44,7 +44,9 @@ export default function Auth() {
         title: "Connexion réussie",
         description: "Bienvenue sur Kopro!",
       });
-      navigate("/dashboard");
+      // Redirect owners to owner dashboard, others to regular dashboard
+      const isOwnerUser = email === "owner@kopro.fr";
+      navigate(isOwnerUser ? "/owner" : "/dashboard");
     } else {
       toast({
         title: "Erreur de connexion",

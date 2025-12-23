@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { OwnerRoute } from "@/components/auth/OwnerRoute";
 
 // Pages
 import Auth from "./pages/Auth";
@@ -27,6 +28,12 @@ import Rental from "./pages/Rental";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 
+// Owner Pages
+import OwnerDashboard from "./pages/OwnerDashboard";
+import OwnerResidences from "./pages/OwnerResidences";
+import OwnerManagers from "./pages/OwnerManagers";
+import OwnerSettings from "./pages/OwnerSettings";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -39,6 +46,21 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Owner routes - Global platform admin */}
+            <Route path="/owner" element={<OwnerRoute><OwnerDashboard /></OwnerRoute>} />
+            <Route path="/owner/residences" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
+            <Route path="/owner/residences/:id" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
+            <Route path="/owner/managers" element={<OwnerRoute><OwnerManagers /></OwnerRoute>} />
+            <Route path="/owner/users" element={<OwnerRoute><OwnerManagers /></OwnerRoute>} />
+            <Route path="/owner/billing" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/subscriptions" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/reports" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/settings" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/emails" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/storage" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/audit" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/impersonate/:id" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
             
             {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
