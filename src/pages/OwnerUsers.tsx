@@ -361,7 +361,7 @@ export default function OwnerUsers() {
                 <TableRow>
                   <TableHead>Utilisateur</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Rôles</TableHead>
+                  <TableHead>Rôles et Résidence</TableHead>
                   <TableHead>Inscrit le</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
