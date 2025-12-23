@@ -8,19 +8,19 @@ interface OwnerRouteProps {
 }
 
 export function OwnerRoute({ children }: OwnerRouteProps) {
-  const { user, isLoading, isOwner } = useAuth();
+  const { user, profile, isLoading, isOwner } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLoading && user && !isOwner()) {
+    if (!isLoading && user && profile && !isOwner()) {
       toast({
         title: "Accès refusé",
         description: "Cette section est réservée aux administrateurs de la plateforme.",
         variant: "destructive",
       });
     }
-  }, [isLoading, user, isOwner, toast]);
+  }, [isLoading, user, profile, isOwner, toast]);
 
   if (isLoading) {
     return (
@@ -32,6 +32,15 @@ export function OwnerRoute({ children }: OwnerRouteProps) {
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Wait for profile to load before checking roles
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Chargement...</div>
+      </div>
+    );
   }
 
   if (!isOwner()) {

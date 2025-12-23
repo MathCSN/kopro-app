@@ -1,66 +1,147 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
 
-// Demo users for showcasing different roles
-const demoUsers = [
-  { email: "resident@kopro.fr", password: "demo123", role: "resident", name: "Marie Dupont", badge: "Résident" },
-  { email: "cs@kopro.fr", password: "demo123", role: "cs", name: "Jean Martin", badge: "Conseil Syndical" },
-  { email: "gestionnaire@kopro.fr", password: "demo123", role: "manager", name: "Sophie Bernard", badge: "Gestionnaire" },
-  { email: "admin@kopro.fr", password: "demo123", role: "admin", name: "Superadmin" , badge: "Superadmin" },
-  { email: "owner@kopro.fr", password: "demo123", role: "owner", name: "Pierre Fondateur", badge: "Fondateur / Owner" },
-];
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().email("Email invalide").max(255, "Email trop long"),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").max(128, "Mot de passe trop long")
+});
+
+const signUpSchema = z.object({
+  firstName: z.string().min(1, "Prénom requis").max(100, "Prénom trop long"),
+  lastName: z.string().min(1, "Nom requis").max(100, "Nom trop long"),
+  email: z.string().email("Email invalide").max(255, "Email trop long"),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").max(128, "Mot de passe trop long")
+});
 
 export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, login } = useAuth();
+  const { user, profile, isLoading: authLoading, login, signUp } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
+    if (!authLoading && user && profile) {
+      navigate(profile.role === 'owner' ? "/owner" : "/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, profile, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
+    
+    // Validate input
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0].toString()] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      return;
+    }
+    
     setIsLoading(true);
 
-    const success = await login(email, password);
-    if (success) {
+    const { error } = await login(email, password);
+    
+    if (error) {
+      let errorMessage = "Erreur de connexion";
+      
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Email ou mot de passe incorrect";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMessage = "Veuillez confirmer votre email avant de vous connecter";
+      } else {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Erreur de connexion",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } else {
       toast({
         title: "Connexion réussie",
         description: "Bienvenue sur Kopro!",
       });
-      // Redirect owners to owner dashboard, others to regular dashboard
-      const isOwnerUser = email === "owner@kopro.fr";
-      navigate(isOwnerUser ? "/owner" : "/dashboard");
-    } else {
-      toast({
-        title: "Erreur de connexion",
-        description: "Email ou mot de passe incorrect",
-        variant: "destructive",
-      });
     }
+    
     setIsLoading(false);
   };
 
-  const handleDemoLogin = (user: typeof demoUsers[0]) => {
-    setEmail(user.email);
-    setPassword(user.password);
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationErrors({});
+    
+    // Validate input
+    const result = signUpSchema.safeParse({ firstName, lastName, email, password });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0].toString()] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      return;
+    }
+    
+    setIsLoading(true);
+
+    const { error } = await signUp(email, password, firstName, lastName);
+    
+    if (error) {
+      let errorMessage = "Erreur lors de l'inscription";
+      
+      if (error.message.includes("User already registered")) {
+        errorMessage = "Cet email est déjà utilisé";
+      } else if (error.message.includes("Password")) {
+        errorMessage = "Le mot de passe ne respecte pas les critères de sécurité";
+      } else {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Erreur d'inscription",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Inscription réussie",
+        description: "Bienvenue sur Kopro! Vous êtes maintenant connecté.",
+      });
+    }
+    
+    setIsLoading(false);
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Chargement...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
@@ -143,6 +224,9 @@ export default function Auth() {
                       required
                     />
                   </div>
+                  {validationErrors.email && (
+                    <p className="text-sm text-destructive">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -166,14 +250,9 @@ export default function Auth() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="rounded border-input" />
-                    <span className="text-muted-foreground">Se souvenir de moi</span>
-                  </label>
-                  <a href="#" className="text-primary hover:underline">Mot de passe oublié?</a>
+                  {validationErrors.password && (
+                    <p className="text-sm text-destructive">{validationErrors.password}</p>
+                  )}
                 </div>
 
                 <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
@@ -181,30 +260,6 @@ export default function Auth() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </form>
-
-              {/* Demo accounts */}
-              <Card className="border-dashed">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Comptes démo</CardTitle>
-                  <CardDescription className="text-xs">Cliquez pour pré-remplir les identifiants</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-2">
-                  {demoUsers.map((user) => (
-                    <Button
-                      key={user.email}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs justify-start h-auto py-2"
-                      onClick={() => handleDemoLogin(user)}
-                    >
-                      <div className="text-left">
-                        <div className="font-medium">{user.badge}</div>
-                        <div className="text-muted-foreground">{user.email}</div>
-                      </div>
-                    </Button>
-                  ))}
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="register" className="space-y-6">
@@ -213,15 +268,37 @@ export default function Auth() {
                 <p className="text-muted-foreground">Rejoignez votre résidence sur Kopro</p>
               </div>
 
-              <form className="space-y-4">
+              <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">Prénom</Label>
-                    <Input id="firstName" placeholder="Jean" required />
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        id="firstName" 
+                        placeholder="Jean" 
+                        className="pl-10"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required 
+                      />
+                    </div>
+                    {validationErrors.firstName && (
+                      <p className="text-sm text-destructive">{validationErrors.firstName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Nom</Label>
-                    <Input id="lastName" placeholder="Dupont" required />
+                    <Input 
+                      id="lastName" 
+                      placeholder="Dupont"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required 
+                    />
+                    {validationErrors.lastName && (
+                      <p className="text-sm text-destructive">{validationErrors.lastName}</p>
+                    )}
                   </div>
                 </div>
 
@@ -229,23 +306,50 @@ export default function Auth() {
                   <Label htmlFor="registerEmail">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="registerEmail" type="email" placeholder="votre@email.fr" className="pl-10" required />
+                    <Input 
+                      id="registerEmail" 
+                      type="email" 
+                      placeholder="votre@email.fr" 
+                      className="pl-10"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required 
+                    />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="inviteCode">Code d'invitation</Label>
-                  <Input id="inviteCode" placeholder="KOPRO-XXXX-XXXX" required />
-                  <p className="text-xs text-muted-foreground">Ce code vous a été fourni par votre gestionnaire</p>
+                  {validationErrors.email && (
+                    <p className="text-sm text-destructive">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="registerPassword">Mot de passe</Label>
-                  <Input id="registerPassword" type="password" placeholder="••••••••" required />
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="registerPassword" 
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••" 
+                      className="pl-10 pr-10"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {validationErrors.password && (
+                    <p className="text-sm text-destructive">{validationErrors.password}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Minimum 8 caractères</p>
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
-                  Créer mon compte
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  {isLoading ? "Inscription..." : "Créer mon compte"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </form>

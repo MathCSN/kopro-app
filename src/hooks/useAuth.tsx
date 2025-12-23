@@ -1,19 +1,24 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { AppRole, ROLE_HIERARCHY } from '@/types/auth';
 
-interface DemoUser {
-  email: string;
+interface UserProfile {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
   role: AppRole;
-  name: string;
-  badge: string;
 }
 
 interface AuthContextType {
-  user: DemoUser | null;
+  user: User | null;
+  session: Session | null;
+  profile: UserProfile | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: Error | null }>;
+  logout: () => Promise<void>;
   hasRole: (requiredRole: AppRole) => boolean;
   canAccessRental: () => boolean;
   isOwner: () => boolean;
@@ -22,61 +27,161 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Demo users
-const demoUsers: (DemoUser & { password: string })[] = [
-  { email: "resident@kopro.fr", password: "demo123", role: "resident", name: "Marie Dupont", badge: "Résident" },
-  { email: "cs@kopro.fr", password: "demo123", role: "cs", name: "Jean Martin", badge: "Conseil Syndical" },
-  { email: "gestionnaire@kopro.fr", password: "demo123", role: "manager", name: "Sophie Bernard", badge: "Gestionnaire" },
-  { email: "admin@kopro.fr", password: "demo123", role: "admin", name: "Admin Système", badge: "Superadmin" },
-  { email: "owner@kopro.fr", password: "demo123", role: "owner", name: "Pierre Fondateur", badge: "Fondateur / Owner" },
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<DemoUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("kopro_user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem("kopro_user");
-      }
-    }
-    setIsLoading(false);
-  }, []);
+  // Fetch user profile and role from database
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      // Get profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, first_name, last_name')
+        .eq('id', userId)
+        .single();
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const foundUser = demoUsers.find(u => u.email === email && u.password === password);
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      localStorage.setItem("kopro_user", JSON.stringify(userWithoutPassword));
-      setUser(userWithoutPassword);
-      return true;
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return null;
+      }
+
+      // Get highest role for user (roles are fetched from user_roles table via RLS)
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+      }
+
+      // Determine highest role based on hierarchy
+      let highestRole: AppRole = 'resident';
+      if (rolesData && rolesData.length > 0) {
+        for (const roleRecord of rolesData) {
+          const role = roleRecord.role as AppRole;
+          if (ROLE_HIERARCHY[role] > ROLE_HIERARCHY[highestRole]) {
+            highestRole = role;
+          }
+        }
+      }
+
+      return {
+        id: profileData.id,
+        email: profileData.email,
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        role: highestRole
+      };
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+      return null;
     }
-    return false;
   };
 
-  const logout = () => {
-    localStorage.removeItem("kopro_user");
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Defer profile fetch to avoid deadlock
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserProfile(session.user.id).then(setProfile);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id).then((profile) => {
+          setProfile(profile);
+          setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<{ error: Error | null }> => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      return { error };
+    }
+    
+    return { error: null };
+  };
+
+  const signUp = async (
+    email: string, 
+    password: string, 
+    firstName: string, 
+    lastName: string
+  ): Promise<{ error: Error | null }> => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+        }
+      }
+    });
+
+    if (error) {
+      return { error };
+    }
+
+    return { error: null };
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
+    setProfile(null);
   };
 
   const hasRole = (requiredRole: AppRole): boolean => {
-    if (!user) return false;
-    return ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY[requiredRole];
+    if (!profile) return false;
+    return ROLE_HIERARCHY[profile.role] >= ROLE_HIERARCHY[requiredRole];
   };
 
-  const isOwner = () => user?.role === 'owner';
-  const isManager = () => user?.role === 'manager' || user?.role === 'admin' || user?.role === 'owner';
-  const canAccessRental = () => isOwner() || user?.role === 'manager' || user?.role === 'admin';
+  const isOwner = () => profile?.role === 'owner';
+  const isManager = () => profile?.role === 'manager' || profile?.role === 'admin' || profile?.role === 'owner';
+  const canAccessRental = () => isOwner() || profile?.role === 'manager' || profile?.role === 'admin';
 
   return (
     <AuthContext.Provider value={{ 
       user, 
+      session,
+      profile,
       isLoading, 
       login, 
+      signUp,
       logout, 
       hasRole,
       canAccessRental,

@@ -131,27 +131,39 @@ const statusColors: Record<string, string> = {
   closed: "bg-muted text-muted-foreground border-border",
 };
 
+// Role badge mapping
+const roleBadges: Record<string, string> = {
+  resident: "Résident",
+  cs: "Conseil Syndical",
+  manager: "Gestionnaire",
+  admin: "Admin",
+  owner: "Fondateur / Owner",
+};
+
 export default function Dashboard() {
-  const { user, logout, isManager, canAccessRental } = useAuth();
+  const { user, profile, logout, isManager, canAccessRental } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth");
   };
 
-  if (!user) {
+  if (!user || !profile) {
     return null;
   }
 
+  const displayName = profile.first_name || profile.email?.split("@")[0] || "Utilisateur";
+  const badge = roleBadges[profile.role] || "Utilisateur";
+
   return (
-    <AppLayout userRole={user.role} onLogout={handleLogout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 lg:space-y-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">
-              Bonjour, {user.name.split(" ")[0]} 👋
+              Bonjour, {displayName} 👋
             </h1>
             <p className="text-muted-foreground mt-1">
               Voici un résumé de votre copropriété
@@ -166,7 +178,7 @@ export default function Dashboard() {
               </span>
             </Button>
             <Badge variant="secondary" className="hidden sm:flex">
-              {user.badge}
+              {badge}
             </Badge>
           </div>
         </div>
