@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Newspaper,
   Ticket,
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 // Quick action cards data
 const quickActions = [
@@ -54,75 +56,6 @@ const quickActions = [
   },
 ];
 
-// Sample announcements
-const announcements = [
-  {
-    id: 1,
-    title: "Travaux de ravalement - Planning actualisé",
-    category: "Travaux",
-    date: "Aujourd'hui",
-    author: "Syndic Gestion Plus",
-    isOfficial: true,
-  },
-  {
-    id: 2,
-    title: "Nouveau règlement intérieur disponible",
-    category: "Documents",
-    date: "Hier",
-    author: "Conseil Syndical",
-    isOfficial: true,
-  },
-  {
-    id: 3,
-    title: "Rappel: Assemblée Générale le 15 janvier",
-    category: "AG",
-    date: "Il y a 2 jours",
-    author: "Syndic Gestion Plus",
-    isOfficial: true,
-  },
-];
-
-// Sample tickets
-const myTickets = [
-  {
-    id: "T-2024-042",
-    title: "Fuite robinet cuisine",
-    status: "in_progress",
-    statusLabel: "En cours",
-    date: "Il y a 3 jours",
-    priority: "normal",
-  },
-  {
-    id: "T-2024-038",
-    title: "Interphone ne fonctionne plus",
-    status: "waiting",
-    statusLabel: "En attente",
-    date: "Il y a 1 semaine",
-    priority: "urgent",
-  },
-];
-
-// Sample reservations
-const upcomingReservations = [
-  {
-    id: 1,
-    resource: "Salle de réception",
-    date: "Samedi 18 janvier",
-    time: "14h00 - 20h00",
-    status: "confirmed",
-  },
-];
-
-// Sample pending votes
-const pendingVotes = [
-  {
-    id: 1,
-    title: "Approbation des comptes 2023",
-    deadline: "10 janvier 2025",
-    type: "AG Ordinaire",
-  },
-];
-
 const statusColors: Record<string, string> = {
   open: "bg-kopro-amber/10 text-kopro-amber border-kopro-amber/20",
   in_progress: "bg-kopro-teal/10 text-kopro-teal border-kopro-teal/20",
@@ -143,6 +76,95 @@ const roleBadges: Record<string, string> = {
 export default function Dashboard() {
   const { user, profile, logout, isManager, canAccessRental } = useAuth();
   const navigate = useNavigate();
+  
+  const [stats, setStats] = useState({
+    openTickets: 0,
+    inProgressTickets: 0,
+    myTickets: [] as any[],
+    upcomingReservations: [] as any[],
+    pendingPayments: 0,
+    openVacancies: 0,
+    pendingApplications: 0,
+    announcements: [] as any[],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch tickets
+      const { data: tickets } = await supabase
+        .from('tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const myTickets = (tickets || []).filter(t => t.created_by === user?.id).slice(0, 2);
+      const openTickets = (tickets || []).filter(t => t.status === 'open').length;
+      const inProgressTickets = (tickets || []).filter(t => t.status === 'in_progress').length;
+
+      // Fetch reservations
+      const { data: reservations } = await supabase
+        .from('reservations')
+        .select('*')
+        .eq('user_id', user!.id)
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true })
+        .limit(3);
+
+      // Fetch pending payments
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('user_id', user!.id)
+        .eq('status', 'pending');
+
+      const pendingPayments = (payments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+
+      // Fetch vacancies & applications (for managers)
+      let openVacancies = 0;
+      let pendingApplications = 0;
+      if (canAccessRental()) {
+        const { data: vacancies } = await supabase
+          .from('vacancies')
+          .select('id')
+          .eq('status', 'open');
+        openVacancies = (vacancies || []).length;
+
+        const { data: applications } = await supabase
+          .from('applications')
+          .select('id')
+          .eq('status', 'new');
+        pendingApplications = (applications || []).length;
+      }
+
+      // Fetch announcements
+      const { data: posts } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      setStats({
+        openTickets,
+        inProgressTickets,
+        myTickets,
+        upcomingReservations: reservations || [],
+        pendingPayments,
+        openVacancies,
+        pendingApplications,
+        announcements: posts || [],
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -187,16 +209,15 @@ export default function Dashboard() {
         {isManager() && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: "Incidents ouverts", value: "12", change: "-3", icon: Ticket, color: "text-kopro-rose" },
-              { label: "Taux recouvrement", value: "94%", change: "+2%", icon: TrendingUp, color: "text-success" },
-              { label: "Réservations mois", value: "28", change: "+5", icon: Calendar, color: "text-kopro-teal" },
-              { label: "Satisfaction", value: "4.6/5", change: "+0.2", icon: CheckCircle2, color: "text-kopro-amber" },
+              { label: "Incidents ouverts", value: String(stats.openTickets), change: "", icon: Ticket, color: "text-kopro-rose" },
+              { label: "En cours", value: String(stats.inProgressTickets), change: "", icon: TrendingUp, color: "text-kopro-teal" },
+              { label: "Réservations", value: String(stats.upcomingReservations.length), change: "", icon: Calendar, color: "text-kopro-purple" },
+              { label: "Paiements en attente", value: `${stats.pendingPayments}€`, change: "", icon: CreditCard, color: "text-kopro-amber" },
             ].map((stat, i) => (
               <Card key={i} className="shadow-soft">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                    <span className="text-xs text-success font-medium">{stat.change}</span>
                   </div>
                   <div className="mt-3">
                     <p className="text-2xl font-bold text-foreground">{stat.value}</p>
@@ -217,7 +238,9 @@ export default function Dashboard() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground">Module Location</h3>
-                <p className="text-sm text-muted-foreground">2 vacances ouvertes · 5 candidatures en attente</p>
+                <p className="text-sm text-muted-foreground">
+                  {stats.openVacancies} vacance(s) ouverte(s) · {stats.pendingApplications} candidature(s) en attente
+                </p>
               </div>
               <Button variant="outline" size="sm" onClick={() => navigate("/rental")}>
                 <Users className="h-4 w-4 mr-2" />
@@ -263,28 +286,35 @@ export default function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {announcements.map((announcement) => (
-                <div
-                  key={announcement.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Newspaper className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {announcement.isOfficial && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Officiel</Badge>
-                      )}
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">{announcement.category}</Badge>
+              {loading ? (
+                <p className="text-center text-muted-foreground py-4">Chargement...</p>
+              ) : stats.announcements.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">Aucune annonce récente</p>
+              ) : (
+                stats.announcements.map((announcement) => (
+                  <div
+                    key={announcement.id}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Newspaper className="h-5 w-5 text-primary" />
                     </div>
-                    <h4 className="font-medium text-sm text-foreground truncate">{announcement.title}</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {announcement.author} · {announcement.date}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {announcement.type === 'announcement' && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Officiel</Badge>
+                        )}
+                      </div>
+                      <h4 className="font-medium text-sm text-foreground truncate">
+                        {announcement.title || announcement.content?.slice(0, 50)}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(announcement.created_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
 
@@ -299,24 +329,33 @@ export default function Dashboard() {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3">
-                {myTickets.map((ticket) => (
-                  <div key={ticket.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer">
-                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                      {ticket.priority === "urgent" ? (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      ) : (
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      )}
+                {loading ? (
+                  <p className="text-center text-muted-foreground py-4">Chargement...</p>
+                ) : stats.myTickets.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">Aucun incident</p>
+                ) : (
+                  stats.myTickets.map((ticket) => (
+                    <div key={ticket.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer">
+                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                        {ticket.priority === "urgent" ? (
+                          <AlertCircle className="h-4 w-4 text-destructive" />
+                        ) : (
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{ticket.title}</p>
+                        <p className="text-xs text-muted-foreground">{ticket.id.slice(0, 8)}</p>
+                      </div>
+                      <Badge className={statusColors[ticket.status || 'open']} variant="outline">
+                        {ticket.status === 'open' ? 'Ouvert' : 
+                         ticket.status === 'in_progress' ? 'En cours' : 
+                         ticket.status === 'waiting' ? 'En attente' : 
+                         ticket.status === 'resolved' ? 'Résolu' : 'Fermé'}
+                      </Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{ticket.title}</p>
-                      <p className="text-xs text-muted-foreground">{ticket.id}</p>
-                    </div>
-                    <Badge className={statusColors[ticket.status]} variant="outline">
-                      {ticket.statusLabel}
-                    </Badge>
-                  </div>
-                ))}
+                  ))
+                )}
                 <Button variant="outline" className="w-full" size="sm" onClick={() => navigate("/tickets/new")}>
                   <Ticket className="h-4 w-4 mr-2" />
                   Nouveau signalement
@@ -333,16 +372,21 @@ export default function Dashboard() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {upcomingReservations.length > 0 ? (
+                {loading ? (
+                  <p className="text-center text-muted-foreground py-4">Chargement...</p>
+                ) : stats.upcomingReservations.length > 0 ? (
                   <div className="space-y-3">
-                    {upcomingReservations.map((res) => (
+                    {stats.upcomingReservations.map((res) => (
                       <div key={res.id} className="p-3 rounded-lg bg-kopro-teal/5 border border-kopro-teal/20">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium text-sm text-foreground">{res.resource}</p>
-                          <Badge variant="secondary" className="text-[10px]">Confirmé</Badge>
+                          <p className="font-medium text-sm text-foreground">{res.resource_name}</p>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {res.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                          </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">{res.date}</p>
-                        <p className="text-xs text-muted-foreground">{res.time}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(res.start_time).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -351,52 +395,26 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Pending Votes */}
-            <Card className="shadow-soft">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="font-display text-lg">Votes en cours</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/votes")}>
-                  <ArrowUpRight className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {pendingVotes.length > 0 ? (
-                  <div className="space-y-3">
-                    {pendingVotes.map((vote) => (
-                      <div key={vote.id} className="p-3 rounded-lg bg-kopro-purple/5 border border-kopro-purple/20">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Vote className="h-4 w-4 text-kopro-purple" />
-                          <Badge variant="secondary" className="text-[10px]">{vote.type}</Badge>
-                        </div>
-                        <p className="font-medium text-sm text-foreground">{vote.title}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Limite: {vote.deadline}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">Aucun vote en attente</p>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
 
         {/* Outstanding Payments Alert */}
-        <Card className="shadow-soft border-warning/30 bg-warning/5">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="w-12 h-12 rounded-xl bg-warning/20 flex items-center justify-center shrink-0">
-              <CreditCard className="h-6 w-6 text-warning" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Appel de fonds du 4ème trimestre</h3>
-              <p className="text-sm text-muted-foreground">Montant: 450,00 € · Échéance: 31 janvier 2025</p>
-            </div>
-            <Button variant="accent" size="sm" onClick={() => navigate("/payments")}>
-              Payer maintenant
-            </Button>
-          </CardContent>
-        </Card>
+        {stats.pendingPayments > 0 && (
+          <Card className="shadow-soft border-warning/30 bg-warning/5">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 rounded-xl bg-warning/20 flex items-center justify-center shrink-0">
+                <CreditCard className="h-6 w-6 text-warning" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground">Paiements en attente</h3>
+                <p className="text-sm text-muted-foreground">Montant: {stats.pendingPayments} €</p>
+              </div>
+              <Button variant="accent" size="sm" onClick={() => navigate("/payments")}>
+                Payer maintenant
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppLayout>
   );
