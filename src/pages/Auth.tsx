@@ -356,30 +356,95 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
 
-          {/* Quick login button for testing */}
+          {/* Quick login buttons for testing */}
           <div className="mt-8 pt-6 border-t border-border">
             <p className="text-xs text-muted-foreground text-center mb-4">Connexion rapide (dev)</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                setIsLoading(true);
-                const { error } = await login("cousinmathis31@gmail.com", "test1234");
-                setIsLoading(false);
-                if (error) {
-                  toast({
-                    title: "Erreur de connexion",
-                    description: error.message,
-                    variant: "destructive",
-                  });
-                }
-              }}
-              disabled={isLoading}
-              className="w-full text-xs"
-            >
-              <Building2 className="h-3 w-3 mr-1" />
-              Administrateur (Owner)
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsLoading(true);
+                  const { error } = await login("cousinmathis31@gmail.com", "test1234");
+                  setIsLoading(false);
+                  if (error) {
+                    toast({
+                      title: "Erreur de connexion",
+                      description: error.message,
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                <Building2 className="h-3 w-3 mr-1" />
+                Admin
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsLoading(true);
+                  const { error } = await login("manager@kopro.fr", "test1234");
+                  setIsLoading(false);
+                  if (error) {
+                    toast({
+                      title: "Erreur de connexion",
+                      description: error.message,
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                <User className="h-3 w-3 mr-1" />
+                Resp. Agence
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsLoading(true);
+                  const { error } = await login("cs@kopro.fr", "test1234");
+                  setIsLoading(false);
+                  if (error) {
+                    toast({
+                      title: "Erreur de connexion",
+                      description: error.message,
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                <User className="h-3 w-3 mr-1" />
+                Syndic
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsLoading(true);
+                  const { error } = await login("resident@kopro.fr", "test1234");
+                  setIsLoading(false);
+                  if (error) {
+                    toast({
+                      title: "Erreur de connexion",
+                      description: error.message,
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                disabled={isLoading}
+                className="text-xs"
+              >
+                <User className="h-3 w-3 mr-1" />
+                Résident
+              </Button>
+            </div>
           </div>
         </div>
       </div>
