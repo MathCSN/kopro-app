@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 // Demo users for showcasing different roles
 const demoUsers = [
   { email: "resident@kopro.fr", password: "demo123", role: "resident", name: "Marie Dupont", badge: "Résident" },
   { email: "cs@kopro.fr", password: "demo123", role: "cs", name: "Jean Martin", badge: "Conseil Syndical" },
   { email: "gestionnaire@kopro.fr", password: "demo123", role: "manager", name: "Sophie Bernard", badge: "Gestionnaire" },
-  { email: "admin@kopro.fr", password: "demo123", role: "admin", name: "Admin Système", badge: "Superadmin" },
+  { email: "admin@kopro.fr", password: "demo123", role: "admin", name: "Superadmin" , badge: "Superadmin" },
+  { email: "owner@kopro.fr", password: "demo123", role: "owner", name: "Pierre Fondateur", badge: "Fondateur / Owner" },
 ];
 
 export default function Auth() {
@@ -23,30 +25,34 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, login } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login - in production this would call Supabase auth
-    setTimeout(() => {
-      const user = demoUsers.find((u) => u.email === email && u.password === password);
-      if (user) {
-        localStorage.setItem("kopro_user", JSON.stringify(user));
-        toast({
-          title: "Connexion réussie",
-          description: `Bienvenue, ${user.name}!`,
-        });
-        navigate("/dashboard");
-      } else {
-        toast({
-          title: "Erreur de connexion",
-          description: "Email ou mot de passe incorrect",
-          variant: "destructive",
-        });
-      }
-      setIsLoading(false);
-    }, 1000);
+    const success = await login(email, password);
+    if (success) {
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur Kopro!",
+      });
+      navigate("/dashboard");
+    } else {
+      toast({
+        title: "Erreur de connexion",
+        description: "Email ou mot de passe incorrect",
+        variant: "destructive",
+      });
+    }
+    setIsLoading(false);
   };
 
   const handleDemoLogin = (user: typeof demoUsers[0]) => {
