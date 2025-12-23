@@ -128,11 +128,11 @@ export default function Rental() {
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl lg:text-3xl font-bold">Location & Candidatures</h1>
-            <p className="text-muted-foreground">Gestion des logements et dossiers locataires</p>
+            <h1 className="font-display text-2xl lg:text-3xl font-bold">Gestion Locative</h1>
+            <p className="text-muted-foreground">Logements, annonces et candidatures</p>
           </div>
           <Button onClick={() => navigate('/rental/vacancies/new')}>
-            <Plus className="h-4 w-4 mr-2" />Créer une vacance
+            <Plus className="h-4 w-4 mr-2" />Nouvelle annonce
           </Button>
         </div>
 
@@ -152,7 +152,7 @@ export default function Rental() {
           <Card className="shadow-soft">
             <CardContent className="p-4">
               <p className="text-2xl font-bold text-kopro-teal">{openVacancies.length}</p>
-              <p className="text-sm text-muted-foreground">Vacances ouvertes</p>
+              <p className="text-sm text-muted-foreground">Annonces actives</p>
             </CardContent>
           </Card>
           <Card className="shadow-soft">
@@ -166,7 +166,7 @@ export default function Rental() {
         <Tabs defaultValue="units">
           <TabsList>
             <TabsTrigger value="units">Logements</TabsTrigger>
-            <TabsTrigger value="vacancies">Vacances</TabsTrigger>
+            <TabsTrigger value="vacancies">Annonces</TabsTrigger>
             <TabsTrigger value="applications">Candidatures</TabsTrigger>
           </TabsList>
 
@@ -200,7 +200,9 @@ export default function Rental() {
                       </p>
                     </div>
                     {unit.status === 'vacant' && (
-                      <Button size="sm">Créer vacance <ArrowRight className="h-4 w-4 ml-1" /></Button>
+                      <Button size="sm" onClick={() => navigate('/rental/vacancies/new')}>
+                        Créer annonce <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
                     )}
                   </CardContent>
                 </Card>
@@ -215,7 +217,7 @@ export default function Rental() {
               <Card className="shadow-soft">
                 <CardContent className="p-8 text-center">
                   <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">Aucune vacance</p>
+                  <p className="text-muted-foreground">Aucune annonce de location</p>
                 </CardContent>
               </Card>
             ) : (
@@ -231,7 +233,7 @@ export default function Rental() {
                         Apt {v.unit?.door} · {v.applications_count || 0} candidature(s)
                       </p>
                     </div>
-                    <Badge>{v.status === 'open' ? 'Ouverte' : v.status === 'draft' ? 'Brouillon' : 'Fermée'}</Badge>
+                    <Badge>{v.status === 'open' ? 'Active' : v.status === 'draft' ? 'Brouillon' : 'Fermée'}</Badge>
                   </CardContent>
                 </Card>
               ))
