@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Plus, Search, Users, Loader2, MoreVertical, Eye, Mail, Trash2 } from "lucide-react";
+import { Search, Users, Loader2, MoreVertical, Eye, Mail, Building2, X, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Database } from "@/integrations/supabase/types";
+
+type AppRole = Database["public"]["Enums"]["app_role"];
+
+type Residence = {
+  id: string;
+  name: string;
+};
+
+type UserRole = {
+  id: string;
+  role: AppRole;
+  residence_id: string | null;
+  residence_name?: string;
+};
 
 type UserWithRole = {
   id: string;
@@ -37,8 +65,10 @@ type UserWithRole = {
   first_name: string | null;
   last_name: string | null;
   created_at: string | null;
-  roles: string[];
+  roles: UserRole[];
 };
+
+const ALL_ROLES: AppRole[] = ['owner', 'admin', 'manager', 'cs', 'resident'];
 
 export default function OwnerUsers() {
   const { user, logout } = useAuth();
@@ -46,39 +76,49 @@ export default function OwnerUsers() {
   const { toast } = useToast();
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
+  const [residences, setResidences] = useState<Residence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedResidenceId, setSelectedResidenceId] = useState<string>("all");
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [savingRoles, setSavingRoles] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
       setIsLoading(true);
       
-      // Fetch all profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch residences and profiles/roles in parallel
+      const [residencesRes, profilesRes, rolesRes] = await Promise.all([
+        supabase.from('residences').select('id, name').order('name'),
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('user_roles').select('id, user_id, role, residence_id'),
+      ]);
 
-      if (profilesError) throw profilesError;
+      if (residencesRes.error) throw residencesRes.error;
+      if (profilesRes.error) throw profilesRes.error;
+      if (rolesRes.error) throw rolesRes.error;
 
-      // Fetch all roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
+      setResidences(residencesRes.data || []);
 
-      if (rolesError) throw rolesError;
+      // Map residence names to roles
+      const residenceMap = new Map((residencesRes.data || []).map(r => [r.id, r.name]));
 
       // Combine profiles with roles
-      const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
-        const userRoles = (roles || [])
+      const usersWithRoles: UserWithRole[] = (profilesRes.data || []).map(profile => {
+        const userRoles: UserRole[] = (rolesRes.data || [])
           .filter(r => r.user_id === profile.id)
-          .map(r => r.role);
+          .map(r => ({
+            id: r.id,
+            role: r.role,
+            residence_id: r.residence_id,
+            residence_name: r.residence_id ? residenceMap.get(r.residence_id) : undefined,
+          }));
         
         return {
           id: profile.id,
@@ -107,20 +147,86 @@ export default function OwnerUsers() {
     navigate("/auth");
   };
 
+  const toggleRole = async (userId: string, role: AppRole, currentRoles: UserRole[]) => {
+    setSavingRoles(true);
+    try {
+      const existingRole = currentRoles.find(r => 
+        r.role === role && 
+        (role === 'owner' || r.residence_id === (selectedResidenceId === 'all' ? null : selectedResidenceId))
+      );
+
+      if (existingRole) {
+        // Remove role
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('id', existingRole.id);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Rôle retiré",
+          description: `Le rôle ${getRoleLabel(role)} a été retiré.`,
+        });
+      } else {
+        // Add role
+        const insertData: any = {
+          user_id: userId,
+          role: role,
+        };
+        
+        // Only add residence_id for non-owner roles
+        if (role !== 'owner' && selectedResidenceId !== 'all') {
+          insertData.residence_id = selectedResidenceId;
+        }
+
+        const { error } = await supabase
+          .from('user_roles')
+          .insert(insertData);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Rôle ajouté",
+          description: `Le rôle ${getRoleLabel(role)} a été ajouté.`,
+        });
+      }
+      
+      // Refresh data
+      await fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier le rôle.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingRoles(false);
+      setEditingUserId(null);
+    }
+  };
+
   if (!user) return null;
 
-  const filteredUsers = users.filter(u => 
+  // Filter users based on selected residence
+  const filteredByResidence = selectedResidenceId === 'all' 
+    ? users 
+    : users.filter(u => 
+        u.roles.some(r => r.role === 'owner' || r.residence_id === selectedResidenceId)
+      );
+
+  const filteredUsers = filteredByResidence.filter(u => 
     u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.first_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (u.last_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   const stats = {
-    total: users.length,
-    owners: users.filter(u => u.roles.includes('owner')).length,
-    admins: users.filter(u => u.roles.includes('admin')).length,
-    managers: users.filter(u => u.roles.includes('manager')).length,
-    residents: users.filter(u => u.roles.includes('resident')).length,
+    total: filteredByResidence.length,
+    owners: filteredByResidence.filter(u => u.roles.some(r => r.role === 'owner')).length,
+    admins: filteredByResidence.filter(u => u.roles.some(r => r.role === 'admin')).length,
+    managers: filteredByResidence.filter(u => u.roles.some(r => r.role === 'manager')).length,
+    residents: filteredByResidence.filter(u => u.roles.some(r => r.role === 'resident')).length,
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -143,6 +249,23 @@ export default function OwnerUsers() {
     }
   };
 
+  const getUserRolesForDisplay = (userRoles: UserRole[]) => {
+    if (selectedResidenceId === 'all') {
+      return userRoles;
+    }
+    return userRoles.filter(r => r.role === 'owner' || r.residence_id === selectedResidenceId);
+  };
+
+  const hasRole = (userRoles: UserRole[], role: AppRole) => {
+    if (role === 'owner') {
+      return userRoles.some(r => r.role === 'owner');
+    }
+    if (selectedResidenceId === 'all') {
+      return userRoles.some(r => r.role === role);
+    }
+    return userRoles.some(r => r.role === role && r.residence_id === selectedResidenceId);
+  };
+
   if (isLoading) {
     return (
       <OwnerLayout onLogout={handleLogout}>
@@ -161,6 +284,24 @@ export default function OwnerUsers() {
             <h1 className="font-display text-2xl lg:text-3xl font-bold">Utilisateurs globaux</h1>
             <p className="text-muted-foreground mt-1">Gérez les utilisateurs de la plateforme</p>
           </div>
+        </div>
+
+        {/* Residence selector */}
+        <div className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          <Select value={selectedResidenceId} onValueChange={setSelectedResidenceId}>
+            <SelectTrigger className="w-[280px]">
+              <SelectValue placeholder="Sélectionner une résidence" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="all">Toutes les résidences</SelectItem>
+              {residences.map(residence => (
+                <SelectItem key={residence.id} value={residence.id}>
+                  {residence.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Stats */}
@@ -256,17 +397,60 @@ export default function OwnerUsers() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
                     <TableCell>
-                      <div className="flex gap-1 flex-wrap">
-                        {u.roles.length > 0 ? (
-                          u.roles.map(role => (
-                            <Badge key={role} variant={getRoleBadgeVariant(role)}>
-                              {getRoleLabel(role)}
-                            </Badge>
-                          ))
-                        ) : (
-                          <Badge variant="outline">Aucun rôle</Badge>
-                        )}
-                      </div>
+                      <Popover open={editingUserId === u.id} onOpenChange={(open) => setEditingUserId(open ? u.id : null)}>
+                        <PopoverTrigger asChild>
+                          <button className="flex gap-1 flex-wrap items-center cursor-pointer hover:opacity-80 transition-opacity">
+                            {getUserRolesForDisplay(u.roles).length > 0 ? (
+                              getUserRolesForDisplay(u.roles).map((role, idx) => (
+                                <Badge key={`${role.role}-${role.residence_id || 'global'}-${idx}`} variant={getRoleBadgeVariant(role.role)}>
+                                  {getRoleLabel(role.role)}
+                                  {role.residence_name && selectedResidenceId === 'all' && (
+                                    <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
+                                  )}
+                                </Badge>
+                              ))
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Ajouter rôle
+                              </Badge>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 bg-popover" align="start">
+                          <div className="space-y-3">
+                            <div className="font-medium text-sm">Modifier les rôles</div>
+                            {selectedResidenceId === 'all' && (
+                              <p className="text-xs text-muted-foreground">
+                                Sélectionnez une résidence pour modifier les rôles liés à une résidence.
+                              </p>
+                            )}
+                            <div className="space-y-2">
+                              {ALL_ROLES.map(role => {
+                                const isDisabled = savingRoles || (role !== 'owner' && selectedResidenceId === 'all');
+                                const isChecked = hasRole(u.roles, role);
+                                
+                                return (
+                                  <label 
+                                    key={role} 
+                                    className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                  >
+                                    <Checkbox 
+                                      checked={isChecked}
+                                      disabled={isDisabled}
+                                      onCheckedChange={() => toggleRole(u.id, role, u.roles)}
+                                    />
+                                    <span className="text-sm">{getRoleLabel(role)}</span>
+                                    {role === 'owner' && (
+                                      <span className="text-xs text-muted-foreground ml-auto">(global)</span>
+                                    )}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {u.created_at 
@@ -336,12 +520,15 @@ export default function OwnerUsers() {
               </div>
               <div className="grid gap-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">Rôles</p>
-                  <div className="flex gap-1 mt-1">
+                  <p className="text-sm text-muted-foreground">Tous les rôles</p>
+                  <div className="flex gap-1 mt-1 flex-wrap">
                     {selectedUser.roles.length > 0 ? (
-                      selectedUser.roles.map(role => (
-                        <Badge key={role} variant={getRoleBadgeVariant(role)}>
-                          {getRoleLabel(role)}
+                      selectedUser.roles.map((role, idx) => (
+                        <Badge key={`${role.role}-${role.residence_id || 'global'}-${idx}`} variant={getRoleBadgeVariant(role.role)}>
+                          {getRoleLabel(role.role)}
+                          {role.residence_name && (
+                            <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
+                          )}
                         </Badge>
                       ))
                     ) : (
