@@ -12,6 +12,7 @@ import {
   Edit,
   Trash2,
   Loader2,
+  QrCode,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { InvitationCodeDialog } from "@/components/residence/InvitationCodeDialog";
 
 type Residence = {
   id: string;
@@ -73,6 +75,7 @@ export default function OwnerResidences() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedResidence, setSelectedResidence] = useState<Residence | null>(null);
+  const [isInvitationDialogOpen, setIsInvitationDialogOpen] = useState(false);
   const [newResidence, setNewResidence] = useState({ 
     name: "", 
     address: "", 
@@ -378,6 +381,13 @@ export default function OwnerResidences() {
                           <Edit className="h-4 w-4 mr-2" />
                           Modifier
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedResidence(residence);
+                          setIsInvitationDialogOpen(true);
+                        }}>
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Codes d'invitation
+                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive"
                           onClick={() => {
@@ -606,6 +616,16 @@ export default function OwnerResidences() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invitation Code Dialog */}
+      {selectedResidence && (
+        <InvitationCodeDialog
+          residenceId={selectedResidence.id}
+          residenceName={selectedResidence.name}
+          open={isInvitationDialogOpen}
+          onOpenChange={setIsInvitationDialogOpen}
+        />
+      )}
     </OwnerLayout>
   );
 }

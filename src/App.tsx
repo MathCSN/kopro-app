@@ -9,6 +9,8 @@ import { OwnerRoute } from "@/components/auth/OwnerRoute";
 
 // Pages
 import Auth from "./pages/Auth";
+import Pending from "./pages/Pending";
+import JoinResidence from "./pages/JoinResidence";
 import Dashboard from "./pages/Dashboard";
 import Newsfeed from "./pages/Newsfeed";
 import Tickets from "./pages/Tickets";
@@ -53,7 +55,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
-            
+            <Route path="/pending" element={<Pending />} />
+            <Route path="/join" element={<JoinResidence />} />
             {/* Owner routes - Global platform admin */}
             <Route path="/owner" element={<OwnerRoute><OwnerDashboard /></OwnerRoute>} />
             <Route path="/owner/residences" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
