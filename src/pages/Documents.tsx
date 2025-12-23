@@ -1,144 +1,111 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Search,
-  Filter,
   Download,
   Eye,
   FolderOpen,
   File,
   Clock,
-  ChevronRight,
   Upload,
-  Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Document {
   id: string;
-  name: string;
-  category: string;
-  type: string;
-  size: string;
-  uploadedAt: string;
-  uploadedBy: string;
-  version: number;
+  title: string;
+  description: string | null;
+  category: string | null;
+  file_url: string;
+  file_name: string | null;
+  file_size: number | null;
+  created_at: string;
 }
 
 const categories = [
-  { id: "pv", name: "Procès-verbaux AG", icon: FileText, count: 12 },
-  { id: "reglement", name: "Règlement & Statuts", icon: FileText, count: 4 },
-  { id: "contrats", name: "Contrats & Assurances", icon: File, count: 8 },
-  { id: "travaux", name: "Travaux & Devis", icon: File, count: 15 },
-  { id: "comptes", name: "Comptes & Budgets", icon: File, count: 6 },
-  { id: "divers", name: "Documents divers", icon: FolderOpen, count: 23 },
-];
-
-const sampleDocuments: Document[] = [
-  {
-    id: "1",
-    name: "PV AG Ordinaire 2024",
-    category: "pv",
-    type: "PDF",
-    size: "2.4 MB",
-    uploadedAt: "15 déc. 2024",
-    uploadedBy: "Syndic Gestion Plus",
-    version: 1,
-  },
-  {
-    id: "2",
-    name: "Règlement intérieur 2024",
-    category: "reglement",
-    type: "PDF",
-    size: "1.2 MB",
-    uploadedAt: "10 déc. 2024",
-    uploadedBy: "Conseil Syndical",
-    version: 3,
-  },
-  {
-    id: "3",
-    name: "Contrat assurance multirisques",
-    category: "contrats",
-    type: "PDF",
-    size: "3.1 MB",
-    uploadedAt: "1 jan. 2024",
-    uploadedBy: "Syndic Gestion Plus",
-    version: 1,
-  },
-  {
-    id: "4",
-    name: "Devis ravalement façade",
-    category: "travaux",
-    type: "PDF",
-    size: "5.8 MB",
-    uploadedAt: "20 nov. 2024",
-    uploadedBy: "Syndic Gestion Plus",
-    version: 2,
-  },
-  {
-    id: "5",
-    name: "Budget prévisionnel 2025",
-    category: "comptes",
-    type: "PDF",
-    size: "890 KB",
-    uploadedAt: "5 déc. 2024",
-    uploadedBy: "Syndic Gestion Plus",
-    version: 1,
-  },
-  {
-    id: "6",
-    name: "PV AG Extraordinaire Oct 2024",
-    category: "pv",
-    type: "PDF",
-    size: "1.8 MB",
-    uploadedAt: "25 oct. 2024",
-    uploadedBy: "Syndic Gestion Plus",
-    version: 1,
-  },
+  { id: "pv", name: "Procès-verbaux AG", icon: FileText },
+  { id: "reglement", name: "Règlement & Statuts", icon: FileText },
+  { id: "contrats", name: "Contrats & Assurances", icon: File },
+  { id: "travaux", name: "Travaux & Devis", icon: File },
+  { id: "comptes", name: "Comptes & Budgets", icon: File },
+  { id: "general", name: "Documents divers", icon: FolderOpen },
 ];
 
 export default function Documents() {
-  const [user, setUser] = useState<any>(null);
+  const { user, profile, logout, isManager } = useAuth();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("kopro_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      navigate("/auth");
+    if (user) {
+      fetchDocuments();
     }
-  }, [navigate]);
+  }, [user]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("kopro_user");
+  const fetchDocuments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth");
   };
 
-  const filteredDocuments = sampleDocuments.filter(doc => {
-    const matchSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredDocuments = documents.filter(doc => {
+    const matchSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCategory = !selectedCategory || doc.category === selectedCategory;
     return matchSearch && matchCategory;
   });
 
-  const recentDocuments = [...sampleDocuments]
-    .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+  const recentDocuments = [...documents]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
 
-  if (!user) return null;
+  const getCategoryCount = (categoryId: string) => {
+    return documents.filter(d => d.category === categoryId).length;
+  };
 
-  const isManager = user.role === "manager" || user.role === "admin";
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('fr-FR', { 
+      day: 'numeric', 
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  if (!user || !profile) return null;
 
   return (
-    <AppLayout userRole={user.role} onLogout={handleLogout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -146,7 +113,7 @@ export default function Documents() {
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Documents</h1>
             <p className="text-muted-foreground mt-1">Bibliothèque documentaire de la copropriété</p>
           </div>
-          {isManager && (
+          {isManager() && (
             <Button>
               <Upload className="h-4 w-4 mr-2" />
               Importer
@@ -180,7 +147,7 @@ export default function Documents() {
                 <FolderOpen className="h-4 w-4" />
                 <span>Tous les documents</span>
               </div>
-              <Badge variant="secondary">{sampleDocuments.length}</Badge>
+              <Badge variant="secondary">{documents.length}</Badge>
             </Button>
             {categories.map((category) => (
               <Button
@@ -193,7 +160,7 @@ export default function Documents() {
                   <category.icon className="h-4 w-4" />
                   <span className="truncate">{category.name}</span>
                 </div>
-                <Badge variant="secondary">{category.count}</Badge>
+                <Badge variant="secondary">{getCategoryCount(category.id)}</Badge>
               </Button>
             ))}
           </div>
@@ -201,7 +168,7 @@ export default function Documents() {
           {/* Documents Grid */}
           <div className="lg:col-span-3 space-y-6">
             {/* Recent Documents */}
-            {!selectedCategory && !searchQuery && (
+            {!selectedCategory && !searchQuery && recentDocuments.length > 0 && (
               <Card className="shadow-soft">
                 <CardHeader className="pb-3">
                   <CardTitle className="font-display text-lg flex items-center gap-2">
@@ -220,10 +187,10 @@ export default function Documents() {
                           <FileText className="h-5 w-5 text-primary" />
                         </div>
                         <h4 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                          {doc.name}
+                          {doc.title}
                         </h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {doc.type} · {doc.size}
+                          {doc.file_name?.split('.').pop()?.toUpperCase() || 'PDF'} · {formatFileSize(doc.file_size)}
                         </p>
                       </div>
                     ))}
@@ -242,48 +209,45 @@ export default function Documents() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {filteredDocuments.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 transition-colors cursor-pointer group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <FileText className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                            {doc.name}
-                          </h4>
-                          {doc.version > 1 && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5">
-                              v{doc.version}
-                            </Badge>
-                          )}
+                {loading ? (
+                  <p className="text-center text-muted-foreground py-8">Chargement...</p>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/50 transition-colors cursor-pointer group"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <FileText className="h-5 w-5 text-primary" />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {doc.type} · {doc.size} · Ajouté le {doc.uploadedAt}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                            {doc.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {doc.file_name?.split('.').pop()?.toUpperCase() || 'PDF'} · {formatFileSize(doc.file_size)} · Ajouté le {formatDate(doc.created_at)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon-sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon-sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon-sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon-sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  {filteredDocuments.length === 0 && (
-                    <div className="text-center py-8">
-                      <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                      <p className="text-muted-foreground">Aucun document trouvé</p>
-                    </div>
-                  )}
-                </div>
+                    {filteredDocuments.length === 0 && (
+                      <div className="text-center py-8">
+                        <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                        <p className="text-muted-foreground">Aucun document trouvé</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

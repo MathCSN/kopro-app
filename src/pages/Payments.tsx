@@ -6,49 +6,65 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const samplePayments = [
-  {
-    id: "PAY-2024-Q4",
-    title: "Appel de fonds Q4 2024",
-    amount: 450,
-    dueDate: "31 janvier 2025",
-    status: "pending",
-    lot: "Apt 12B",
-  },
-  {
-    id: "PAY-2024-Q3",
-    title: "Appel de fonds Q3 2024",
-    amount: 450,
-    dueDate: "31 octobre 2024",
-    paidDate: "28 octobre 2024",
-    status: "paid",
-    lot: "Apt 12B",
-  },
-  {
-    id: "PAY-2024-Q2",
-    title: "Appel de fonds Q2 2024",
-    amount: 450,
-    dueDate: "31 juillet 2024",
-    paidDate: "15 juillet 2024",
-    status: "paid",
-    lot: "Apt 12B",
-  },
-];
-
-const sampleArrears = [
-  { resident: "Pierre L.", apartment: "Apt 5D", amount: 900, months: 2 },
-  { resident: "Marc T.", apartment: "Apt 7A", amount: 450, months: 1 },
-];
+interface Payment {
+  id: string;
+  amount: number;
+  type: string | null;
+  description: string | null;
+  due_date: string;
+  paid_at: string | null;
+  status: string | null;
+  user_id: string;
+}
 
 function PaymentDetail({ id }: { id: string }) {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
-  const payment = samplePayments.find(p => p.id === id);
+  const [payment, setPayment] = useState<Payment | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPayment();
+  }, [id]);
+
+  const fetchPayment = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setPayment(data);
+    } catch (error) {
+      console.error('Error fetching payment:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (loading) {
+    return (
+      <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!payment) {
     return (
-      <AppLayout userRole={user?.role || 'resident'} onLogout={logout}>
+      <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
         <div className="text-center py-12">
           <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Paiement non trouvé</p>
@@ -60,8 +76,10 @@ function PaymentDetail({ id }: { id: string }) {
     );
   }
 
+  const dueDate = new Date(payment.due_date);
+
   return (
-    <AppLayout userRole={user?.role || 'resident'} onLogout={logout}>
+    <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in max-w-2xl">
         <Button variant="ghost" onClick={() => navigate('/payments')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -72,8 +90,7 @@ function PaymentDetail({ id }: { id: string }) {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle>{payment.title}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">{payment.lot}</p>
+                <CardTitle>{payment.description || `Paiement ${payment.type}`}</CardTitle>
               </div>
               <Badge variant={payment.status === 'paid' ? 'secondary' : 'destructive'}>
                 {payment.status === 'paid' ? 'Payé' : 'En attente'}
@@ -84,7 +101,7 @@ function PaymentDetail({ id }: { id: string }) {
             <div className="text-center py-6 border rounded-lg">
               <p className="text-4xl font-bold text-foreground">{payment.amount} €</p>
               <p className="text-muted-foreground mt-1">
-                Échéance: {payment.dueDate}
+                Échéance: {dueDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
 
@@ -104,7 +121,11 @@ function PaymentDetail({ id }: { id: string }) {
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <div>
                   <p className="font-medium text-success">Paiement effectué</p>
-                  <p className="text-sm text-muted-foreground">Le {payment.paidDate}</p>
+                  {payment.paid_at && (
+                    <p className="text-sm text-muted-foreground">
+                      Le {new Date(payment.paid_at).toLocaleDateString('fr-FR')}
+                    </p>
+                  )}
                 </div>
                 <Button variant="outline" size="sm" className="ml-auto">
                   <Download className="h-4 w-4 mr-1" />
@@ -120,11 +141,40 @@ function PaymentDetail({ id }: { id: string }) {
 }
 
 export default function Payments() {
-  const { user, logout, isManager } = useAuth();
+  const { user, profile, logout, isManager } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!user) {
+  useEffect(() => {
+    if (user && !id) {
+      fetchPayments();
+    }
+  }, [user, id]);
+
+  const fetchPayments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .order('due_date', { ascending: false });
+
+      if (error) throw error;
+      setPayments(data || []);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (!user || !profile) {
     navigate("/auth");
     return null;
   }
@@ -133,12 +183,17 @@ export default function Payments() {
     return <PaymentDetail id={id} />;
   }
 
-  const pendingTotal = samplePayments
+  const myPayments = payments.filter(p => p.user_id === user.id);
+  const pendingTotal = myPayments
     .filter(p => p.status === 'pending')
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const arrearsUsers = isManager() 
+    ? [...new Set(payments.filter(p => p.status === 'pending').map(p => p.user_id))]
+    : [];
 
   return (
-    <AppLayout userRole={user.role} onLogout={logout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -169,39 +224,55 @@ export default function Payments() {
           </TabsList>
 
           <TabsContent value="my-payments" className="mt-4 space-y-4">
-            {samplePayments.map((payment) => (
-              <Card 
-                key={payment.id} 
-                className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
-                onClick={() => navigate(`/payments/${payment.id}`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      payment.status === 'paid' ? 'bg-success/10' : 'bg-warning/10'
-                    }`}>
-                      {payment.status === 'paid' ? (
-                        <CheckCircle2 className="h-6 w-6 text-success" />
-                      ) : (
-                        <Clock className="h-6 w-6 text-warning" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{payment.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {payment.status === 'paid' ? `Payé le ${payment.paidDate}` : `Échéance: ${payment.dueDate}`}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-foreground">{payment.amount} €</p>
-                      <Badge variant={payment.status === 'paid' ? 'secondary' : 'destructive'}>
-                        {payment.status === 'paid' ? 'Payé' : 'En attente'}
-                      </Badge>
-                    </div>
-                  </div>
+            {loading ? (
+              <p className="text-center text-muted-foreground py-8">Chargement...</p>
+            ) : myPayments.length === 0 ? (
+              <Card className="shadow-soft">
+                <CardContent className="p-8 text-center">
+                  <CreditCard className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Aucun paiement</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              myPayments.map((payment) => {
+                const dueDate = new Date(payment.due_date);
+                return (
+                  <Card 
+                    key={payment.id} 
+                    className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
+                    onClick={() => navigate(`/payments/${payment.id}`)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          payment.status === 'paid' ? 'bg-success/10' : 'bg-warning/10'
+                        }`}>
+                          {payment.status === 'paid' ? (
+                            <CheckCircle2 className="h-6 w-6 text-success" />
+                          ) : (
+                            <Clock className="h-6 w-6 text-warning" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-foreground">{payment.description || `Paiement ${payment.type}`}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {payment.status === 'paid' && payment.paid_at
+                              ? `Payé le ${new Date(payment.paid_at).toLocaleDateString('fr-FR')}`
+                              : `Échéance: ${dueDate.toLocaleDateString('fr-FR')}`}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-foreground">{payment.amount} €</p>
+                          <Badge variant={payment.status === 'paid' ? 'secondary' : 'destructive'}>
+                            {payment.status === 'paid' ? 'Payé' : 'En attente'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
           </TabsContent>
 
           {isManager() && (
@@ -211,20 +282,30 @@ export default function Payments() {
                   <CardTitle className="text-lg">Résidents avec impayés</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {sampleArrears.map((arrear, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-                        <div>
-                          <p className="font-medium">{arrear.resident}</p>
-                          <p className="text-sm text-muted-foreground">{arrear.apartment} · {arrear.months} mois de retard</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-destructive">{arrear.amount} €</p>
-                          <Button size="sm" variant="outline" className="mt-1">Relancer</Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {loading ? (
+                    <p className="text-center text-muted-foreground py-4">Chargement...</p>
+                  ) : arrearsUsers.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">Aucun impayé</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {arrearsUsers.map((userId) => {
+                        const userPayments = payments.filter(p => p.user_id === userId && p.status === 'pending');
+                        const totalArrears = userPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+                        return (
+                          <div key={userId} className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                            <div>
+                              <p className="font-medium">Utilisateur</p>
+                              <p className="text-sm text-muted-foreground">{userPayments.length} paiement(s) en retard</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-destructive">{totalArrears} €</p>
+                              <Button size="sm" variant="outline" className="mt-1">Relancer</Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

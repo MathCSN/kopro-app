@@ -26,82 +26,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TicketItem {
   id: string;
   title: string;
-  description: string;
-  category: string;
-  status: "open" | "in_progress" | "waiting" | "resolved" | "closed";
-  priority: "low" | "normal" | "urgent";
-  createdAt: string;
-  updatedAt: string;
-  assignee?: string;
-  reporter: string;
-  commentsCount: number;
-  hasPhotos: boolean;
+  description: string | null;
+  category: string | null;
+  status: string | null;
+  priority: string | null;
+  created_at: string;
+  updated_at: string;
+  assignee_id: string | null;
+  created_by: string | null;
+  location: string | null;
 }
 
-const sampleTickets: TicketItem[] = [
-  {
-    id: "T-2024-042",
-    title: "Fuite robinet cuisine",
-    description: "Fuite importante au niveau du robinet de la cuisine. L'eau coule en permanence même lorsque le robinet est fermé.",
-    category: "Plomberie",
-    status: "in_progress",
-    priority: "urgent",
-    createdAt: "18 déc. 2024",
-    updatedAt: "Aujourd'hui",
-    assignee: "Plomberie Martin",
-    reporter: "Marie Dupont",
-    commentsCount: 4,
-    hasPhotos: true,
-  },
-  {
-    id: "T-2024-041",
-    title: "Interphone ne fonctionne plus",
-    description: "L'interphone de l'appartement 12B ne sonne plus. Impossible de savoir quand quelqu'un sonne à la porte.",
-    category: "Électricité",
-    status: "waiting",
-    priority: "normal",
-    createdAt: "15 déc. 2024",
-    updatedAt: "Il y a 2 jours",
-    assignee: "Électricien Pro",
-    reporter: "Jean Martin",
-    commentsCount: 2,
-    hasPhotos: false,
-  },
-  {
-    id: "T-2024-040",
-    title: "Lumière parking sous-sol",
-    description: "La lumière du parking niveau -1 ne s'allume plus automatiquement à l'entrée.",
-    category: "Parties communes",
-    status: "open",
-    priority: "low",
-    createdAt: "12 déc. 2024",
-    updatedAt: "Il y a 5 jours",
-    reporter: "Sophie Bernard",
-    commentsCount: 0,
-    hasPhotos: false,
-  },
-  {
-    id: "T-2024-038",
-    title: "Fissure mur cage d'escalier",
-    description: "Une fissure est apparue sur le mur de la cage d'escalier au 3ème étage, côté fenêtre.",
-    category: "Structure",
-    status: "resolved",
-    priority: "normal",
-    createdAt: "5 déc. 2024",
-    updatedAt: "Il y a 1 semaine",
-    assignee: "Bâtiment Express",
-    reporter: "Pierre Lefebvre",
-    commentsCount: 6,
-    hasPhotos: true,
-  },
-];
-
-const statusConfig = {
+const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
   open: { label: "Ouvert", icon: AlertCircle, color: "bg-kopro-amber/10 text-kopro-amber border-kopro-amber/20" },
   in_progress: { label: "En cours", icon: Timer, color: "bg-kopro-teal/10 text-kopro-teal border-kopro-teal/20" },
   waiting: { label: "En attente", icon: Clock, color: "bg-kopro-purple/10 text-kopro-purple border-kopro-purple/20" },
@@ -109,18 +51,41 @@ const statusConfig = {
   closed: { label: "Fermé", icon: XCircle, color: "bg-muted text-muted-foreground border-border" },
 };
 
-const priorityConfig = {
+const priorityConfig: Record<string, { label: string; color: string }> = {
   low: { label: "Faible", color: "text-muted-foreground" },
-  normal: { label: "Normal", color: "text-foreground" },
+  medium: { label: "Normal", color: "text-foreground" },
   urgent: { label: "Urgent", color: "text-destructive" },
 };
 
 export default function Tickets() {
   const { user, profile, logout, isManager } = useAuth();
-  const [tickets] = useState(sampleTickets);
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      fetchTickets();
+    }
+  }, [user]);
+
+  const fetchTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTickets(data || []);
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -141,7 +106,31 @@ export default function Tickets() {
     return filtered;
   };
 
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Hier";
+    if (diffDays < 7) return `Il y a ${diffDays} jours`;
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
+  const getStatusCounts = () => {
+    return {
+      open: tickets.filter(t => t.status === 'open').length,
+      in_progress: tickets.filter(t => t.status === 'in_progress').length,
+      waiting: tickets.filter(t => t.status === 'waiting').length,
+      resolved: tickets.filter(t => t.status === 'resolved').length,
+      closed: tickets.filter(t => t.status === 'closed').length,
+    };
+  };
+
   if (!user || !profile) return null;
+
+  const counts = getStatusCounts();
 
   return (
     <AppLayout userRole={profile.role} onLogout={handleLogout}>
@@ -162,13 +151,13 @@ export default function Tickets() {
         {isManager() && (
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { label: "Ouverts", count: 3, status: "open" },
-              { label: "En cours", count: 5, status: "in_progress" },
-              { label: "En attente", count: 2, status: "waiting" },
-              { label: "Résolus", count: 12, status: "resolved" },
-              { label: "Fermés", count: 45, status: "closed" },
+              { label: "Ouverts", count: counts.open, status: "open" },
+              { label: "En cours", count: counts.in_progress, status: "in_progress" },
+              { label: "En attente", count: counts.waiting, status: "waiting" },
+              { label: "Résolus", count: counts.resolved, status: "resolved" },
+              { label: "Fermés", count: counts.closed, status: "closed" },
             ].map((stat) => {
-              const config = statusConfig[stat.status as keyof typeof statusConfig];
+              const config = statusConfig[stat.status];
               return (
                 <Card key={stat.status} className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow">
                   <CardContent className="p-4">
@@ -220,78 +209,79 @@ export default function Tickets() {
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-4">
-            <div className="space-y-3">
-              {filterTickets(activeTab).map((ticket) => {
-                const status = statusConfig[ticket.status];
-                const priority = priorityConfig[ticket.priority];
-                return (
-                  <Card 
-                    key={ticket.id} 
-                    className="shadow-soft hover:shadow-medium transition-all cursor-pointer group"
-                    onClick={() => navigate(`/tickets/${ticket.id}`)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        {/* Status Icon */}
-                        <div className={`w-10 h-10 rounded-xl ${status.color.split(" ")[0]} flex items-center justify-center shrink-0`}>
-                          <status.icon className={`h-5 w-5 ${status.color.split(" ")[1]}`} />
-                        </div>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Chargement...</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filterTickets(activeTab).map((ticket) => {
+                  const status = statusConfig[ticket.status || 'open'] || statusConfig.open;
+                  const priority = priorityConfig[ticket.priority || 'medium'] || priorityConfig.medium;
+                  return (
+                    <Card 
+                      key={ticket.id} 
+                      className="shadow-soft hover:shadow-medium transition-all cursor-pointer group"
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          {/* Status Icon */}
+                          <div className={`w-10 h-10 rounded-xl ${status.color.split(" ")[0]} flex items-center justify-center shrink-0`}>
+                            <status.icon className={`h-5 w-5 ${status.color.split(" ")[1]}`} />
+                          </div>
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-mono text-muted-foreground">{ticket.id}</span>
-                                {ticket.priority === "urgent" && (
-                                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Urgent</Badge>
-                                )}
-                                {ticket.hasPhotos && (
-                                  <Camera className="h-3 w-3 text-muted-foreground" />
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-mono text-muted-foreground">{ticket.id.slice(0, 8)}</span>
+                                  {ticket.priority === "urgent" && (
+                                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Urgent</Badge>
+                                  )}
+                                </div>
+                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                  {ticket.title}
+                                </h3>
+                                {ticket.description && (
+                                  <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                                    {ticket.description}
+                                  </p>
                                 )}
                               </div>
-                              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                                {ticket.title}
-                              </h3>
-                              <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
-                                {ticket.description}
-                              </p>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
                             </div>
-                            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
-                          </div>
 
-                          {/* Meta */}
-                          <div className="flex items-center gap-4 mt-3 flex-wrap">
-                            <Badge variant="outline" className={status.color}>
-                              {status.label}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">{ticket.category}</Badge>
-                            {ticket.assignee && (
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <User className="h-3 w-3" />
-                                {ticket.assignee}
-                              </div>
-                            )}
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              Mis à jour {ticket.updatedAt}
-                            </span>
+                            {/* Meta */}
+                            <div className="flex items-center gap-4 mt-3 flex-wrap">
+                              <Badge variant="outline" className={status.color}>
+                                {status.label}
+                              </Badge>
+                              {ticket.category && (
+                                <Badge variant="secondary" className="text-xs">{ticket.category}</Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                Mis à jour {formatDate(ticket.updated_at)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                {filterTickets(activeTab).length === 0 && (
+                  <Card className="shadow-soft">
+                    <CardContent className="p-8 text-center">
+                      <Ticket className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">Aucun incident trouvé</p>
                     </CardContent>
                   </Card>
-                );
-              })}
-
-              {filterTickets(activeTab).length === 0 && (
-                <Card className="shadow-soft">
-                  <CardContent className="p-8 text-center">
-                    <Ticket className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                    <p className="text-muted-foreground">Aucun incident trouvé</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

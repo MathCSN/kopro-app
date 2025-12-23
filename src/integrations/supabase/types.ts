@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      ag_votes: {
+        Row: {
+          assembly_id: string
+          created_at: string
+          id: string
+          proxy_for: string | null
+          resolution_index: number
+          user_id: string
+          vote: string
+        }
+        Insert: {
+          assembly_id: string
+          created_at?: string
+          id?: string
+          proxy_for?: string | null
+          resolution_index: number
+          user_id: string
+          vote: string
+        }
+        Update: {
+          assembly_id?: string
+          created_at?: string
+          id?: string
+          proxy_for?: string | null
+          resolution_index?: number
+          user_id?: string
+          vote?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ag_votes_assembly_id_fkey"
+            columns: ["assembly_id"]
+            isOneToOne: false
+            referencedRelation: "general_assemblies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_documents: {
         Row: {
           application_id: string
@@ -298,6 +336,179 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          residence_id: string | null
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          residence_id?: string | null
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          residence_id?: string | null
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string
+          id: string
+          is_public: boolean | null
+          residence_id: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url: string
+          id?: string
+          is_public?: boolean | null
+          residence_id: string
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          is_public?: boolean | null
+          residence_id?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      general_assemblies: {
+        Row: {
+          agenda: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          location: string | null
+          minutes_url: string | null
+          residence_id: string
+          scheduled_at: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agenda?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          minutes_url?: string | null
+          residence_id: string
+          scheduled_at: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agenda?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          minutes_url?: string | null
+          residence_id?: string
+          scheduled_at?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "general_assemblies_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lots: {
         Row: {
           building_id: string | null
@@ -364,6 +575,97 @@ export type Database = {
           },
         ]
       }
+      marketplace_listings: {
+        Row: {
+          category: string | null
+          condition: string | null
+          created_at: string
+          description: string | null
+          id: string
+          images: Json | null
+          price: number | null
+          residence_id: string
+          seller_id: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          condition?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          price?: number | null
+          residence_id: string
+          seller_id: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          condition?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          images?: Json | null
+          price?: number | null
+          residence_id?: string
+          seller_id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          attachments: Json | null
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       occupancies: {
         Row: {
           created_at: string | null
@@ -405,6 +707,175 @@ export type Database = {
           },
         ]
       }
+      packages: {
+        Row: {
+          carrier: string | null
+          collected_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          received_at: string | null
+          recipient_id: string | null
+          recipient_name: string
+          recipient_unit: string | null
+          residence_id: string
+          status: string | null
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          carrier?: string | null
+          collected_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          recipient_id?: string | null
+          recipient_name: string
+          recipient_unit?: string | null
+          residence_id: string
+          status?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          carrier?: string | null
+          collected_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          recipient_id?: string | null
+          recipient_name?: string
+          recipient_unit?: string | null
+          residence_id?: string
+          status?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packages_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          lot_id: string | null
+          paid_at: string | null
+          payment_method: string | null
+          reference: string | null
+          residence_id: string
+          status: string | null
+          type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          lot_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          residence_id: string
+          status?: string | null
+          type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          lot_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          residence_id?: string
+          status?: string | null
+          type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          attachments: Json | null
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean | null
+          residence_id: string
+          title: string | null
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          residence_id: string
+          title?: string | null
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          residence_id?: string
+          title?: string | null
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -440,6 +911,56 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reservations: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          notes: string | null
+          residence_id: string
+          resource_name: string
+          resource_type: string | null
+          start_time: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          residence_id: string
+          resource_name: string
+          resource_type?: string | null
+          start_time: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          residence_id?: string
+          resource_name?: string
+          resource_type?: string | null
+          start_time?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       residences: {
         Row: {
@@ -531,6 +1052,59 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assignee_id: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          location: string | null
+          priority: string | null
+          residence_id: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          priority?: string | null
+          residence_id: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          priority?: string | null
+          residence_id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
             referencedColumns: ["id"]
           },
         ]
@@ -711,6 +1285,68 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visitors: {
+        Row: {
+          access_code: string | null
+          arrived_at: string | null
+          created_at: string
+          expected_at: string | null
+          host_id: string
+          id: string
+          left_at: string | null
+          notes: string | null
+          purpose: string | null
+          residence_id: string
+          status: string | null
+          updated_at: string
+          visitor_email: string | null
+          visitor_name: string
+          visitor_phone: string | null
+        }
+        Insert: {
+          access_code?: string | null
+          arrived_at?: string | null
+          created_at?: string
+          expected_at?: string | null
+          host_id: string
+          id?: string
+          left_at?: string | null
+          notes?: string | null
+          purpose?: string | null
+          residence_id: string
+          status?: string | null
+          updated_at?: string
+          visitor_email?: string | null
+          visitor_name: string
+          visitor_phone?: string | null
+        }
+        Update: {
+          access_code?: string | null
+          arrived_at?: string | null
+          created_at?: string
+          expected_at?: string | null
+          host_id?: string
+          id?: string
+          left_at?: string | null
+          notes?: string | null
+          purpose?: string | null
+          residence_id?: string
+          status?: string | null
+          updated_at?: string
+          visitor_email?: string | null
+          visitor_name?: string
+          visitor_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitors_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
             referencedColumns: ["id"]
           },
         ]

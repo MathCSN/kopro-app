@@ -1,68 +1,72 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { ShoppingBag, Plus, Heart, Search, Filter, MessageCircle } from "lucide-react";
+import { ShoppingBag, Plus, Heart, Search, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const sampleListings = [
-  {
-    id: "1",
-    title: "Canapé 3 places beige",
-    price: 250,
-    category: "Mobilier",
-    image: null,
-    seller: "Marie D.",
-    apartment: "Apt 12B",
-    createdAt: "Il y a 2 jours",
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    title: "Vélo enfant 20 pouces",
-    price: 80,
-    category: "Sport",
-    image: null,
-    seller: "Jean M.",
-    apartment: "Apt 8A",
-    createdAt: "Il y a 1 semaine",
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    title: "Table basse en verre",
-    price: 45,
-    category: "Mobilier",
-    image: null,
-    seller: "Sophie B.",
-    apartment: "Apt 3C",
-    createdAt: "Il y a 3 jours",
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    title: "Lot livres Harry Potter",
-    price: 30,
-    category: "Livres",
-    image: null,
-    seller: "Pierre L.",
-    apartment: "Apt 5D",
-    createdAt: "Hier",
-    isFavorite: false,
-  },
-];
+interface Listing {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  category: string | null;
+  condition: string | null;
+  images: any;
+  status: string | null;
+  created_at: string;
+  seller_id: string;
+}
 
 function ListingDetail({ id }: { id: string }) {
-  const listing = sampleListings.find(l => l.id === id);
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchListing();
+  }, [id]);
+
+  const fetchListing = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setListing(data);
+    } catch (error) {
+      console.error('Error fetching listing:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (loading) {
+    return (
+      <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!listing) {
     return (
-      <AppLayout userRole={user?.role || 'resident'} onLogout={logout}>
+      <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
         <div className="text-center py-12">
           <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Annonce non trouvée</p>
@@ -75,7 +79,7 @@ function ListingDetail({ id }: { id: string }) {
   }
 
   return (
-    <AppLayout userRole={user?.role || 'resident'} onLogout={logout}>
+    <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in max-w-2xl">
         <Button variant="ghost" onClick={() => navigate('/marketplace')}>
           ← Retour aux annonces
@@ -90,20 +94,18 @@ function ListingDetail({ id }: { id: string }) {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h1 className="font-display text-2xl font-bold text-foreground">{listing.title}</h1>
-                <Badge variant="secondary" className="mt-2">{listing.category}</Badge>
+                {listing.category && (
+                  <Badge variant="secondary" className="mt-2">{listing.category}</Badge>
+                )}
               </div>
-              <p className="text-2xl font-bold text-primary">{listing.price} €</p>
+              {listing.price !== null && (
+                <p className="text-2xl font-bold text-primary">{listing.price} €</p>
+              )}
             </div>
 
-            <div className="flex items-center gap-4 py-4 border-t border-b border-border">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="font-semibold text-primary">{listing.seller.charAt(0)}</span>
-              </div>
-              <div>
-                <p className="font-medium">{listing.seller}</p>
-                <p className="text-sm text-muted-foreground">{listing.apartment}</p>
-              </div>
-            </div>
+            {listing.description && (
+              <p className="text-muted-foreground mb-4">{listing.description}</p>
+            )}
 
             <div className="flex gap-3 mt-6">
               <Button className="flex-1">
@@ -122,12 +124,42 @@ function ListingDetail({ id }: { id: string }) {
 }
 
 export default function Marketplace() {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  if (!user) {
+  useEffect(() => {
+    if (user && !id) {
+      fetchListings();
+    }
+  }, [user, id]);
+
+  const fetchListings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setListings(data || []);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (!user || !profile) {
     navigate("/auth");
     return null;
   }
@@ -136,13 +168,25 @@ export default function Marketplace() {
     return <ListingDetail id={id} />;
   }
 
-  const filteredListings = sampleListings.filter(l =>
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Hier";
+    if (diffDays < 7) return `Il y a ${diffDays} jours`;
+    return `Il y a ${Math.floor(diffDays / 7)} semaine(s)`;
+  };
+
+  const filteredListings = listings.filter(l =>
     l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    l.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (l.category && l.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
-    <AppLayout userRole={user.role} onLogout={logout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -165,39 +209,56 @@ export default function Marketplace() {
           />
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {filteredListings.map((listing) => (
-            <Card 
-              key={listing.id} 
-              className="shadow-soft hover:shadow-medium transition-all cursor-pointer group overflow-hidden"
-              onClick={() => navigate(`/marketplace/${listing.id}`)}
-            >
-              <div className="aspect-square bg-muted flex items-center justify-center relative">
-                <ShoppingBag className="h-12 w-12 text-muted-foreground/30" />
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  <Heart className={`h-4 w-4 ${listing.isFavorite ? 'fill-destructive text-destructive' : ''}`} />
-                </Button>
-              </div>
-              <CardContent className="p-3">
-                <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                  {listing.title}
-                </p>
-                <p className="text-lg font-bold text-primary mt-1">{listing.price} €</p>
-                <div className="flex items-center justify-between mt-2">
-                  <Badge variant="secondary" className="text-xs">{listing.category}</Badge>
-                  <span className="text-xs text-muted-foreground">{listing.createdAt}</span>
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Chargement...</p>
+          </div>
+        ) : filteredListings.length === 0 ? (
+          <Card className="shadow-soft">
+            <CardContent className="p-8 text-center">
+              <ShoppingBag className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground">Aucune annonce</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {filteredListings.map((listing) => (
+              <Card 
+                key={listing.id} 
+                className="shadow-soft hover:shadow-medium transition-all cursor-pointer group overflow-hidden"
+                onClick={() => navigate(`/marketplace/${listing.id}`)}
+              >
+                <div className="aspect-square bg-muted flex items-center justify-center relative">
+                  <ShoppingBag className="h-12 w-12 text-muted-foreground/30" />
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <Heart className="h-4 w-4" />
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardContent className="p-3">
+                  <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                    {listing.title}
+                  </p>
+                  {listing.price !== null && (
+                    <p className="text-lg font-bold text-primary mt-1">{listing.price} €</p>
+                  )}
+                  <div className="flex items-center justify-between mt-2">
+                    {listing.category && (
+                      <Badge variant="secondary" className="text-xs">{listing.category}</Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground">{formatDate(listing.created_at)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </AppLayout>
   );

@@ -1,61 +1,83 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Package, Plus, Search, QrCode, Check, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const samplePackages = [
-  {
-    id: "P-001",
-    recipient: "Marie Dupont",
-    apartment: "Apt 12B",
-    carrier: "Amazon",
-    receivedAt: "Aujourd'hui 14:30",
-    status: "pending",
-    photo: null,
-  },
-  {
-    id: "P-002",
-    recipient: "Jean Martin",
-    apartment: "Apt 8A",
-    carrier: "La Poste",
-    receivedAt: "Hier 10:15",
-    status: "pending",
-    photo: null,
-  },
-  {
-    id: "P-003",
-    recipient: "Sophie Bernard",
-    apartment: "Apt 3C",
-    carrier: "Chronopost",
-    receivedAt: "Il y a 2 jours",
-    status: "collected",
-    collectedAt: "Hier 18:00",
-    photo: null,
-  },
-];
+interface PackageItem {
+  id: string;
+  recipient_name: string;
+  recipient_unit: string | null;
+  carrier: string | null;
+  status: string | null;
+  received_at: string | null;
+  collected_at: string | null;
+}
 
 export default function Packages() {
-  const { user, logout, isManager } = useAuth();
+  const { user, profile, logout, isManager } = useAuth();
   const navigate = useNavigate();
+  const [packages, setPackages] = useState<PackageItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  if (!user) {
+  useEffect(() => {
+    if (user) {
+      fetchPackages();
+    }
+  }, [user]);
+
+  const fetchPackages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('packages')
+        .select('*')
+        .order('received_at', { ascending: false });
+
+      if (error) throw error;
+      setPackages(data || []);
+    } catch (error) {
+      console.error('Error fetching packages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return `Aujourd'hui ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    if (diffDays === 1) return `Hier ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    if (diffDays < 7) return `Il y a ${diffDays} jours`;
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
+  if (!user || !profile) {
     navigate("/auth");
     return null;
   }
 
-  const filteredPackages = samplePackages.filter(p => 
-    p.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.apartment.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPackages = packages.filter(p => 
+    p.recipient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.recipient_unit && p.recipient_unit.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
-    <AppLayout userRole={user.role} onLogout={logout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -80,53 +102,70 @@ export default function Packages() {
           />
         </div>
 
-        <div className="grid gap-4">
-          {filteredPackages.map((pkg) => (
-            <Card key={pkg.id} className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    pkg.status === 'pending' ? 'bg-kopro-amber/10' : 'bg-success/10'
-                  }`}>
-                    <Package className={`h-6 w-6 ${
-                      pkg.status === 'pending' ? 'text-kopro-amber' : 'text-success'
-                    }`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-foreground">{pkg.recipient}</span>
-                      <Badge variant="secondary">{pkg.apartment}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {pkg.carrier} · Reçu {pkg.receivedAt}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {pkg.status === 'pending' ? (
-                      <>
-                        <Badge variant="outline" className="bg-kopro-amber/10 text-kopro-amber border-kopro-amber/20">
-                          <Clock className="h-3 w-3 mr-1" />
-                          En attente
-                        </Badge>
-                        {isManager() && (
-                          <Button size="sm" variant="outline">
-                            <QrCode className="h-4 w-4 mr-1" />
-                            Marquer retiré
-                          </Button>
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Chargement...</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {filteredPackages.length === 0 ? (
+              <Card className="shadow-soft">
+                <CardContent className="p-8 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Aucun colis trouvé</p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredPackages.map((pkg) => (
+                <Card key={pkg.id} className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        pkg.status === 'received' ? 'bg-kopro-amber/10' : 'bg-success/10'
+                      }`}>
+                        <Package className={`h-6 w-6 ${
+                          pkg.status === 'received' ? 'text-kopro-amber' : 'text-success'
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-foreground">{pkg.recipient_name}</span>
+                          {pkg.recipient_unit && (
+                            <Badge variant="secondary">{pkg.recipient_unit}</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {pkg.carrier || 'Transporteur inconnu'} · Reçu {formatDate(pkg.received_at)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {pkg.status === 'received' ? (
+                          <>
+                            <Badge variant="outline" className="bg-kopro-amber/10 text-kopro-amber border-kopro-amber/20">
+                              <Clock className="h-3 w-3 mr-1" />
+                              En attente
+                            </Badge>
+                            {isManager() && (
+                              <Button size="sm" variant="outline">
+                                <QrCode className="h-4 w-4 mr-1" />
+                                Marquer retiré
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                            <Check className="h-3 w-3 mr-1" />
+                            Retiré
+                          </Badge>
                         )}
-                      </>
-                    ) : (
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        <Check className="h-3 w-3 mr-1" />
-                        Retiré
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
