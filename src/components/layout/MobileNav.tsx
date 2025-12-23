@@ -17,7 +17,7 @@ const mobileNavItems = [
   { title: "Actus", href: "/newsfeed", icon: Newspaper },
   { title: "Incidents", href: "/tickets", icon: Ticket },
   { title: "Réserver", href: "/reservations", icon: Calendar },
-  { title: "Messages", href: "/chat", icon: MessageCircle, badge: 12 },
+  { title: "Messages", href: "/chat", icon: MessageCircle },
 ];
 
 interface MobileNavProps {
@@ -71,11 +71,6 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
             >
               <div className="relative">
                 <item.icon className={cn("h-5 w-5", isActive(item.href) && "text-primary")} />
-                {item.badge && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] font-bold px-1">
-                    {item.badge > 9 ? "9+" : item.badge}
-                  </span>
-                )}
               </div>
               <span className={cn(
                 "text-[10px] font-medium",

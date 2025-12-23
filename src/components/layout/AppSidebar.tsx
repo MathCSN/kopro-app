@@ -35,10 +35,10 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: Home },
-  { title: "Actualités", href: "/newsfeed", icon: Newspaper, badge: 3 },
-  { title: "Incidents", href: "/tickets", icon: Ticket, badge: 5 },
+  { title: "Actualités", href: "/newsfeed", icon: Newspaper },
+  { title: "Incidents", href: "/tickets", icon: Ticket },
   { title: "Réservations", href: "/reservations", icon: Calendar },
-  { title: "Colis", href: "/packages", icon: Package, badge: 2 },
+  { title: "Colis", href: "/packages", icon: Package },
   { title: "Visiteurs", href: "/visitors", icon: Users },
   { title: "Petites annonces", href: "/marketplace", icon: ShoppingBag },
 ];
@@ -48,7 +48,7 @@ const managementNavItems: NavItem[] = [
   { title: "Charges & Paiements", href: "/payments", icon: CreditCard },
   { title: "Documents", href: "/documents", icon: FileText },
   { title: "Mon coffre-fort", href: "/vault", icon: Lock },
-  { title: "Messagerie", href: "/chat", icon: MessageCircle, badge: 12 },
+  { title: "Messagerie", href: "/chat", icon: MessageCircle },
 ];
 
 const rentalNavItems: NavItem[] = [
