@@ -44,17 +44,20 @@ const mainNavItems: NavItem[] = [
 ];
 
 const managementNavItems: NavItem[] = [
-  { title: "Assemblées & Votes", href: "/votes", icon: Vote },
+  { title: "Assemblées & Votes", href: "/ag", icon: Vote },
   { title: "Charges & Paiements", href: "/payments", icon: CreditCard },
   { title: "Documents", href: "/documents", icon: FileText },
   { title: "Mon coffre-fort", href: "/vault", icon: Lock },
   { title: "Messagerie", href: "/chat", icon: MessageCircle, badge: 12 },
 ];
 
+const rentalNavItems: NavItem[] = [
+  { title: "Location / Vacances", href: "/rental", icon: Building2, roles: ["manager", "admin", "owner"] },
+];
+
 const adminNavItems: NavItem[] = [
-  { title: "Tableau de bord KPI", href: "/analytics", icon: BarChart3, roles: ["manager", "admin"] },
-  { title: "Gestion résidence", href: "/admin/residence", icon: Building2, roles: ["manager", "admin"] },
-  { title: "Paramètres", href: "/settings", icon: Settings },
+  { title: "Tableau de bord KPI", href: "/analytics", icon: BarChart3, roles: ["manager", "admin", "owner"] },
+  { title: "Gestion résidence", href: "/admin", icon: Settings, roles: ["manager", "admin", "owner"] },
 ];
 
 interface AppSidebarProps {
@@ -153,6 +156,20 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
               <NavItemLink key={item.href} item={item} />
             ))}
           </div>
+
+          {/* Rental Section - Manager/Owner only */}
+          {filterByRole(rentalNavItems).length > 0 && (
+            <div className="space-y-1">
+              {!collapsed && (
+                <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
+                  Location
+                </p>
+              )}
+              {filterByRole(rentalNavItems).map((item) => (
+                <NavItemLink key={item.href} item={item} />
+              ))}
+            </div>
+          )}
 
           {/* Admin Section */}
           {filterByRole(adminNavItems).length > 0 && (

@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Newspaper,
@@ -14,20 +13,14 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
+  Building2,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AppLayout } from "@/components/layout/AppLayout";
-
-interface DemoUser {
-  email: string;
-  role: string;
-  name: string;
-  badge: string;
-}
+import { useAuth } from "@/hooks/useAuth";
 
 // Quick action cards data
 const quickActions = [
@@ -139,28 +132,17 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const [user, setUser] = useState<DemoUser | null>(null);
+  const { user, logout, isManager, canAccessRental } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("kopro_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      navigate("/auth");
-    }
-  }, [navigate]);
-
   const handleLogout = () => {
-    localStorage.removeItem("kopro_user");
+    logout();
     navigate("/auth");
   };
 
   if (!user) {
     return null;
   }
-
-  const isManager = user.role === "manager" || user.role === "admin";
 
   return (
     <AppLayout userRole={user.role} onLogout={handleLogout}>
@@ -190,7 +172,7 @@ export default function Dashboard() {
         </div>
 
         {/* Manager KPI Summary */}
-        {isManager && (
+        {isManager() && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Incidents ouverts", value: "12", change: "-3", icon: Ticket, color: "text-kopro-rose" },
@@ -212,6 +194,25 @@ export default function Dashboard() {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Rental Module Quick Access - Manager/Owner only */}
+        {canAccessRental() && (
+          <Card className="shadow-soft border-kopro-teal/30 bg-kopro-teal/5">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 rounded-xl bg-kopro-teal/20 flex items-center justify-center shrink-0">
+                <Building2 className="h-6 w-6 text-kopro-teal" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground">Module Location</h3>
+                <p className="text-sm text-muted-foreground">2 vacances ouvertes · 5 candidatures en attente</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate("/rental")}>
+                <Users className="h-4 w-4 mr-2" />
+                Gérer
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {/* Quick Actions */}
