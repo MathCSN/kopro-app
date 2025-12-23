@@ -19,35 +19,21 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { OwnerLayout } from "@/components/layout/OwnerLayout";
 
-// Demo data for platform overview
+// Empty state - data will come from database
 const platformStats = {
-  totalResidences: 12,
-  totalLots: 847,
-  totalUsers: 2156,
-  activeTickets: 67,
-  monthlyRevenue: 45200,
-  pendingPayments: 12400,
+  totalResidences: 0,
+  totalLots: 0,
+  totalUsers: 0,
+  activeTickets: 0,
+  monthlyRevenue: 0,
+  pendingPayments: 0,
 };
 
-const recentResidences = [
-  { id: "1", name: "Résidence du Parc", city: "Paris", lots: 84, users: 156, status: "active" },
-  { id: "2", name: "Les Jardins de Neuilly", city: "Neuilly-sur-Seine", lots: 120, users: 245, status: "active" },
-  { id: "3", name: "Villa Montmartre", city: "Paris", lots: 42, users: 89, status: "active" },
-  { id: "4", name: "Domaine des Lilas", city: "Lyon", lots: 65, users: 134, status: "pending" },
-];
+const recentResidences: { id: string; name: string; city: string; lots: number; users: number; status: string }[] = [];
 
-const recentActivity = [
-  { id: 1, type: "user", message: "Nouveau gestionnaire ajouté - Sophie Bernard", time: "Il y a 2h", residence: "Résidence du Parc" },
-  { id: 2, type: "payment", message: "Paiement reçu - 12,450€", time: "Il y a 4h", residence: "Les Jardins de Neuilly" },
-  { id: 3, type: "alert", message: "3 tickets urgents en attente", time: "Il y a 6h", residence: "Villa Montmartre" },
-  { id: 4, type: "residence", message: "Nouvelle résidence créée", time: "Hier", residence: "Domaine des Lilas" },
-];
+const recentActivity: { id: number; type: string; message: string; time: string; residence: string }[] = [];
 
-const managers = [
-  { id: "1", name: "Sophie Bernard", email: "sophie@kopro.fr", residences: 3, status: "active" },
-  { id: "2", name: "Marc Lefebvre", email: "marc@kopro.fr", residences: 2, status: "active" },
-  { id: "3", name: "Julie Martin", email: "julie@kopro.fr", residences: 4, status: "active" },
-];
+const managers: { id: string; name: string; email: string; residences: number; status: string }[] = [];
 
 export default function OwnerDashboard() {
   const { user, logout } = useAuth();
