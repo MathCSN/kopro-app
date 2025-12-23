@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Ticket,
   Plus,
   Search,
-  Filter,
   AlertCircle,
   Clock,
   CheckCircle2,
@@ -14,12 +12,11 @@ import {
   ChevronRight,
   User,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   Select,
@@ -28,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 
 interface TicketItem {
   id: string;
@@ -117,23 +116,14 @@ const priorityConfig = {
 };
 
 export default function Tickets() {
-  const [user, setUser] = useState<any>(null);
+  const { user, profile, logout, isManager } = useAuth();
   const [tickets] = useState(sampleTickets);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("kopro_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      navigate("/auth");
-    }
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("kopro_user");
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth");
   };
 
@@ -151,12 +141,10 @@ export default function Tickets() {
     return filtered;
   };
 
-  if (!user) return null;
-
-  const isManager = user.role === "manager" || user.role === "admin";
+  if (!user || !profile) return null;
 
   return (
-    <AppLayout userRole={user.role} onLogout={handleLogout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -171,7 +159,7 @@ export default function Tickets() {
         </div>
 
         {/* Stats Cards (Manager view) */}
-        {isManager && (
+        {isManager() && (
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               { label: "Ouverts", count: 3, status: "open" },

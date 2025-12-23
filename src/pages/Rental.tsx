@@ -1,10 +1,9 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, Search, Building2, ArrowRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Home, Plus, Building2, ArrowRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -19,16 +18,20 @@ const sampleVacancies = [
 ];
 
 export default function Rental() {
-  const { user, logout, canAccessRental } = useAuth();
+  const { user, profile, logout, canAccessRental } = useAuth();
   const navigate = useNavigate();
 
-  if (!user || !canAccessRental()) {
-    navigate("/dashboard");
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (!user || !profile || !canAccessRental()) {
     return null;
   }
 
   return (
-    <AppLayout userRole={user.role} onLogout={logout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
