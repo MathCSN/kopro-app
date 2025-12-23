@@ -47,7 +47,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { InvitationCodeDialog } from "@/components/residence/InvitationCodeDialog";
+import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
 
 type Residence = {
   id: string;
@@ -75,7 +75,7 @@ export default function OwnerResidences() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedResidence, setSelectedResidence] = useState<Residence | null>(null);
-  const [isInvitationDialogOpen, setIsInvitationDialogOpen] = useState(false);
+  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
   const [newResidence, setNewResidence] = useState({ 
     name: "", 
     address: "", 
@@ -383,10 +383,10 @@ export default function OwnerResidences() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           setSelectedResidence(residence);
-                          setIsInvitationDialogOpen(true);
+                          setIsQRDialogOpen(true);
                         }}>
                           <QrCode className="h-4 w-4 mr-2" />
-                          Codes d'invitation
+                          QR Code d'invitation
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive"
@@ -617,13 +617,13 @@ export default function OwnerResidences() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Invitation Code Dialog */}
+      {/* QR Code Dialog */}
       {selectedResidence && (
-        <InvitationCodeDialog
+        <ResidenceQRDialog
           residenceId={selectedResidence.id}
           residenceName={selectedResidence.name}
-          open={isInvitationDialogOpen}
-          onOpenChange={setIsInvitationDialogOpen}
+          open={isQRDialogOpen}
+          onOpenChange={setIsQRDialogOpen}
         />
       )}
     </OwnerLayout>
