@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Users, Loader2, MoreVertical, Eye, Mail, Building2, X, Plus } from "lucide-react";
+import { Search, Users, Loader2, MoreVertical, Eye, Mail, Building2, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +42,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -84,6 +83,7 @@ export default function OwnerUsers() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [savingRoles, setSavingRoles] = useState(false);
+  const [roleResidenceSelection, setRoleResidenceSelection] = useState<string>("");
 
   useEffect(() => {
     fetchData();
@@ -93,7 +93,6 @@ export default function OwnerUsers() {
     try {
       setIsLoading(true);
       
-      // Fetch residences and profiles/roles in parallel
       const [residencesRes, profilesRes, rolesRes] = await Promise.all([
         supabase.from('residences').select('id, name').order('name'),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
@@ -106,10 +105,8 @@ export default function OwnerUsers() {
 
       setResidences(residencesRes.data || []);
 
-      // Map residence names to roles
       const residenceMap = new Map((residencesRes.data || []).map(r => [r.id, r.name]));
 
-      // Combine profiles with roles
       const usersWithRoles: UserWithRole[] = (profilesRes.data || []).map(profile => {
         const userRoles: UserRole[] = (rolesRes.data || [])
           .filter(r => r.user_id === profile.id)
@@ -147,68 +144,71 @@ export default function OwnerUsers() {
     navigate("/auth");
   };
 
-  const toggleRole = async (userId: string, role: AppRole, currentRoles: UserRole[]) => {
+  const addRole = async (userId: string, role: AppRole, residenceId: string | null) => {
     setSavingRoles(true);
     try {
-      const existingRole = currentRoles.find(r => 
-        r.role === role && 
-        (role === 'owner' || r.residence_id === (selectedResidenceId === 'all' ? null : selectedResidenceId))
-      );
-
-      if (existingRole) {
-        // Remove role
-        const { error } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('id', existingRole.id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Rôle retiré",
-          description: `Le rôle ${getRoleLabel(role)} a été retiré.`,
-        });
-      } else {
-        // Add role
-        const insertData: any = {
-          user_id: userId,
-          role: role,
-        };
-        
-        // Only add residence_id for non-owner roles
-        if (role !== 'owner' && selectedResidenceId !== 'all') {
-          insertData.residence_id = selectedResidenceId;
-        }
-
-        const { error } = await supabase
-          .from('user_roles')
-          .insert(insertData);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Rôle ajouté",
-          description: `Le rôle ${getRoleLabel(role)} a été ajouté.`,
-        });
-      }
+      const insertData: any = {
+        user_id: userId,
+        role: role,
+      };
       
-      // Refresh data
+      if (role !== 'owner' && residenceId) {
+        insertData.residence_id = residenceId;
+      }
+
+      const { error } = await supabase
+        .from('user_roles')
+        .insert(insertData);
+      
+      if (error) throw error;
+      
+      const residenceName = residenceId ? residences.find(r => r.id === residenceId)?.name : null;
+      toast({
+        title: "Rôle ajouté",
+        description: `Le rôle ${getRoleLabel(role)}${residenceName ? ` pour ${residenceName}` : ''} a été ajouté.`,
+      });
+      
       await fetchData();
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de modifier le rôle.",
+        description: error.message || "Impossible d'ajouter le rôle.",
         variant: "destructive",
       });
     } finally {
       setSavingRoles(false);
-      setEditingUserId(null);
+    }
+  };
+
+  const removeRole = async (roleId: string, role: AppRole) => {
+    setSavingRoles(true);
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('id', roleId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Rôle retiré",
+        description: `Le rôle ${getRoleLabel(role)} a été retiré.`,
+      });
+      
+      await fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de retirer le rôle.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingRoles(false);
     }
   };
 
   if (!user) return null;
 
-  // Filter users based on selected residence
   const filteredByResidence = selectedResidenceId === 'all' 
     ? users 
     : users.filter(u => 
@@ -254,16 +254,6 @@ export default function OwnerUsers() {
       return userRoles;
     }
     return userRoles.filter(r => r.role === 'owner' || r.residence_id === selectedResidenceId);
-  };
-
-  const hasRole = (userRoles: UserRole[], role: AppRole) => {
-    if (role === 'owner') {
-      return userRoles.some(r => r.role === 'owner');
-    }
-    if (selectedResidenceId === 'all') {
-      return userRoles.some(r => r.role === role);
-    }
-    return userRoles.some(r => r.role === role && r.residence_id === selectedResidenceId);
   };
 
   if (isLoading) {
@@ -315,7 +305,7 @@ export default function OwnerUsers() {
           <Card className="shadow-soft">
             <CardContent className="p-4">
               <p className="text-2xl font-bold">{stats.owners}</p>
-              <p className="text-sm text-muted-foreground">Propriétaires</p>
+              <p className="text-sm text-muted-foreground">Kopro</p>
             </CardContent>
           </Card>
           <Card className="shadow-soft">
@@ -397,7 +387,13 @@ export default function OwnerUsers() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
                     <TableCell>
-                      <Popover open={editingUserId === u.id} onOpenChange={(open) => setEditingUserId(open ? u.id : null)}>
+                      <Popover 
+                        open={editingUserId === u.id} 
+                        onOpenChange={(open) => {
+                          setEditingUserId(open ? u.id : null);
+                          if (open) setRoleResidenceSelection("");
+                        }}
+                      >
                         <PopoverTrigger asChild>
                           <button className="flex gap-1 flex-wrap items-center cursor-pointer hover:opacity-80 transition-opacity">
                             {getUserRolesForDisplay(u.roles).length > 0 ? (
@@ -417,36 +413,85 @@ export default function OwnerUsers() {
                             )}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-64 bg-popover" align="start">
-                          <div className="space-y-3">
-                            <div className="font-medium text-sm">Modifier les rôles</div>
-                            {selectedResidenceId === 'all' && (
-                              <p className="text-xs text-muted-foreground">
-                                Sélectionnez une résidence pour modifier les rôles liés à une résidence.
-                              </p>
+                        <PopoverContent className="w-80 bg-popover" align="start">
+                          <div className="space-y-4">
+                            <div className="font-medium text-sm">Gérer les rôles</div>
+                            
+                            {/* Current roles */}
+                            {u.roles.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-xs text-muted-foreground">Rôles actuels</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {u.roles.map((role, idx) => (
+                                    <Badge 
+                                      key={`current-${role.role}-${role.residence_id || 'global'}-${idx}`} 
+                                      variant={getRoleBadgeVariant(role.role)}
+                                      className="cursor-pointer hover:opacity-70"
+                                      onClick={() => !savingRoles && removeRole(role.id, role.role)}
+                                    >
+                                      {getRoleLabel(role.role)}
+                                      {role.residence_name && (
+                                        <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
+                                      )}
+                                      <span className="ml-1">×</span>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
                             )}
-                            <div className="space-y-2">
-                              {ALL_ROLES.map(role => {
-                                const isDisabled = savingRoles || (role !== 'owner' && selectedResidenceId === 'all');
-                                const isChecked = hasRole(u.roles, role);
-                                
-                                return (
-                                  <label 
-                                    key={role} 
-                                    className={`flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                  >
-                                    <Checkbox 
-                                      checked={isChecked}
-                                      disabled={isDisabled}
-                                      onCheckedChange={() => toggleRole(u.id, role, u.roles)}
-                                    />
-                                    <span className="text-sm">{getRoleLabel(role)}</span>
-                                    {role === 'owner' && (
-                                      <span className="text-xs text-muted-foreground ml-auto">(global)</span>
-                                    )}
-                                  </label>
-                                );
-                              })}
+
+                            {/* Add new role */}
+                            <div className="space-y-3 pt-2 border-t">
+                              <p className="text-xs text-muted-foreground">Ajouter un rôle</p>
+                              
+                              {/* Residence selector for new role */}
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium">Résidence</label>
+                                <Select value={roleResidenceSelection} onValueChange={setRoleResidenceSelection}>
+                                  <SelectTrigger className="w-full h-8 text-xs">
+                                    <SelectValue placeholder="Sélectionner une résidence..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-popover">
+                                    {residences.map(residence => (
+                                      <SelectItem key={residence.id} value={residence.id} className="text-xs">
+                                        {residence.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              {/* Role buttons */}
+                              <div className="flex flex-wrap gap-1">
+                                {ALL_ROLES.map(role => {
+                                  const isOwnerRole = role === 'owner';
+                                  const needsResidence = !isOwnerRole && !roleResidenceSelection;
+                                  const alreadyHasRole = isOwnerRole 
+                                    ? u.roles.some(r => r.role === 'owner')
+                                    : u.roles.some(r => r.role === role && r.residence_id === roleResidenceSelection);
+                                  
+                                  return (
+                                    <Button
+                                      key={role}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs"
+                                      disabled={savingRoles || (needsResidence && !isOwnerRole) || alreadyHasRole}
+                                      onClick={() => addRole(u.id, role, isOwnerRole ? null : roleResidenceSelection)}
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      {getRoleLabel(role)}
+                                      {isOwnerRole && <span className="ml-1 opacity-50">(global)</span>}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                              
+                              {!roleResidenceSelection && (
+                                <p className="text-xs text-muted-foreground italic">
+                                  Sélectionnez une résidence pour ajouter un rôle (sauf Kopro qui est global)
+                                </p>
+                              )}
                             </div>
                           </div>
                         </PopoverContent>
