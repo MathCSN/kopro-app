@@ -356,59 +356,30 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
 
-          {/* Quick login buttons for testing */}
+          {/* Quick login button for testing */}
           <div className="mt-8 pt-6 border-t border-border">
             <p className="text-xs text-muted-foreground text-center mb-4">Connexion rapide (dev)</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEmail("cousinmathis31@gmail.com");
-                  setPassword("test1234");
-                }}
-                className="text-xs"
-              >
-                <Building2 className="h-3 w-3 mr-1" />
-                Owner (Syndic)
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEmail("manager@kopro.fr");
-                  setPassword("test1234");
-                }}
-                className="text-xs"
-              >
-                <User className="h-3 w-3 mr-1" />
-                Manager
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEmail("resident@kopro.fr");
-                  setPassword("test1234");
-                }}
-                className="text-xs"
-              >
-                <User className="h-3 w-3 mr-1" />
-                Résident
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEmail("admin@kopro.fr");
-                  setPassword("test1234");
-                }}
-                className="text-xs"
-              >
-                <User className="h-3 w-3 mr-1" />
-                Admin
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                setIsLoading(true);
+                const { error } = await login("cousinmathis31@gmail.com", "test1234");
+                setIsLoading(false);
+                if (error) {
+                  toast({
+                    title: "Erreur de connexion",
+                    description: error.message,
+                    variant: "destructive",
+                  });
+                }
+              }}
+              disabled={isLoading}
+              className="w-full text-xs"
+            >
+              <Building2 className="h-3 w-3 mr-1" />
+              Administrateur (Owner)
+            </Button>
           </div>
         </div>
       </div>
