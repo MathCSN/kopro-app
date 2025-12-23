@@ -11,12 +11,12 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole, requireRental }: ProtectedRouteProps) {
-  const { user, isLoading, hasRole, canAccessRental } = useAuth();
+  const { user, profile, isLoading, hasRole, canAccessRental } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!isLoading && user && profile) {
       if (requiredRole && !hasRole(requiredRole)) {
         toast({
           title: "Accès refusé",
@@ -32,7 +32,7 @@ export function ProtectedRoute({ children, requiredRole, requireRental }: Protec
         });
       }
     }
-  }, [isLoading, user, requiredRole, requireRental, hasRole, canAccessRental, toast]);
+  }, [isLoading, user, profile, requiredRole, requireRental, hasRole, canAccessRental, toast]);
 
   if (isLoading) {
     return (
@@ -44,6 +44,15 @@ export function ProtectedRoute({ children, requiredRole, requireRental }: Protec
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Wait for profile to load before checking roles
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Chargement...</div>
+      </div>
+    );
   }
 
   if (requiredRole && !hasRole(requiredRole)) {
