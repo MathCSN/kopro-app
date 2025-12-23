@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Building2,
@@ -23,13 +24,60 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 // Empty state - data will come from database
-const residences: { id: string; name: string; address: string; city: string; postalCode: string; lots: number; users: number; status: string; manager: string }[] = [];
+type Residence = {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  lots: number;
+  users: number;
+  status: string;
+  manager: string;
+};
+
+const residencesData: Residence[] = [];
 
 export default function OwnerResidences() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [residences, setResidences] = useState(residencesData);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedResidence, setSelectedResidence] = useState<Residence | null>(null);
+  const [newResidence, setNewResidence] = useState({ 
+    name: "", 
+    address: "", 
+    city: "", 
+    postalCode: "" 
+  });
 
   const handleLogout = () => {
     logout();
@@ -37,6 +85,70 @@ export default function OwnerResidences() {
   };
 
   if (!user) return null;
+
+  const filteredResidences = residences.filter(r => 
+    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.city.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleAddResidence = () => {
+    if (!newResidence.name || !newResidence.city) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs obligatoires.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const residence: Residence = {
+      id: Date.now().toString(),
+      name: newResidence.name,
+      address: newResidence.address,
+      city: newResidence.city,
+      postalCode: newResidence.postalCode,
+      lots: 0,
+      users: 0,
+      status: "pending",
+      manager: "",
+    };
+    
+    setResidences([...residences, residence]);
+    setNewResidence({ name: "", address: "", city: "", postalCode: "" });
+    setIsAddDialogOpen(false);
+    
+    toast({
+      title: "Résidence créée",
+      description: `${residence.name} a été ajoutée avec succès.`,
+    });
+  };
+
+  const handleEditResidence = () => {
+    if (!selectedResidence) return;
+    
+    setResidences(residences.map(r => 
+      r.id === selectedResidence.id ? selectedResidence : r
+    ));
+    setIsEditDialogOpen(false);
+    
+    toast({
+      title: "Résidence modifiée",
+      description: `Les informations de ${selectedResidence.name} ont été mises à jour.`,
+    });
+  };
+
+  const handleDeleteResidence = () => {
+    if (!selectedResidence) return;
+    
+    setResidences(residences.filter(r => r.id !== selectedResidence.id));
+    setIsDeleteDialogOpen(false);
+    
+    toast({
+      title: "Résidence supprimée",
+      description: `${selectedResidence.name} a été supprimée.`,
+      variant: "destructive",
+    });
+  };
 
   return (
     <OwnerLayout onLogout={handleLogout}>
@@ -46,7 +158,7 @@ export default function OwnerResidences() {
             <h1 className="font-display text-2xl lg:text-3xl font-bold">Résidences</h1>
             <p className="text-muted-foreground mt-1">Gérez toutes les copropriétés de la plateforme</p>
           </div>
-          <Button>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle résidence
           </Button>
@@ -83,77 +195,301 @@ export default function OwnerResidences() {
         {/* Search */}
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher une résidence..." className="pl-10" />
+          <Input 
+            placeholder="Rechercher une résidence..." 
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
-        {/* Residences Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {residences.map((residence) => (
-            <Card key={residence.id} className="shadow-soft hover:shadow-medium transition-shadow">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{residence.name}</CardTitle>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {residence.city}
+        {/* Empty state or Residences Grid */}
+        {filteredResidences.length === 0 ? (
+          <Card className="shadow-soft">
+            <CardContent className="p-12 text-center">
+              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-semibold text-lg mb-2">
+                {residences.length === 0 ? "Aucune résidence" : "Aucun résultat"}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {residences.length === 0 
+                  ? "Créez votre première résidence pour commencer."
+                  : "Aucune résidence ne correspond à votre recherche."}
+              </p>
+              {residences.length === 0 && (
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer une résidence
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredResidences.map((residence) => (
+              <Card key={residence.id} className="shadow-soft hover:shadow-medium transition-shadow">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Building2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{residence.name}</CardTitle>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          {residence.city}
+                        </div>
                       </div>
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover">
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedResidence(residence);
+                          setIsViewDialogOpen(true);
+                        }}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Voir détails
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedResidence(residence);
+                          setIsEditDialogOpen(true);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => {
+                            setSelectedResidence(residence);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`/owner/residences/${residence.id}`)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir détails
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Modifier
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">{residence.address}, {residence.postalCode}</p>
-                
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>{residence.lots} lots</span>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{residence.address}, {residence.postalCode}</p>
+                  
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span>{residence.lots} lots</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>{residence.users} utilisateurs</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>{residence.users} utilisateurs</span>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <div className="text-xs text-muted-foreground">
-                    Géré par: <span className="text-foreground">{residence.manager}</span>
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="text-xs text-muted-foreground">
+                      {residence.manager ? `Géré par: ${residence.manager}` : "Non assignée"}
+                    </div>
+                    <Badge variant={residence.status === 'active' ? 'secondary' : 'outline'}>
+                      {residence.status === 'active' ? 'Active' : 'En cours'}
+                    </Badge>
                   </div>
-                  <Badge variant={residence.status === 'active' ? 'secondary' : 'outline'}>
-                    {residence.status === 'active' ? 'Active' : 'En cours'}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add Residence Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nouvelle résidence</DialogTitle>
+            <DialogDescription>
+              Créez une nouvelle copropriété sur la plateforme.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom de la résidence *</Label>
+              <Input 
+                id="name" 
+                value={newResidence.name}
+                onChange={(e) => setNewResidence({ ...newResidence, name: e.target.value })}
+                placeholder="Résidence du Parc"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input 
+                id="address" 
+                value={newResidence.address}
+                onChange={(e) => setNewResidence({ ...newResidence, address: e.target.value })}
+                placeholder="12 Avenue des Champs"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">Ville *</Label>
+                <Input 
+                  id="city" 
+                  value={newResidence.city}
+                  onChange={(e) => setNewResidence({ ...newResidence, city: e.target.value })}
+                  placeholder="Paris"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">Code postal</Label>
+                <Input 
+                  id="postalCode" 
+                  value={newResidence.postalCode}
+                  onChange={(e) => setNewResidence({ ...newResidence, postalCode: e.target.value })}
+                  placeholder="75008"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleAddResidence}>
+              Créer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Residence Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Détails de la résidence</DialogTitle>
+          </DialogHeader>
+          {selectedResidence && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedResidence.name}</h3>
+                  <Badge variant={selectedResidence.status === 'active' ? 'secondary' : 'outline'}>
+                    {selectedResidence.status === 'active' ? 'Active' : 'En cours'}
                   </Badge>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+              </div>
+              <div className="grid gap-3">
+                <div>
+                  <Label className="text-muted-foreground">Adresse</Label>
+                  <p>{selectedResidence.address}, {selectedResidence.postalCode} {selectedResidence.city}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">Lots</Label>
+                    <p>{selectedResidence.lots}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Utilisateurs</Label>
+                    <p>{selectedResidence.users}</p>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Gestionnaire</Label>
+                  <p>{selectedResidence.manager || "Non assigné"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsViewDialogOpen(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Residence Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la résidence</DialogTitle>
+          </DialogHeader>
+          {selectedResidence && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Nom de la résidence</Label>
+                <Input 
+                  id="edit-name" 
+                  value={selectedResidence.name}
+                  onChange={(e) => setSelectedResidence({ ...selectedResidence, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-address">Adresse</Label>
+                <Input 
+                  id="edit-address" 
+                  value={selectedResidence.address}
+                  onChange={(e) => setSelectedResidence({ ...selectedResidence, address: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-city">Ville</Label>
+                  <Input 
+                    id="edit-city" 
+                    value={selectedResidence.city}
+                    onChange={(e) => setSelectedResidence({ ...selectedResidence, city: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-postalCode">Code postal</Label>
+                  <Input 
+                    id="edit-postalCode" 
+                    value={selectedResidence.postalCode}
+                    onChange={(e) => setSelectedResidence({ ...selectedResidence, postalCode: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleEditResidence}>
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette résidence ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. La résidence {selectedResidence?.name} et toutes ses données seront définitivement supprimées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteResidence}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </OwnerLayout>
   );
 }
