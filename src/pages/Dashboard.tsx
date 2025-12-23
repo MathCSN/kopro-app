@@ -8,7 +8,6 @@ import {
   Vote,
   CreditCard,
   FileText,
-  Bell,
   ArrowUpRight,
   AlertCircle,
   CheckCircle2,
@@ -23,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 // Quick action cards data
 const quickActions = [
@@ -193,12 +193,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
-                3
-              </span>
-            </Button>
+            <NotificationBell />
             <Badge variant="secondary" className="hidden sm:flex">
               {badge}
             </Badge>
