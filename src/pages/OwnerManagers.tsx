@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -11,6 +11,7 @@ import {
   Edit,
   Trash2,
   UserCheck,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,23 +46,111 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Empty state - data will come from database
-const managersData: { id: string; name: string; email: string; phone: string; residences: string[]; status: string; joinedAt: string }[] = [];
+type Manager = {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  residences: string[];
+  status: string;
+  joinedAt: string;
+};
 
 export default function OwnerManagers() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [managers, setManagers] = useState(managersData);
+  const [managers, setManagers] = useState<Manager[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [selectedManager, setSelectedManager] = useState<typeof managersData[0] | null>(null);
-  const [newManager, setNewManager] = useState({ name: "", email: "", phone: "" });
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedManager, setSelectedManager] = useState<Manager | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetchManagers();
+  }, []);
+
+  const fetchManagers = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch users with manager or admin role
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role, residence_id')
+        .in('role', ['manager', 'admin']);
+
+      if (rolesError) throw rolesError;
+
+      if (!roles || roles.length === 0) {
+        setManagers([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(roles.map(r => r.user_id))];
+
+      // Fetch profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Fetch residences for these managers
+      const residenceIds = roles.filter(r => r.residence_id).map(r => r.residence_id);
+      let residencesMap: Record<string, string> = {};
+      
+      if (residenceIds.length > 0) {
+        const { data: residences } = await supabase
+          .from('residences')
+          .select('id, name')
+          .in('id', residenceIds);
+        
+        if (residences) {
+          residencesMap = Object.fromEntries(residences.map(r => [r.id, r.name]));
+        }
+      }
+
+      // Combine data
+      const managersData: Manager[] = (profiles || []).map(profile => {
+        const userRoles = roles.filter(r => r.user_id === profile.id);
+        const userResidences = userRoles
+          .filter(r => r.residence_id && residencesMap[r.residence_id])
+          .map(r => residencesMap[r.residence_id!]);
+
+        return {
+          id: profile.id,
+          user_id: profile.id,
+          name: profile.first_name && profile.last_name 
+            ? `${profile.first_name} ${profile.last_name}` 
+            : profile.email || 'Utilisateur',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          residences: userResidences,
+          status: 'active',
+          joinedAt: profile.created_at || new Date().toISOString(),
+        };
+      });
+
+      setManagers(managersData);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les gestionnaires.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -71,7 +160,7 @@ export default function OwnerManagers() {
   if (!user) return null;
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const filteredManagers = managers.filter(m => 
@@ -79,70 +168,56 @@ export default function OwnerManagers() {
     m.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddManager = () => {
-    if (!newManager.name || !newManager.email) {
+  const handleDeleteManager = async () => {
+    if (!selectedManager) return;
+    
+    try {
+      setIsSaving(true);
+      
+      // Remove manager/admin roles for this user
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', selectedManager.user_id)
+        .in('role', ['manager', 'admin']);
+
+      if (error) throw error;
+
+      setManagers(managers.filter(m => m.id !== selectedManager.id));
+      setIsDeleteDialogOpen(false);
+      
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires.",
+        title: "Gestionnaire supprimé",
+        description: `${selectedManager.name} n'est plus gestionnaire.`,
         variant: "destructive",
       });
-      return;
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer le gestionnaire.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-    
-    const manager = {
-      id: Date.now().toString(),
-      name: newManager.name,
-      email: newManager.email,
-      phone: newManager.phone,
-      residences: [],
-      status: "pending",
-      joinedAt: new Date().toISOString().split('T')[0],
-    };
-    
-    setManagers([...managers, manager]);
-    setNewManager({ name: "", email: "", phone: "" });
-    setIsAddDialogOpen(false);
-    
+  };
+
+  const handleImpersonate = (manager: Manager) => {
     toast({
-      title: "Gestionnaire ajouté",
-      description: `${manager.name} a été ajouté avec succès.`,
+      title: "Fonctionnalité à venir",
+      description: `L'impersonation de ${manager.name} sera disponible prochainement.`,
     });
   };
 
-  const handleEditManager = () => {
-    if (!selectedManager) return;
-    
-    setManagers(managers.map(m => 
-      m.id === selectedManager.id ? selectedManager : m
-    ));
-    setIsEditDialogOpen(false);
-    
-    toast({
-      title: "Gestionnaire modifié",
-      description: `Les informations de ${selectedManager.name} ont été mises à jour.`,
-    });
-  };
-
-  const handleDeleteManager = () => {
-    if (!selectedManager) return;
-    
-    setManagers(managers.filter(m => m.id !== selectedManager.id));
-    setIsDeleteDialogOpen(false);
-    
-    toast({
-      title: "Gestionnaire supprimé",
-      description: `${selectedManager.name} a été supprimé.`,
-      variant: "destructive",
-    });
-  };
-
-  const handleImpersonate = (manager: typeof managersData[0]) => {
-    toast({
-      title: "Mode impersonnation",
-      description: `Vous êtes maintenant connecté en tant que ${manager.name}.`,
-    });
-    navigate(`/owner/impersonate/${manager.id}`);
-  };
+  if (isLoading) {
+    return (
+      <OwnerLayout onLogout={handleLogout}>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </OwnerLayout>
+    );
+  }
 
   return (
     <OwnerLayout onLogout={handleLogout}>
@@ -152,9 +227,9 @@ export default function OwnerManagers() {
             <h1 className="font-display text-2xl lg:text-3xl font-bold">Gestionnaires</h1>
             <p className="text-muted-foreground mt-1">Gérez les gestionnaires de copropriétés</p>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Button onClick={() => navigate("/owner/users")}>
             <Plus className="h-4 w-4 mr-2" />
-            Nouveau gestionnaire
+            Voir tous les utilisateurs
           </Button>
         </div>
 
@@ -180,8 +255,8 @@ export default function OwnerManagers() {
           </Card>
           <Card className="shadow-soft">
             <CardContent className="p-4">
-              <p className="text-2xl font-bold">{managers.filter(m => m.status === 'pending').length}</p>
-              <p className="text-sm text-muted-foreground">En attente</p>
+              <p className="text-2xl font-bold">{managers.filter(m => m.residences.length === 0).length}</p>
+              <p className="text-sm text-muted-foreground">Sans résidence</p>
             </CardContent>
           </Card>
         </div>
@@ -207,13 +282,13 @@ export default function OwnerManagers() {
               </h3>
               <p className="text-muted-foreground mb-4">
                 {managers.length === 0 
-                  ? "Ajoutez votre premier gestionnaire pour commencer."
+                  ? "Les utilisateurs avec le rôle gestionnaire apparaîtront ici."
                   : "Aucun gestionnaire ne correspond à votre recherche."}
               </p>
               {managers.length === 0 && (
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un gestionnaire
+                <Button onClick={() => navigate("/owner/users")}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Voir les utilisateurs
                 </Button>
               )}
             </CardContent>
@@ -242,7 +317,9 @@ export default function OwnerManagers() {
                             <Mail className="h-3 w-3" />
                             {manager.email}
                           </span>
-                          <span className="hidden md:block">{manager.phone}</span>
+                          {manager.phone && (
+                            <span className="hidden md:block">{manager.phone}</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -278,13 +355,6 @@ export default function OwnerManagers() {
                             <Eye className="h-4 w-4 mr-2" />
                             Voir profil
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedManager(manager);
-                            setIsEditDialogOpen(true);
-                          }}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Modifier
-                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive"
                             onClick={() => {
@@ -293,7 +363,7 @@ export default function OwnerManagers() {
                             }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Supprimer
+                            Retirer le rôle
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -305,56 +375,6 @@ export default function OwnerManagers() {
           </div>
         )}
       </div>
-
-      {/* Add Manager Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nouveau gestionnaire</DialogTitle>
-            <DialogDescription>
-              Ajoutez un nouveau gestionnaire à la plateforme.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nom complet *</Label>
-              <Input 
-                id="name" 
-                value={newManager.name}
-                onChange={(e) => setNewManager({ ...newManager, name: e.target.value })}
-                placeholder="Jean Dupont"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input 
-                id="email" 
-                type="email"
-                value={newManager.email}
-                onChange={(e) => setNewManager({ ...newManager, email: e.target.value })}
-                placeholder="jean@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
-              <Input 
-                id="phone" 
-                value={newManager.phone}
-                onChange={(e) => setNewManager({ ...newManager, phone: e.target.value })}
-                placeholder="06 12 34 56 78"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleAddManager}>
-              Ajouter
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* View Manager Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
@@ -405,68 +425,24 @@ export default function OwnerManagers() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Manager Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier le gestionnaire</DialogTitle>
-          </DialogHeader>
-          {selectedManager && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Nom complet</Label>
-                <Input 
-                  id="edit-name" 
-                  value={selectedManager.name}
-                  onChange={(e) => setSelectedManager({ ...selectedManager, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-email">Email</Label>
-                <Input 
-                  id="edit-email" 
-                  type="email"
-                  value={selectedManager.email}
-                  onChange={(e) => setSelectedManager({ ...selectedManager, email: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-phone">Téléphone</Label>
-                <Input 
-                  id="edit-phone" 
-                  value={selectedManager.phone}
-                  onChange={(e) => setSelectedManager({ ...selectedManager, phone: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleEditManager}>
-              Enregistrer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce gestionnaire ?</AlertDialogTitle>
+            <AlertDialogTitle>Retirer le rôle gestionnaire ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le gestionnaire {selectedManager?.name} sera définitivement supprimé de la plateforme.
+              {selectedManager?.name} perdra son accès gestionnaire. Cette action peut être annulée en réassignant le rôle.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSaving}>Annuler</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleDeleteManager}
+              onClick={handleDeleteManager} 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSaving}
             >
-              Supprimer
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirmer
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
