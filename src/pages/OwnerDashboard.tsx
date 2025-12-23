@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Building2,
@@ -10,16 +11,65 @@ import {
   CreditCard,
   FileText,
   Shield,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { OwnerLayout } from "@/components/layout/OwnerLayout";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function OwnerDashboard() {
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [platformStats, setPlatformStats] = useState({
+    totalResidences: 0,
+    totalLots: 0,
+    totalUsers: 0,
+    activeTickets: 0,
+    monthlyRevenue: 0,
+    pendingPayments: 0,
+  });
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch residences count
+      const { count: residencesCount } = await supabase
+        .from('residences')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch lots count
+      const { count: lotsCount } = await supabase
+        .from('lots')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch users count
+      const { count: usersCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      setPlatformStats({
+        totalResidences: residencesCount || 0,
+        totalLots: lotsCount || 0,
+        totalUsers: usersCount || 0,
+        activeTickets: 0,
+        monthlyRevenue: 0,
+        pendingPayments: 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -29,16 +79,6 @@ export default function OwnerDashboard() {
   if (!user) {
     return null;
   }
-
-  // Stats from database (will be fetched later)
-  const platformStats = {
-    totalResidences: 0,
-    totalLots: 0,
-    totalUsers: 0,
-    activeTickets: 0,
-    monthlyRevenue: 0,
-    pendingPayments: 0,
-  };
 
   return (
     <OwnerLayout onLogout={handleLogout}>
