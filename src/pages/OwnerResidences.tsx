@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Building2,
@@ -11,6 +11,7 @@ import {
   Eye,
   Edit,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,8 +45,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Empty state - data will come from database
 type Residence = {
   id: string;
   name: string;
@@ -58,14 +59,14 @@ type Residence = {
   manager: string;
 };
 
-const residencesData: Residence[] = [];
-
 export default function OwnerResidences() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [residences, setResidences] = useState(residencesData);
+  const [residences, setResidences] = useState<Residence[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -79,6 +80,45 @@ export default function OwnerResidences() {
     postalCode: "" 
   });
 
+  // Fetch residences from database
+  useEffect(() => {
+    fetchResidences();
+  }, []);
+
+  const fetchResidences = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('residences')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const mappedResidences: Residence[] = (data || []).map(r => ({
+        id: r.id,
+        name: r.name,
+        address: r.address || '',
+        city: r.city || '',
+        postalCode: r.postal_code || '',
+        lots: 0, // Will be calculated from lots table later
+        users: 0, // Will be calculated from user_roles later
+        status: 'active',
+        manager: '',
+      }));
+
+      setResidences(mappedResidences);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les résidences.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate("/auth");
@@ -91,7 +131,7 @@ export default function OwnerResidences() {
     r.city.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddResidence = () => {
+  const handleAddResidence = async () => {
     if (!newResidence.name || !newResidence.city) {
       toast({
         title: "Erreur",
@@ -101,54 +141,129 @@ export default function OwnerResidences() {
       return;
     }
     
-    const residence: Residence = {
-      id: Date.now().toString(),
-      name: newResidence.name,
-      address: newResidence.address,
-      city: newResidence.city,
-      postalCode: newResidence.postalCode,
-      lots: 0,
-      users: 0,
-      status: "pending",
-      manager: "",
-    };
-    
-    setResidences([...residences, residence]);
-    setNewResidence({ name: "", address: "", city: "", postalCode: "" });
-    setIsAddDialogOpen(false);
-    
-    toast({
-      title: "Résidence créée",
-      description: `${residence.name} a été ajoutée avec succès.`,
-    });
+    try {
+      setIsSaving(true);
+      const { data, error } = await supabase
+        .from('residences')
+        .insert({
+          name: newResidence.name,
+          address: newResidence.address,
+          city: newResidence.city,
+          postal_code: newResidence.postalCode,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const residence: Residence = {
+        id: data.id,
+        name: data.name,
+        address: data.address || '',
+        city: data.city || '',
+        postalCode: data.postal_code || '',
+        lots: 0,
+        users: 0,
+        status: 'active',
+        manager: '',
+      };
+      
+      setResidences([residence, ...residences]);
+      setNewResidence({ name: "", address: "", city: "", postalCode: "" });
+      setIsAddDialogOpen(false);
+      
+      toast({
+        title: "Résidence créée",
+        description: `${residence.name} a été ajoutée avec succès.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de créer la résidence.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleEditResidence = () => {
+  const handleEditResidence = async () => {
     if (!selectedResidence) return;
     
-    setResidences(residences.map(r => 
-      r.id === selectedResidence.id ? selectedResidence : r
-    ));
-    setIsEditDialogOpen(false);
-    
-    toast({
-      title: "Résidence modifiée",
-      description: `Les informations de ${selectedResidence.name} ont été mises à jour.`,
-    });
+    try {
+      setIsSaving(true);
+      const { error } = await supabase
+        .from('residences')
+        .update({
+          name: selectedResidence.name,
+          address: selectedResidence.address,
+          city: selectedResidence.city,
+          postal_code: selectedResidence.postalCode,
+        })
+        .eq('id', selectedResidence.id);
+
+      if (error) throw error;
+
+      setResidences(residences.map(r => 
+        r.id === selectedResidence.id ? selectedResidence : r
+      ));
+      setIsEditDialogOpen(false);
+      
+      toast({
+        title: "Résidence modifiée",
+        description: `Les informations de ${selectedResidence.name} ont été mises à jour.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier la résidence.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeleteResidence = () => {
+  const handleDeleteResidence = async () => {
     if (!selectedResidence) return;
     
-    setResidences(residences.filter(r => r.id !== selectedResidence.id));
-    setIsDeleteDialogOpen(false);
-    
-    toast({
-      title: "Résidence supprimée",
-      description: `${selectedResidence.name} a été supprimée.`,
-      variant: "destructive",
-    });
+    try {
+      setIsSaving(true);
+      const { error } = await supabase
+        .from('residences')
+        .delete()
+        .eq('id', selectedResidence.id);
+
+      if (error) throw error;
+
+      setResidences(residences.filter(r => r.id !== selectedResidence.id));
+      setIsDeleteDialogOpen(false);
+      
+      toast({
+        title: "Résidence supprimée",
+        description: `${selectedResidence.name} a été supprimée.`,
+        variant: "destructive",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer la résidence.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <OwnerLayout onLogout={handleLogout}>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </OwnerLayout>
+    );
+  }
 
   return (
     <OwnerLayout onLogout={handleLogout}>
@@ -356,10 +471,11 @@ export default function OwnerResidences() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSaving}>
               Annuler
             </Button>
-            <Button onClick={handleAddResidence}>
+            <Button onClick={handleAddResidence} disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Créer
             </Button>
           </DialogFooter>
