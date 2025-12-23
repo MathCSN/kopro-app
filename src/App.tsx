@@ -32,7 +32,14 @@ import NotFound from "./pages/NotFound";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerResidences from "./pages/OwnerResidences";
 import OwnerManagers from "./pages/OwnerManagers";
+import OwnerUsers from "./pages/OwnerUsers";
+import OwnerBilling from "./pages/OwnerBilling";
+import OwnerSubscriptions from "./pages/OwnerSubscriptions";
+import OwnerReports from "./pages/OwnerReports";
 import OwnerSettings from "./pages/OwnerSettings";
+import OwnerEmails from "./pages/OwnerEmails";
+import OwnerStorage from "./pages/OwnerStorage";
+import OwnerAudit from "./pages/OwnerAudit";
 
 const queryClient = new QueryClient();
 
@@ -52,14 +59,14 @@ const App = () => (
             <Route path="/owner/residences" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
             <Route path="/owner/residences/:id" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
             <Route path="/owner/managers" element={<OwnerRoute><OwnerManagers /></OwnerRoute>} />
-            <Route path="/owner/users" element={<OwnerRoute><OwnerManagers /></OwnerRoute>} />
-            <Route path="/owner/billing" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
-            <Route path="/owner/subscriptions" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
-            <Route path="/owner/reports" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/users" element={<OwnerRoute><OwnerUsers /></OwnerRoute>} />
+            <Route path="/owner/billing" element={<OwnerRoute><OwnerBilling /></OwnerRoute>} />
+            <Route path="/owner/subscriptions" element={<OwnerRoute><OwnerSubscriptions /></OwnerRoute>} />
+            <Route path="/owner/reports" element={<OwnerRoute><OwnerReports /></OwnerRoute>} />
             <Route path="/owner/settings" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
-            <Route path="/owner/emails" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
-            <Route path="/owner/storage" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
-            <Route path="/owner/audit" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/emails" element={<OwnerRoute><OwnerEmails /></OwnerRoute>} />
+            <Route path="/owner/storage" element={<OwnerRoute><OwnerStorage /></OwnerRoute>} />
+            <Route path="/owner/audit" element={<OwnerRoute><OwnerAudit /></OwnerRoute>} />
             <Route path="/owner/impersonate/:id" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
             
             {/* Protected routes */}
