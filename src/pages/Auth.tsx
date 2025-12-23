@@ -407,7 +407,7 @@ export default function Auth() {
                 size="sm"
                 onClick={async () => {
                   setIsLoading(true);
-                  const { error } = await login("cs@kopro.fr", "test1234");
+                  const { error } = await login("syndic@kopro.fr", "test1234");
                   setIsLoading(false);
                   if (error) {
                     toast({

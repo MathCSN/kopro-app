@@ -24,13 +24,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const residences = [
-  { id: "1", name: "Résidence du Parc", address: "12 Avenue des Champs", city: "Paris", postalCode: "75008", lots: 84, users: 156, status: "active", manager: "Sophie Bernard" },
-  { id: "2", name: "Les Jardins de Neuilly", address: "45 Boulevard de la République", city: "Neuilly-sur-Seine", postalCode: "92200", lots: 120, users: 245, status: "active", manager: "Marc Lefebvre" },
-  { id: "3", name: "Villa Montmartre", address: "8 Rue des Abbesses", city: "Paris", postalCode: "75018", lots: 42, users: 89, status: "active", manager: "Julie Martin" },
-  { id: "4", name: "Domaine des Lilas", address: "22 Rue de Lyon", city: "Lyon", postalCode: "69003", lots: 65, users: 134, status: "pending", manager: "Sophie Bernard" },
-  { id: "5", name: "Le Clos des Vignes", address: "5 Place de la Mairie", city: "Bordeaux", postalCode: "33000", lots: 98, users: 201, status: "active", manager: "Marc Lefebvre" },
-];
+// Empty state - data will come from database
+const residences: { id: string; name: string; address: string; city: string; postalCode: string; lots: number; users: number; status: string; manager: string }[] = [];
 
 export default function OwnerResidences() {
   const { user, logout } = useAuth();

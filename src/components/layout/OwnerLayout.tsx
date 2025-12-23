@@ -1,9 +1,8 @@
 import { ReactNode } from "react";
-import { OwnerSidebar } from "./OwnerSidebar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { OwnerSidebar, OwnerMobileSidebar } from "./OwnerSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, Shield } from "lucide-react";
 
 interface OwnerLayoutProps {
   children: ReactNode;
@@ -17,38 +16,36 @@ export function OwnerLayout({ children, onLogout }: OwnerLayoutProps) {
       <OwnerSidebar onLogout={onLogout} />
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-kopro-amber flex items-center justify-center">
-              <span className="text-white font-bold text-sm">K</span>
+              <Shield className="h-4 w-4 text-white" />
             </div>
-            <span className="font-display font-semibold text-foreground">Kopro Admin</span>
+            <span className="font-display font-semibold text-white">Kopro Admin</span>
           </div>
 
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon-sm">
+              <Button variant="ghost" size="icon" className="text-white hover:bg-slate-800">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72">
-              <OwnerSidebar onLogout={onLogout} />
+            <SheetContent side="left" className="p-0 w-72 bg-slate-900 border-slate-800">
+              <OwnerMobileSidebar onLogout={onLogout} />
             </SheetContent>
           </Sheet>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-screen md:ml-0">
+      <main className="flex-1 flex flex-col min-h-screen overflow-auto">
         {/* Mobile top padding */}
-        <div className="h-14 md:hidden" />
+        <div className="h-14 md:hidden shrink-0" />
         
-        <ScrollArea className="flex-1">
-          <div className="p-4 md:p-6 lg:p-8">
-            {children}
-          </div>
-        </ScrollArea>
+        <div className="flex-1 p-4 md:p-6 lg:p-8">
+          {children}
+        </div>
       </main>
     </div>
   );

@@ -51,8 +51,14 @@ interface OwnerSidebarProps {
   onLogout?: () => void;
 }
 
-export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+interface OwnerSidebarContentProps {
+  collapsed: boolean;
+  setCollapsed: (value: boolean) => void;
+  onLogout?: () => void;
+  isMobile?: boolean;
+}
+
+function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = false }: OwnerSidebarContentProps) {
   const location = useLocation();
 
   const isActive = (href: string) => {
@@ -69,11 +75,11 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
         isActive(item.href)
           ? "bg-kopro-amber text-white shadow-soft"
-          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          : "text-slate-300 hover:bg-slate-800 hover:text-white"
       )}
     >
-      <item.icon className={cn("h-5 w-5 shrink-0", collapsed && "mx-auto")} />
-      {!collapsed && (
+      <item.icon className={cn("h-5 w-5 shrink-0", collapsed && !isMobile && "mx-auto")} />
+      {(!collapsed || isMobile) && (
         <>
           <span className="font-medium truncate">{item.title}</span>
           {item.badge && (
@@ -87,30 +93,23 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
   );
 
   return (
-    <aside
-      className={cn(
-        "hidden md:flex flex-col h-screen bg-gradient-to-b from-slate-900 to-slate-950 border-r border-slate-800 transition-all duration-300",
-        collapsed ? "w-[72px]" : "w-64"
-      )}
-    >
+    <div className={cn(
+      "flex flex-col h-full bg-gradient-to-b from-slate-900 to-slate-950",
+      isMobile ? "w-full" : ""
+    )}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-800">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-kopro-amber flex items-center justify-center shadow-soft">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-kopro-amber flex items-center justify-center shadow-soft">
+            <Shield className="h-5 w-5 text-white" />
+          </div>
+          {(!collapsed || isMobile) && (
             <div>
               <h1 className="font-display font-bold text-lg text-white">Kopro</h1>
               <p className="text-xs text-slate-400">Administration</p>
             </div>
-          </div>
-        )}
-        {collapsed && (
-          <div className="w-9 h-9 rounded-xl bg-kopro-amber flex items-center justify-center shadow-soft mx-auto">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
@@ -118,7 +117,7 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
         <nav className="space-y-6">
           {/* Main Section */}
           <div className="space-y-1">
-            {!collapsed && (
+            {(!collapsed || isMobile) && (
               <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                 Plateforme
               </p>
@@ -130,7 +129,7 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
 
           {/* Finance Section */}
           <div className="space-y-1">
-            {!collapsed && (
+            {(!collapsed || isMobile) && (
               <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                 Finance
               </p>
@@ -142,7 +141,7 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
 
           {/* Settings Section */}
           <div className="space-y-1">
-            {!collapsed && (
+            {(!collapsed || isMobile) && (
               <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                 Configuration
               </p>
@@ -156,15 +155,17 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
 
       {/* Footer */}
       <div className="p-3 border-t border-slate-800 space-y-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center text-slate-400 hover:text-white hover:bg-slate-800"
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          {!collapsed && <span className="ml-2">Réduire</span>}
-        </Button>
+        {!isMobile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCollapsed(!collapsed)}
+            className="w-full justify-center text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {!collapsed && <span className="ml-2">Réduire</span>}
+          </Button>
+        )}
         
         {onLogout && (
           <Button
@@ -172,15 +173,45 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
             size="sm"
             onClick={onLogout}
             className={cn(
-              "w-full text-slate-400 hover:text-destructive hover:bg-destructive/10",
-              collapsed ? "justify-center" : "justify-start"
+              "w-full text-slate-400 hover:text-red-400 hover:bg-red-500/10",
+              (collapsed && !isMobile) ? "justify-center" : "justify-start"
             )}
           >
             <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">Déconnexion</span>}
+            {(!collapsed || isMobile) && <span className="ml-2">Déconnexion</span>}
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside
+      className={cn(
+        "hidden md:flex flex-col h-screen sticky top-0 border-r border-slate-800 transition-all duration-300",
+        collapsed ? "w-[72px]" : "w-64"
+      )}
+    >
+      <OwnerSidebarContent 
+        collapsed={collapsed} 
+        setCollapsed={setCollapsed} 
+        onLogout={onLogout} 
+      />
     </aside>
+  );
+}
+
+export function OwnerMobileSidebar({ onLogout }: OwnerSidebarProps) {
+  return (
+    <OwnerSidebarContent 
+      collapsed={false} 
+      setCollapsed={() => {}} 
+      onLogout={onLogout}
+      isMobile={true}
+    />
   );
 }
