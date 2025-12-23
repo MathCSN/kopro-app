@@ -1,15 +1,9 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Plus,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  Users,
-  CheckCircle2,
-  XCircle,
-  Filter,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 
 interface Resource {
   id: string;
@@ -84,23 +80,14 @@ const statusConfig = {
 };
 
 export default function Reservations() {
-  const [user, setUser] = useState<any>(null);
+  const { user, profile, logout } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedResource, setSelectedResource] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("kopro_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      navigate("/auth");
-    }
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("kopro_user");
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth");
   };
 
@@ -117,10 +104,10 @@ export default function Reservations() {
   const nextWeek = () => setWeekStart(addDays(weekStart, 7));
   const prevWeek = () => setWeekStart(addDays(weekStart, -7));
 
-  if (!user) return null;
+  if (!user || !profile) return null;
 
   return (
-    <AppLayout userRole={user.role} onLogout={handleLogout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

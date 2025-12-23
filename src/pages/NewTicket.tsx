@@ -12,15 +12,19 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function NewTicket() {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
 
-  if (!user) {
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth");
+  };
+
+  if (!user || !profile) {
     return null;
   }
 
@@ -31,7 +35,7 @@ export default function NewTicket() {
   };
 
   return (
-    <AppLayout userRole={user.role} onLogout={logout}>
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in max-w-2xl">
         <Button variant="ghost" onClick={() => navigate('/tickets')}>
           <ArrowLeft className="h-4 w-4 mr-2" />Retour
