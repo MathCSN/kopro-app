@@ -240,7 +240,7 @@ export default function OwnerUsers() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'owner': return 'Propriétaire';
+      case 'owner': return 'Kopro';
       case 'admin': return 'Admin';
       case 'manager': return 'Gestionnaire';
       case 'cs': return 'Support';
