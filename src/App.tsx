@@ -36,10 +36,10 @@ import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerResidences from "./pages/OwnerResidences";
 import OwnerManagers from "./pages/OwnerManagers";
 import OwnerUsers from "./pages/OwnerUsers";
-import OwnerBilling from "./pages/OwnerBilling";
-import OwnerSubscriptions from "./pages/OwnerSubscriptions";
+import OwnerQuotes from "./pages/OwnerQuotes";
 import OwnerReports from "./pages/OwnerReports";
 import OwnerSettings from "./pages/OwnerSettings";
+import OwnerIntegrations from "./pages/OwnerIntegrations";
 import OwnerEmails from "./pages/OwnerEmails";
 import OwnerStorage from "./pages/OwnerStorage";
 import OwnerAudit from "./pages/OwnerAudit";
@@ -64,10 +64,10 @@ const App = () => (
             <Route path="/owner/residences/:id" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
             <Route path="/owner/managers" element={<OwnerRoute><OwnerManagers /></OwnerRoute>} />
             <Route path="/owner/users" element={<OwnerRoute><OwnerUsers /></OwnerRoute>} />
-            <Route path="/owner/billing" element={<OwnerRoute><OwnerBilling /></OwnerRoute>} />
-            <Route path="/owner/subscriptions" element={<OwnerRoute><OwnerSubscriptions /></OwnerRoute>} />
+            <Route path="/owner/quotes" element={<OwnerRoute><OwnerQuotes /></OwnerRoute>} />
             <Route path="/owner/reports" element={<OwnerRoute><OwnerReports /></OwnerRoute>} />
             <Route path="/owner/settings" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
+            <Route path="/owner/integrations" element={<OwnerRoute><OwnerIntegrations /></OwnerRoute>} />
             <Route path="/owner/emails" element={<OwnerRoute><OwnerEmails /></OwnerRoute>} />
             <Route path="/owner/storage" element={<OwnerRoute><OwnerStorage /></OwnerRoute>} />
             <Route path="/owner/audit" element={<OwnerRoute><OwnerAudit /></OwnerRoute>} />

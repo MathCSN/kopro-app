@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -14,7 +14,7 @@ import {
   Mail,
   Database,
   BarChart3,
-  FileText,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,13 +35,13 @@ const mainNavItems: NavItem[] = [
 ];
 
 const financeNavItems: NavItem[] = [
-  { title: "Facturation", href: "/owner/billing", icon: CreditCard },
-  { title: "Abonnements", href: "/owner/subscriptions", icon: FileText },
+  { title: "Facturation & Devis", href: "/owner/quotes", icon: CreditCard },
   { title: "Rapports", href: "/owner/reports", icon: BarChart3 },
 ];
 
 const settingsNavItems: NavItem[] = [
   { title: "Paramètres globaux", href: "/owner/settings", icon: Settings },
+  { title: "Intégrations", href: "/owner/integrations", icon: Plug },
   { title: "Emails & Templates", href: "/owner/emails", icon: Mail },
   { title: "Stockage", href: "/owner/storage", icon: Database },
   { title: "Journal d'audit", href: "/owner/audit", icon: Activity },
@@ -60,6 +60,21 @@ interface OwnerSidebarContentProps {
 
 function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = false }: OwnerSidebarContentProps) {
   const location = useLocation();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // Save scroll position before navigation
+  useEffect(() => {
+    const scrollElement = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    if (scrollElement && scrollPosition > 0) {
+      scrollElement.scrollTop = scrollPosition;
+    }
+  }, [location.pathname]);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    setScrollPosition(target.scrollTop);
+  };
 
   const isActive = (href: string) => {
     if (href === "/owner") {
@@ -105,7 +120,7 @@ function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
           </div>
           {(!collapsed || isMobile) && (
             <div>
-              <h1 className="font-display font-bold text-lg text-white">Kopro</h1>
+              <h1 className="font-display font-bold text-lg text-white">KOPRO</h1>
               <p className="text-xs text-slate-400">Administration</p>
             </div>
           )}
@@ -113,7 +128,7 @@ function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 px-3 py-4" ref={scrollRef} onScrollCapture={handleScroll}>
         <nav className="space-y-6">
           {/* Main Section */}
           <div className="space-y-1">
