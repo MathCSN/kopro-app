@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Users, Loader2, MoreVertical, Eye, Mail, Building2, Plus } from "lucide-react";
+import { Search, Users, Loader2, MoreVertical, Eye, Mail, Building2, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -29,19 +30,31 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -67,7 +80,8 @@ type UserWithRole = {
   roles: UserRole[];
 };
 
-const ALL_ROLES: AppRole[] = ['owner', 'admin', 'manager', 'cs', 'resident'];
+// Rôles: owner = KOPRO (admin global), autres = par résidence
+const ALL_ROLES: AppRole[] = ['owner', 'manager', 'cs', 'resident'];
 
 export default function OwnerUsers() {
   const { user, logout } = useAuth();
@@ -79,11 +93,19 @@ export default function OwnerUsers() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedResidenceId, setSelectedResidenceId] = useState<string>("all");
+  const [residenceSearchOpen, setResidenceSearchOpen] = useState(false);
+  const [residenceSearchQuery, setResidenceSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [savingRoles, setSavingRoles] = useState(false);
   const [roleResidenceSelection, setRoleResidenceSelection] = useState<string>("");
+  const [roleResidenceSearchOpen, setRoleResidenceSearchOpen] = useState(false);
+  
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -207,6 +229,46 @@ export default function OwnerUsers() {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // Delete all user roles first
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userToDelete.id);
+      
+      if (rolesError) throw rolesError;
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userToDelete.id);
+      
+      if (profileError) throw profileError;
+
+      toast({
+        title: "Utilisateur supprimé",
+        description: `${userToDelete.email} a été supprimé.`,
+      });
+      
+      await fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer l'utilisateur.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    }
+  };
+
   if (!user) return null;
 
   const filteredByResidence = selectedResidenceId === 'all' 
@@ -221,27 +283,29 @@ export default function OwnerUsers() {
     (u.last_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
+  const filteredResidences = residences.filter(r =>
+    r.name.toLowerCase().includes(residenceSearchQuery.toLowerCase())
+  );
+
   const stats = {
     total: filteredByResidence.length,
     owners: filteredByResidence.filter(u => u.roles.some(r => r.role === 'owner')).length,
-    admins: filteredByResidence.filter(u => u.roles.some(r => r.role === 'admin')).length,
     managers: filteredByResidence.filter(u => u.roles.some(r => r.role === 'manager')).length,
+    support: filteredByResidence.filter(u => u.roles.some(r => r.role === 'cs')).length,
     residents: filteredByResidence.filter(u => u.roles.some(r => r.role === 'resident')).length,
   };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'owner': return 'default';
-      case 'admin': return 'secondary';
-      case 'manager': return 'outline';
+      case 'manager': return 'secondary';
       default: return 'outline';
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'owner': return 'Kopro';
-      case 'admin': return 'Admin';
+      case 'owner': return 'KOPRO';
       case 'manager': return 'Gestionnaire';
       case 'cs': return 'Support';
       case 'resident': return 'Résident';
@@ -255,6 +319,10 @@ export default function OwnerUsers() {
     }
     return userRoles.filter(r => r.role === 'owner' || r.residence_id === selectedResidenceId);
   };
+
+  const selectedResidenceName = selectedResidenceId === 'all' 
+    ? 'Toutes les résidences' 
+    : residences.find(r => r.id === selectedResidenceId)?.name || 'Résidence';
 
   if (isLoading) {
     return (
@@ -276,22 +344,54 @@ export default function OwnerUsers() {
           </div>
         </div>
 
-        {/* Residence selector */}
+        {/* Residence selector with search */}
         <div className="flex items-center gap-2">
           <Building2 className="h-4 w-4 text-muted-foreground" />
-          <Select value={selectedResidenceId} onValueChange={setSelectedResidenceId}>
-            <SelectTrigger className="w-[280px]">
-              <SelectValue placeholder="Sélectionner une résidence" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="all">Toutes les résidences</SelectItem>
-              {residences.map(residence => (
-                <SelectItem key={residence.id} value={residence.id}>
-                  {residence.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={residenceSearchOpen} onOpenChange={setResidenceSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-[280px] justify-between">
+                {selectedResidenceName}
+                <Search className="h-4 w-4 ml-2 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[280px] p-0 bg-popover" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Rechercher une résidence..." 
+                  value={residenceSearchQuery}
+                  onValueChange={setResidenceSearchQuery}
+                />
+                <CommandList>
+                  <CommandEmpty>Aucune résidence trouvée.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem 
+                      value="all"
+                      onSelect={() => {
+                        setSelectedResidenceId("all");
+                        setResidenceSearchOpen(false);
+                        setResidenceSearchQuery("");
+                      }}
+                    >
+                      Toutes les résidences
+                    </CommandItem>
+                    {filteredResidences.map(residence => (
+                      <CommandItem 
+                        key={residence.id} 
+                        value={residence.name}
+                        onSelect={() => {
+                          setSelectedResidenceId(residence.id);
+                          setResidenceSearchOpen(false);
+                          setResidenceSearchQuery("");
+                        }}
+                      >
+                        {residence.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Stats */}
@@ -305,19 +405,19 @@ export default function OwnerUsers() {
           <Card className="shadow-soft">
             <CardContent className="p-4">
               <p className="text-2xl font-bold">{stats.owners}</p>
-              <p className="text-sm text-muted-foreground">Kopro</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-soft">
-            <CardContent className="p-4">
-              <p className="text-2xl font-bold">{stats.admins}</p>
-              <p className="text-sm text-muted-foreground">Admins</p>
+              <p className="text-sm text-muted-foreground">KOPRO</p>
             </CardContent>
           </Card>
           <Card className="shadow-soft">
             <CardContent className="p-4">
               <p className="text-2xl font-bold">{stats.managers}</p>
               <p className="text-sm text-muted-foreground">Gestionnaires</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-soft">
+            <CardContent className="p-4">
+              <p className="text-2xl font-bold">{stats.support}</p>
+              <p className="text-sm text-muted-foreground">Support</p>
             </CardContent>
           </Card>
           <Card className="shadow-soft">
@@ -444,21 +544,41 @@ export default function OwnerUsers() {
                             <div className="space-y-3 pt-2 border-t">
                               <p className="text-xs text-muted-foreground">Ajouter un rôle</p>
                               
-                              {/* Residence selector for new role */}
+                              {/* Residence selector for new role with search */}
                               <div className="space-y-1">
                                 <label className="text-xs font-medium">Résidence</label>
-                                <Select value={roleResidenceSelection} onValueChange={setRoleResidenceSelection}>
-                                  <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue placeholder="Sélectionner une résidence..." />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-popover">
-                                    {residences.map(residence => (
-                                      <SelectItem key={residence.id} value={residence.id} className="text-xs">
-                                        {residence.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Popover open={roleResidenceSearchOpen} onOpenChange={setRoleResidenceSearchOpen}>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full h-8 text-xs justify-between">
+                                      {roleResidenceSelection 
+                                        ? residences.find(r => r.id === roleResidenceSelection)?.name 
+                                        : "Sélectionner une résidence..."}
+                                      <Search className="h-3 w-3 ml-2 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-full p-0 bg-popover" align="start">
+                                    <Command>
+                                      <CommandInput placeholder="Rechercher..." />
+                                      <CommandList>
+                                        <CommandEmpty>Aucune résidence.</CommandEmpty>
+                                        <CommandGroup>
+                                          {residences.map(residence => (
+                                            <CommandItem 
+                                              key={residence.id} 
+                                              value={residence.name}
+                                              onSelect={() => {
+                                                setRoleResidenceSelection(residence.id);
+                                                setRoleResidenceSearchOpen(false);
+                                              }}
+                                            >
+                                              {residence.name}
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      </CommandList>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
                               </div>
                               
                               {/* Role buttons */}
@@ -489,7 +609,7 @@ export default function OwnerUsers() {
                               
                               {!roleResidenceSelection && (
                                 <p className="text-xs text-muted-foreground italic">
-                                  Sélectionnez une résidence pour ajouter un rôle (sauf Kopro qui est global)
+                                  Sélectionnez une résidence pour ajouter un rôle (sauf KOPRO qui est global)
                                 </p>
                               )}
                             </div>
@@ -525,6 +645,17 @@ export default function OwnerUsers() {
                           }}>
                             <Mail className="h-4 w-4 mr-2" />
                             Envoyer email
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setUserToDelete(u);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -598,6 +729,30 @@ export default function OwnerUsers() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'utilisateur ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer <strong>{userToDelete?.email}</strong> ? 
+              Cette action supprimera tous ses rôles et ne peut pas être annulée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </OwnerLayout>
   );
 }
