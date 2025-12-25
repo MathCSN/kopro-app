@@ -43,6 +43,7 @@ import OwnerIntegrations from "./pages/OwnerIntegrations";
 import OwnerEmails from "./pages/OwnerEmails";
 import OwnerStorage from "./pages/OwnerStorage";
 import OwnerAudit from "./pages/OwnerAudit";
+import QuotePublic from "./pages/QuotePublic";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/pending" element={<Pending />} />
             <Route path="/join" element={<JoinResidence />} />
+            <Route path="/quote/:quoteNumber" element={<QuotePublic />} />
             {/* Owner routes - Global platform admin */}
             <Route path="/owner" element={<OwnerRoute><OwnerDashboard /></OwnerRoute>} />
             <Route path="/owner/residences" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
