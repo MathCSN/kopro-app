@@ -918,6 +918,93 @@ export type Database = {
         }
         Relationships: []
       }
+      quotes: {
+        Row: {
+          activation_price: number
+          apartments_count: number
+          client_address: string | null
+          client_company: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          monthly_price_per_apartment: number
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          quote_number: string
+          residences_count: number
+          sender_address: string | null
+          sender_email: string | null
+          sender_logo_url: string | null
+          sender_name: string | null
+          sender_phone: string | null
+          sender_siren: string | null
+          status: string
+          stripe_payment_id: string | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          activation_price?: number
+          apartments_count?: number
+          client_address?: string | null
+          client_company?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          monthly_price_per_apartment?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          quote_number: string
+          residences_count?: number
+          sender_address?: string | null
+          sender_email?: string | null
+          sender_logo_url?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          sender_siren?: string | null
+          status?: string
+          stripe_payment_id?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          activation_price?: number
+          apartments_count?: number
+          client_address?: string | null
+          client_company?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          monthly_price_per_apartment?: number
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          quote_number?: string
+          residences_count?: number
+          sender_address?: string | null
+          sender_email?: string | null
+          sender_logo_url?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          sender_siren?: string | null
+          status?: string
+          stripe_payment_id?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       reservations: {
         Row: {
           created_at: string
