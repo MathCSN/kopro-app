@@ -4,10 +4,7 @@ import {
   Home,
   Newspaper,
   Ticket,
-  Calendar,
-  Package,
   Users,
-  ShoppingBag,
   Vote,
   CreditCard,
   FileText,
@@ -23,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { ResidenceSelector } from "./ResidenceSelector";
 
 interface NavItem {
   title: string;
@@ -37,10 +34,7 @@ const mainNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: Home },
   { title: "Actualités", href: "/newsfeed", icon: Newspaper },
   { title: "Incidents", href: "/tickets", icon: Ticket },
-  { title: "Réservations", href: "/reservations", icon: Calendar },
-  { title: "Colis", href: "/packages", icon: Package },
-  { title: "Visiteurs", href: "/visitors", icon: Users },
-  { title: "Petites annonces", href: "/marketplace", icon: ShoppingBag },
+  { title: "Locataires", href: "/tenants", icon: Users, roles: ["manager", "admin", "owner"] },
 ];
 
 const managementNavItems: NavItem[] = [
@@ -52,7 +46,7 @@ const managementNavItems: NavItem[] = [
 ];
 
 const rentalNavItems: NavItem[] = [
-  { title: "Location / Vacances", href: "/rental", icon: Building2, roles: ["manager", "admin", "owner"] },
+  { title: "Location", href: "/rental", icon: Building2, roles: ["manager", "admin", "owner"] },
 ];
 
 const adminNavItems: NavItem[] = [
@@ -119,7 +113,6 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
             </div>
             <div>
               <h1 className="font-display font-bold text-lg text-sidebar-foreground">Kopro</h1>
-              <p className="text-xs text-sidebar-foreground/60">Résidence du Parc</p>
             </div>
           </div>
         )}
@@ -128,6 +121,11 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
             <Building2 className="h-5 w-5 text-accent-foreground" />
           </div>
         )}
+      </div>
+
+      {/* Residence Selector */}
+      <div className="px-3 py-3 border-b border-sidebar-border">
+        <ResidenceSelector collapsed={collapsed} />
       </div>
 
       {/* Navigation */}
@@ -140,7 +138,7 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
                 Principal
               </p>
             )}
-            {mainNavItems.map((item) => (
+            {filterByRole(mainNavItems).map((item) => (
               <NavItemLink key={item.href} item={item} />
             ))}
           </div>

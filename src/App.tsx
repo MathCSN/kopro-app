@@ -30,6 +30,7 @@ import Rental from "./pages/Rental";
 import NewVacancy from "./pages/NewVacancy";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import Tenants from "./pages/Tenants";
 
 // Owner Pages
 import OwnerDashboard from "./pages/OwnerDashboard";
@@ -84,6 +85,9 @@ const App = () => (
             <Route path="/tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
             <Route path="/tickets/new" element={<ProtectedRoute><NewTicket /></ProtectedRoute>} />
             <Route path="/tickets/:id" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
+            
+            {/* Tenants - Manager only */}
+            <Route path="/tenants" element={<ProtectedRoute requiredRole="manager"><Tenants /></ProtectedRoute>} />
             
             {/* Reservations */}
             <Route path="/reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
