@@ -403,6 +403,63 @@ export type Database = {
           },
         ]
       }
+      document_requests: {
+        Row: {
+          created_at: string | null
+          doc_type: string
+          email_template_id: string | null
+          id: string
+          notes: string | null
+          received_at: string | null
+          requested_by: string
+          residence_id: string
+          sent_at: string | null
+          status: string | null
+          tenant_user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          doc_type: string
+          email_template_id?: string | null
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          requested_by: string
+          residence_id: string
+          sent_at?: string | null
+          status?: string | null
+          tenant_user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          doc_type?: string
+          email_template_id?: string | null
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          requested_by?: string
+          residence_id?: string
+          sent_at?: string | null
+          status?: string | null
+          tenant_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requests_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           category: string | null
@@ -449,6 +506,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "documents_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string | null
+          created_by: string | null
+          footer_text: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          residence_id: string | null
+          subject: string
+          type: string
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          created_by?: string | null
+          footer_text?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          residence_id?: string | null
+          subject: string
+          type?: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          created_by?: string | null
+          footer_text?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          residence_id?: string | null
+          subject?: string
+          type?: string
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_residence_id_fkey"
             columns: ["residence_id"]
             isOneToOne: false
             referencedRelation: "residences"
@@ -1005,6 +1115,75 @@ export type Database = {
         }
         Relationships: []
       }
+      rent_receipts: {
+        Row: {
+          charges_amount: number | null
+          created_at: string | null
+          id: string
+          lot_id: string | null
+          payment_date: string | null
+          payment_received: boolean | null
+          pdf_url: string | null
+          period_end: string
+          period_start: string
+          rent_amount: number
+          residence_id: string
+          sent_at: string | null
+          sent_by: string | null
+          tenant_user_id: string
+          total_amount: number
+        }
+        Insert: {
+          charges_amount?: number | null
+          created_at?: string | null
+          id?: string
+          lot_id?: string | null
+          payment_date?: string | null
+          payment_received?: boolean | null
+          pdf_url?: string | null
+          period_end: string
+          period_start: string
+          rent_amount: number
+          residence_id: string
+          sent_at?: string | null
+          sent_by?: string | null
+          tenant_user_id: string
+          total_amount: number
+        }
+        Update: {
+          charges_amount?: number | null
+          created_at?: string | null
+          id?: string
+          lot_id?: string | null
+          payment_date?: string | null
+          payment_received?: boolean | null
+          pdf_url?: string | null
+          period_end?: string
+          period_start?: string
+          rent_amount?: number
+          residence_id?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          tenant_user_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rent_receipts_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rent_receipts_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservations: {
         Row: {
           created_at: string
@@ -1090,6 +1269,75 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      tenant_documents: {
+        Row: {
+          created_at: string | null
+          doc_type: string
+          expires_at: string | null
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          occupancy_id: string | null
+          residence_id: string
+          updated_at: string | null
+          user_id: string
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          doc_type: string
+          expires_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          occupancy_id?: string | null
+          residence_id: string
+          updated_at?: string | null
+          user_id: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          doc_type?: string
+          expires_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          occupancy_id?: string | null
+          residence_id?: string
+          updated_at?: string | null
+          user_id?: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_documents_occupancy_id_fkey"
+            columns: ["occupancy_id"]
+            isOneToOne: false
+            referencedRelation: "occupancies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_documents_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenant_dossiers: {
         Row: {
