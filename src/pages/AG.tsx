@@ -1,11 +1,11 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { Vote, Plus, Calendar, FileText, Users, CheckCircle2, Clock, ArrowLeft } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Vote, Calendar, FileText, ArrowLeft } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { CreateAGDialog } from "@/components/ag/CreateAGDialog";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -194,10 +194,7 @@ export default function AG() {
             <p className="text-muted-foreground mt-1">Votes et résolutions de copropriété</p>
           </div>
           {isManager() && (
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Créer une AG
-            </Button>
+            <CreateAGDialog onCreated={fetchAssemblies} />
           )}
         </div>
 

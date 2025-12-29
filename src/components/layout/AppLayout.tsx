@@ -14,25 +14,27 @@ export function AppLayout({ children, userRole = "resident", onLogout }: AppLayo
   return (
     <ResidenceProvider>
       <div className="flex min-h-screen w-full bg-background">
-        {/* Desktop Sidebar */}
-        <AppSidebar userRole={userRole} onLogout={onLogout} />
+        {/* Desktop Sidebar - Fixed position */}
+        <div className="hidden md:block">
+          <AppSidebar userRole={userRole} onLogout={onLogout} />
+        </div>
 
         {/* Mobile Navigation */}
         <MobileNav userRole={userRole} onLogout={onLogout} />
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-h-screen">
+        <main className="flex-1 flex flex-col min-h-screen w-full">
           {/* Mobile top padding - increased for residence selector */}
-          <div className="h-[104px] md:hidden" />
+          <div className="h-[104px] md:hidden shrink-0" />
           
           <ScrollArea className="flex-1">
-            <div className="p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
+            <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
               {children}
             </div>
           </ScrollArea>
           
           {/* Mobile bottom padding */}
-          <div className="h-16 md:hidden" />
+          <div className="h-20 md:hidden shrink-0" />
         </main>
       </div>
     </ResidenceProvider>

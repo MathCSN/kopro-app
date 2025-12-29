@@ -8,14 +8,15 @@ import {
   FolderOpen,
   File,
   Clock,
-  Upload,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ImportDocumentDialog } from "@/components/documents/ImportDocumentDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { useResidence } from "@/contexts/ResidenceContext";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Document {
@@ -40,6 +41,7 @@ const categories = [
 
 export default function Documents() {
   const { user, profile, logout, isManager } = useAuth();
+  const { selectedResidence } = useResidence();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,14 +52,20 @@ export default function Documents() {
     if (user) {
       fetchDocuments();
     }
-  }, [user]);
+  }, [user, selectedResidence]);
 
   const fetchDocuments = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('documents')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (selectedResidence) {
+        query = query.eq('residence_id', selectedResidence.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setDocuments(data || []);
@@ -114,10 +122,7 @@ export default function Documents() {
             <p className="text-muted-foreground mt-1">Bibliothèque documentaire de la copropriété</p>
           </div>
           {isManager() && (
-            <Button>
-              <Upload className="h-4 w-4 mr-2" />
-              Importer
-            </Button>
+            <ImportDocumentDialog onImported={fetchDocuments} />
           )}
         </div>
 
