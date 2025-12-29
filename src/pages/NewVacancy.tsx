@@ -170,9 +170,15 @@ export default function NewVacancy() {
               <p className="text-muted-foreground mb-4">
                 Vous devez d'abord avoir des logements vacants pour créer une annonce.
               </p>
-              <Button variant="outline" onClick={() => navigate('/rental')}>
-                Retour à la gestion locative
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button variant="outline" onClick={() => navigate('/rental')}>
+                  Retour à la gestion locative
+                </Button>
+                <Button onClick={() => navigate('/rental/units/new')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer un logement
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
