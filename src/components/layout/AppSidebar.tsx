@@ -100,7 +100,7 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col h-screen gradient-sidebar border-r border-sidebar-border transition-all duration-300",
+        "flex flex-col h-screen gradient-sidebar border-r border-sidebar-border transition-all duration-300 sticky top-0",
         collapsed ? "w-[72px]" : "w-64"
       )}
     >

@@ -1,9 +1,11 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Lock, Plus, FileText, Download, Trash2, FolderOpen } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock, FileText, Download, Trash2, FolderOpen } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { VaultUploadDialog } from "@/components/vault/VaultUploadDialog";
+import { toast } from "sonner";
 
 const sampleVaultFiles = [
   {
@@ -46,10 +48,7 @@ export default function Vault() {
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Coffre-fort Personnel</h1>
             <p className="text-muted-foreground mt-1">Vos documents privés et sécurisés</p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un document
-          </Button>
+          <VaultUploadDialog onUploaded={() => toast.success("Document ajouté")} />
         </div>
 
         <Card className="shadow-soft border-primary/20 bg-primary/5">
@@ -102,10 +101,7 @@ export default function Vault() {
               <p className="text-muted-foreground mb-4">
                 Commencez à sauvegarder vos documents importants en toute sécurité.
               </p>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter un document
-              </Button>
+              <VaultUploadDialog onUploaded={() => {}} />
             </CardContent>
           </Card>
         )}

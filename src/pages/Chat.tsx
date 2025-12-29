@@ -1,11 +1,12 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { MessageCircle, Plus, Send } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { NewConversationDialog } from "@/components/chat/NewConversationDialog";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -177,7 +178,7 @@ export default function Chat() {
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-bold">Messages</h1>
-          <Button size="sm"><Plus className="h-4 w-4 mr-2" />Nouveau</Button>
+          <NewConversationDialog onCreated={(id) => navigate(`/chat/${id}`)} />
         </div>
 
         {loading ? (
