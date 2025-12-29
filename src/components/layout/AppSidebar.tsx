@@ -46,7 +46,10 @@ const managementNavItems: NavItem[] = [
 ];
 
 const rentalNavItems: NavItem[] = [
-  { title: "Location", href: "/rental", icon: Building2, roles: ["manager", "admin", "owner"] },
+  { title: "Gestion locative", href: "/rental", icon: Building2, roles: ["manager", "admin", "owner"] },
+  { title: "Logements", href: "/rental/units", icon: Home, roles: ["manager", "admin", "owner"] },
+  { title: "Annonces", href: "/rental/vacancies", icon: FileText, roles: ["manager", "admin", "owner"] },
+  { title: "Candidatures", href: "/rental/applications", icon: Users, roles: ["manager", "admin", "owner"] },
 ];
 
 const adminNavItems: NavItem[] = [

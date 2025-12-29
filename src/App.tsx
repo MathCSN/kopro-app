@@ -27,6 +27,10 @@ import Directory from "./pages/Directory";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
 import Rental from "./pages/Rental";
+import RentalUnits from "./pages/RentalUnits";
+import NewUnit from "./pages/NewUnit";
+import RentalVacancies from "./pages/RentalVacancies";
+import RentalApplications from "./pages/RentalApplications";
 import NewVacancy from "./pages/NewVacancy";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
@@ -137,8 +141,12 @@ const App = () => (
             
             {/* Rental module - requires manager/owner */}
             <Route path="/rental" element={<ProtectedRoute requireRental><Rental /></ProtectedRoute>} />
+            <Route path="/rental/units" element={<ProtectedRoute requireRental><RentalUnits /></ProtectedRoute>} />
+            <Route path="/rental/units/new" element={<ProtectedRoute requireRental><NewUnit /></ProtectedRoute>} />
+            <Route path="/rental/vacancies" element={<ProtectedRoute requireRental><RentalVacancies /></ProtectedRoute>} />
             <Route path="/rental/vacancies/new" element={<ProtectedRoute requireRental><NewVacancy /></ProtectedRoute>} />
             <Route path="/rental/vacancies/:id" element={<ProtectedRoute requireRental><Rental /></ProtectedRoute>} />
+            <Route path="/rental/applications" element={<ProtectedRoute requireRental><RentalApplications /></ProtectedRoute>} />
             <Route path="/rental/applications/:id" element={<ProtectedRoute requireRental><Rental /></ProtectedRoute>} />
             
             {/* Help */}
