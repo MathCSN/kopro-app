@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Plug, CreditCard, Building, FileText, Phone, Mail, 
@@ -22,6 +22,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StripeConfigForm } from "@/components/integrations/StripeConfigForm";
+import { supabase } from "@/integrations/supabase/client";
 
 type IntegrationStatus = 'connected' | 'disconnected' | 'pending';
 
@@ -114,13 +116,31 @@ export default function OwnerIntegrations() {
   // Qonto specific
   const [qontoApiKey, setQontoApiKey] = useState("");
   
-  // Stripe specific  
-  const [stripePublishableKey, setStripePublishableKey] = useState("");
-  const [stripeSecretKey, setStripeSecretKey] = useState("");
-  
   // 2FA specific
   const [enable2FA, setEnable2FA] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+
+  // Load Stripe connection status on mount
+  useEffect(() => {
+    const checkStripeStatus = async () => {
+      try {
+        const { data } = await supabase
+          .from("app_config")
+          .select("value")
+          .eq("key", "stripe_secret_key")
+          .single();
+        
+        if (data?.value) {
+          setIntegrations(prev => prev.map(i => 
+            i.id === "stripe" ? { ...i, status: "connected" as IntegrationStatus } : i
+          ));
+        }
+      } catch (error) {
+        // No config found, that's ok
+      }
+    };
+    checkStripeStatus();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -207,32 +227,20 @@ export default function OwnerIntegrations() {
     switch (selectedIntegration.id) {
       case 'stripe':
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Clé publique (Publishable Key)</Label>
-              <Input 
-                value={stripePublishableKey}
-                onChange={(e) => setStripePublishableKey(e.target.value)}
-                placeholder="pk_live_..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Clé secrète (Secret Key)</Label>
-              <Input 
-                type="password"
-                value={stripeSecretKey}
-                onChange={(e) => setStripeSecretKey(e.target.value)}
-                placeholder="sk_live_..."
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Mode test</p>
-                <p className="text-sm text-muted-foreground">Utiliser les clés de test</p>
-              </div>
-              <Switch />
-            </div>
-          </div>
+          <StripeConfigForm 
+            onConnected={() => {
+              setIntegrations(prev => prev.map(i => 
+                i.id === 'stripe' ? { ...i, status: 'connected' as IntegrationStatus } : i
+              ));
+              setIsConfigDialogOpen(false);
+            }}
+            onDisconnected={() => {
+              setIntegrations(prev => prev.map(i => 
+                i.id === 'stripe' ? { ...i, status: 'disconnected' as IntegrationStatus } : i
+              ));
+              setIsConfigDialogOpen(false);
+            }}
+          />
         );
 
       case 'qonto':
@@ -416,7 +424,7 @@ export default function OwnerIntegrations() {
 
       {/* Config Dialog */}
       <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-        <DialogContent>
+        <DialogContent className={selectedIntegration?.id === 'stripe' ? 'max-w-2xl max-h-[90vh] overflow-y-auto' : ''}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {selectedIntegration && (
@@ -433,15 +441,18 @@ export default function OwnerIntegrations() {
 
           {renderConfigForm()}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleConnect} disabled={isConnecting}>
-              {isConnecting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {selectedIntegration?.status === 'connected' ? 'Mettre à jour' : 'Connecter'}
-            </Button>
-          </DialogFooter>
+          {/* Only show footer buttons for non-Stripe integrations */}
+          {selectedIntegration?.id !== 'stripe' && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleConnect} disabled={isConnecting}>
+                {isConnecting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {selectedIntegration?.status === 'connected' ? 'Mettre à jour' : 'Connecter'}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </OwnerLayout>
