@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Building2, Trash2, Edit, Home } from "lucide-react";
+import { Plus, Search, Building2, Trash2, Edit, Home, Download } from "lucide-react";
 import { toast } from "sonner";
 import { BuildingFormDialog } from "./BuildingFormDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { exportToCsv } from "@/lib/exportCsv";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -128,10 +129,38 @@ export function BuildingsManagement() {
             className="pl-10"
           />
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un bâtiment
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!filteredBuildings || filteredBuildings.length === 0) {
+                toast.error("Aucun bâtiment à exporter");
+                return;
+              }
+              exportToCsv(
+                filteredBuildings.map((building) => ({
+                  name: building.name,
+                  address: building.address || "",
+                  lots_count: lotsCount?.[building.id] || 0,
+                })),
+                `batiments-${selectedResidence.name.replace(/\s+/g, "-").toLowerCase()}`,
+                [
+                  { key: "name", header: "Nom" },
+                  { key: "address", header: "Adresse" },
+                  { key: "lots_count", header: "Nombre de lots" },
+                ]
+              );
+              toast.success("Export CSV téléchargé");
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Exporter</span>
+          </Button>
+          <Button onClick={() => setIsFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un bâtiment
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

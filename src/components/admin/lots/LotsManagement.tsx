@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, Trash2, Edit, Upload, Home, X } from "lucide-react";
+import { Plus, Search, Building2, Trash2, Edit, Upload, Home, X, Download } from "lucide-react";
 import { toast } from "sonner";
+import { exportToCsv } from "@/lib/exportCsv";
 import { LotFormDialog } from "./LotFormDialog";
 import { BulkCreateDialog } from "./BulkCreateDialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -178,6 +179,44 @@ export function LotsManagement() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (!filteredLots || filteredLots.length === 0) {
+                  toast.error("Aucun lot à exporter");
+                  return;
+                }
+                exportToCsv(
+                  filteredLots.map((lot) => ({
+                    lot_number: lot.lot_number,
+                    floor: lot.floor,
+                    door: lot.door,
+                    type: lot.type || "Appartement",
+                    surface: lot.surface,
+                    rooms: lot.rooms,
+                    tantiemes: lot.tantiemes,
+                    building: lot.buildings?.name || "",
+                    join_code: lot.join_code,
+                  })),
+                  `lots-${selectedResidence.name.replace(/\s+/g, "-").toLowerCase()}`,
+                  [
+                    { key: "lot_number", header: "N° Lot" },
+                    { key: "floor", header: "Étage" },
+                    { key: "door", header: "Porte" },
+                    { key: "type", header: "Type" },
+                    { key: "surface", header: "Surface (m²)" },
+                    { key: "rooms", header: "Pièces" },
+                    { key: "tantiemes", header: "Tantièmes" },
+                    { key: "building", header: "Bâtiment" },
+                    { key: "join_code", header: "Code" },
+                  ]
+                );
+                toast.success("Export CSV téléchargé");
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Exporter</span>
+            </Button>
             <Button variant="outline" onClick={() => setIsBulkOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Création en masse</span>
