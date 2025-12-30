@@ -19,9 +19,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Mail, Send, FileText, Receipt, TrendingUp, Copy } from "lucide-react";
+import { Mail, Send, FileText, Receipt, TrendingUp, Copy, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSendEmail } from "@/hooks/useSendEmail";
 
 interface EmailTemplate {
   id: string;
@@ -69,13 +70,13 @@ export function EmailTemplateEditor({
   residenceId,
   onSend,
 }: EmailTemplateEditorProps) {
+  const { sendEmail, isSending } = useSendEmail();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [documentType, setDocumentType] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState(false);
 
   // For rent revision
   const [newRent, setNewRent] = useState("");
@@ -158,24 +159,31 @@ export function EmailTemplateEditor({
       return;
     }
 
-    setSending(true);
-    try {
-      const finalSubject = replaceVariables(subject);
-      const finalBody = replaceVariables(body);
+    const finalSubject = replaceVariables(subject);
+    const finalBody = replaceVariables(body);
 
-      // For now, just show success - actual email sending requires edge function
-      toast.success(`Email préparé pour ${tenant.email}`);
-      toast.info("L'envoi d'emails sera disponible prochainement");
-      
+    const success = await sendEmail({
+      to: tenant.email,
+      subject: finalSubject,
+      body: finalBody,
+      templateId: selectedTemplate?.id,
+      variables: {
+        tenant_name: tenant.name,
+        document_type: documentType,
+        period_start: periodStart,
+        period_end: periodEnd,
+        rent_amount: String(tenant.rent_amount || 0),
+        charges_amount: String(tenant.charges_amount || 0),
+        new_rent: newRent,
+        percentage,
+      },
+    });
+
+    if (success) {
       if (onSend) {
         onSend(finalSubject, finalBody);
       }
-      
       onOpenChange(false);
-    } catch (error) {
-      toast.error("Erreur lors de l'envoi");
-    } finally {
-      setSending(false);
     }
   };
 
@@ -372,9 +380,10 @@ export function EmailTemplateEditor({
             <Copy className="h-4 w-4 mr-2" />
             Copier
           </Button>
-          <Button onClick={handleSend} disabled={sending || !tenant.email}>
+          <Button onClick={handleSend} disabled={isSending || !tenant.email}>
+            {isSending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Send className="h-4 w-4 mr-2" />
-            {sending ? "Envoi..." : "Envoyer"}
+            {isSending ? "Envoi..." : "Envoyer"}
           </Button>
         </DialogFooter>
       </DialogContent>

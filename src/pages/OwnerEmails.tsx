@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Plus, Search, Edit2, Trash2, Send } from "lucide-react";
+import { Mail, Plus, Search, Edit2, Trash2, Send, Loader2, Eye, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { OwnerLayout } from "@/components/layout/OwnerLayout";
 import { useToast } from "@/hooks/use-toast";
+import { useSendEmail } from "@/hooks/useSendEmail";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,6 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type EmailTemplate = {
   id: string;
@@ -66,17 +76,26 @@ export default function OwnerEmails() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { sendEmail, isSending } = useSendEmail();
   
   const [templates, setTemplates] = useState<EmailTemplate[]>(defaultTemplates);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     subject: '',
     content: '',
     type: 'custom' as EmailTemplate['type'],
   });
+  
+  // Send email state
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [customVariables, setCustomVariables] = useState<Record<string, string>>({});
 
   const handleLogout = () => {
     logout();
@@ -98,6 +117,26 @@ export default function OwnerEmails() {
       type: template.type,
     });
     setIsDialogOpen(true);
+  };
+
+  const openSendDialog = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+    setRecipientEmail("");
+    setRecipientName("");
+    setCustomVariables({
+      nom: "",
+      email: "",
+      residence: "",
+      date: new Date().toLocaleDateString("fr-FR"),
+      montant: "",
+      document: "",
+    });
+    setIsSendDialogOpen(true);
+  };
+
+  const openPreview = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+    setIsPreviewOpen(true);
   };
 
   const handleSave = () => {
@@ -131,11 +170,35 @@ export default function OwnerEmails() {
     toast({ title: "Template supprimé", description: "Le template a été supprimé." });
   };
 
-  const handleTestSend = (template: EmailTemplate) => {
-    toast({ 
-      title: "Email de test envoyé", 
-      description: `Un email de test "${template.subject}" a été envoyé à votre adresse.` 
+  const replaceVariables = (text: string, variables: Record<string, string>) => {
+    let result = text;
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+      result = result.replace(regex, value || `{{${key}}}`);
+    }
+    return result;
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedTemplate || !recipientEmail) {
+      toast({ title: "Erreur", description: "Veuillez renseigner l'email du destinataire.", variant: "destructive" });
+      return;
+    }
+
+    const variables = { ...customVariables, nom: recipientName || customVariables.nom };
+    const processedSubject = replaceVariables(selectedTemplate.subject, variables);
+    const processedBody = replaceVariables(selectedTemplate.content, variables);
+
+    const success = await sendEmail({
+      to: recipientEmail,
+      subject: processedSubject,
+      body: processedBody,
+      variables,
     });
+
+    if (success) {
+      setIsSendDialogOpen(false);
+    }
   };
 
   if (!user) return null;
@@ -218,14 +281,17 @@ export default function OwnerEmails() {
                       {new Date(template.createdAt).toLocaleDateString('fr-FR')}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleTestSend(template)}>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openPreview(template)} title="Aperçu">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openSendDialog(template)} title="Envoyer">
                           <Send className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)}>
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(template)} title="Modifier">
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)}>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)} title="Supprimer">
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -281,6 +347,145 @@ export default function OwnerEmails() {
               </Button>
               <Button onClick={handleSave}>
                 {editingTemplate ? 'Enregistrer' : 'Créer'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Send Email Dialog */}
+        <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Envoyer un email
+              </DialogTitle>
+              <DialogDescription>
+                Template: {selectedTemplate?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Email du destinataire *</Label>
+                  <Input
+                    type="email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    placeholder="email@exemple.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nom du destinataire</Label>
+                  <Input
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    placeholder="Jean Dupont"
+                  />
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium">Variables dynamiques</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Résidence</Label>
+                    <Input
+                      value={customVariables.residence || ""}
+                      onChange={(e) => setCustomVariables({ ...customVariables, residence: e.target.value })}
+                      placeholder="Nom de la résidence"
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Montant</Label>
+                    <Input
+                      value={customVariables.montant || ""}
+                      onChange={(e) => setCustomVariables({ ...customVariables, montant: e.target.value })}
+                      placeholder="1000"
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Date</Label>
+                    <Input
+                      value={customVariables.date || ""}
+                      onChange={(e) => setCustomVariables({ ...customVariables, date: e.target.value })}
+                      placeholder="01/01/2024"
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Document</Label>
+                    <Input
+                      value={customVariables.document || ""}
+                      onChange={(e) => setCustomVariables({ ...customVariables, document: e.target.value })}
+                      placeholder="Attestation d'assurance"
+                      className="h-8"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {selectedTemplate && (
+                <div className="space-y-2">
+                  <Label>Aperçu du contenu</Label>
+                  <div className="p-4 bg-muted/50 rounded-lg text-sm whitespace-pre-wrap border">
+                    <p className="font-medium mb-2">Objet: {replaceVariables(selectedTemplate.subject, { ...customVariables, nom: recipientName })}</p>
+                    <p className="text-muted-foreground">{replaceVariables(selectedTemplate.content, { ...customVariables, nom: recipientName })}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSendDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleSendEmail} disabled={isSending || !recipientEmail}>
+                {isSending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Send className="h-4 w-4 mr-2" />
+                Envoyer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview Dialog */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Aperçu: {selectedTemplate?.name}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedTemplate && (
+              <div className="space-y-4 py-4">
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Objet</p>
+                  <p className="font-medium">{selectedTemplate.subject}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">Contenu</p>
+                  <div className="whitespace-pre-wrap">{selectedTemplate.content}</div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <p className="text-sm text-muted-foreground w-full">Variables utilisées:</p>
+                  {["{{nom}}", "{{email}}", "{{residence}}", "{{date}}", "{{montant}}", "{{document}}"].map(v => (
+                    selectedTemplate.content.includes(v) && (
+                      <Badge key={v} variant="secondary">{v}</Badge>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+                Fermer
+              </Button>
+              <Button onClick={() => { setIsPreviewOpen(false); openSendDialog(selectedTemplate!); }}>
+                <Send className="h-4 w-4 mr-2" />
+                Envoyer avec ce template
               </Button>
             </DialogFooter>
           </DialogContent>
