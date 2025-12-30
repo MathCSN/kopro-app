@@ -52,6 +52,123 @@ export type Database = {
           },
         ]
       }
+      ai_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          residence_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          residence_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          residence_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_knowledge_documents: {
+        Row: {
+          content_text: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string
+          id: string
+          name: string
+          residence_id: string
+          updated_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url: string
+          id?: string
+          name: string
+          residence_id: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          name?: string
+          residence_id?: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_knowledge_documents_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          role: string
+          sources: Json | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+          sources?: Json | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          sources?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_config: {
         Row: {
           created_at: string | null
@@ -1394,6 +1511,50 @@ export type Database = {
             foreignKeyName: "reservations_residence_id_fkey"
             columns: ["residence_id"]
             isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      residence_ai_settings: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          fallback_contact_email: string | null
+          fallback_contact_name: string | null
+          fallback_contact_phone: string | null
+          id: string
+          residence_id: string
+          updated_at: string | null
+          welcome_message: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          fallback_contact_email?: string | null
+          fallback_contact_name?: string | null
+          fallback_contact_phone?: string | null
+          id?: string
+          residence_id: string
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          fallback_contact_email?: string | null
+          fallback_contact_name?: string | null
+          fallback_contact_phone?: string | null
+          id?: string
+          residence_id?: string
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "residence_ai_settings_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: true
             referencedRelation: "residences"
             referencedColumns: ["id"]
           },

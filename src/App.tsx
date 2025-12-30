@@ -34,6 +34,7 @@ import Tenants from "./pages/Tenants";
 import Profile from "./pages/Profile";
 import Household from "./pages/Household";
 import ServiceProviders from "./pages/ServiceProviders";
+import AIAssistant from "./pages/AIAssistant";
 
 // Owner Pages
 import OwnerDashboard from "./pages/OwnerDashboard";
@@ -120,6 +121,9 @@ const App = () => (
             {/* Chat */}
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            
+            {/* AI Assistant */}
+            <Route path="/assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
             
             {/* Admin - requires manager role */}
             <Route path="/admin" element={<ProtectedRoute requiredRole="manager"><Admin /></ProtectedRoute>} />

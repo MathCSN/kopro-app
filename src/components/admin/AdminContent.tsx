@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, Users, Building2, FileText, Home, Mail, Wrench, Landmark } from "lucide-react";
+import { Settings, Users, Building2, FileText, Home, Mail, Wrench, Landmark, Bot } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResidence } from "@/contexts/ResidenceContext";
@@ -7,6 +7,7 @@ import { SmtpConfigForm } from "@/components/settings/SmtpConfigForm";
 import { LotsManagement } from "@/components/admin/lots/LotsManagement";
 import { UsersManagement } from "@/components/admin/users/UsersManagement";
 import { BuildingsManagement } from "@/components/admin/buildings/BuildingsManagement";
+import { AISettingsTab } from "@/components/admin/AISettingsTab";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -39,6 +40,10 @@ export function AdminContent() {
           <TabsTrigger value="users" className="gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Utilisateurs</span>
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="gap-2">
+            <Bot className="h-4 w-4" />
+            <span className="hidden sm:inline">Assistant IA</span>
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
             <FileText className="h-4 w-4" />
@@ -105,6 +110,10 @@ export function AdminContent() {
 
         <TabsContent value="users">
           <UsersManagement />
+        </TabsContent>
+
+        <TabsContent value="ai">
+          <AISettingsTab />
         </TabsContent>
 
         <TabsContent value="templates">
