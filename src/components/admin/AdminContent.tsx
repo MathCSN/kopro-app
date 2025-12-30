@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Settings, Users, Building2, FileText, Home, Mail, Wrench } from "lucide-react";
+import { Settings, Users, Building2, FileText, Home, Mail, Wrench, Landmark } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { SmtpConfigForm } from "@/components/settings/SmtpConfigForm";
 import { LotsManagement } from "@/components/admin/lots/LotsManagement";
 import { UsersManagement } from "@/components/admin/users/UsersManagement";
+import { BuildingsManagement } from "@/components/admin/buildings/BuildingsManagement";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -27,9 +28,9 @@ export function AdminContent() {
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Aperçu</span>
           </TabsTrigger>
-          <TabsTrigger value="residence" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Résidence</span>
+          <TabsTrigger value="buildings" className="gap-2">
+            <Landmark className="h-4 w-4" />
+            <span className="hidden sm:inline">Bâtiments</span>
           </TabsTrigger>
           <TabsTrigger value="lots" className="gap-2">
             <Home className="h-4 w-4" />
@@ -57,11 +58,11 @@ export function AdminContent() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card 
               className="cursor-pointer hover:shadow-medium transition-shadow" 
-              onClick={() => setActiveTab("residence")}
+              onClick={() => setActiveTab("buildings")}
             >
               <CardContent className="p-6 text-center">
-                <Building2 className="h-8 w-8 mx-auto mb-2 text-primary" />
-                <p className="font-medium">Résidence</p>
+                <Landmark className="h-8 w-8 mx-auto mb-2 text-primary" />
+                <p className="font-medium">Bâtiments</p>
               </CardContent>
             </Card>
             <Card 
@@ -94,31 +95,8 @@ export function AdminContent() {
           </div>
         </TabsContent>
 
-        <TabsContent value="residence">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gestion de la résidence</CardTitle>
-              <CardDescription>
-                {selectedResidence ? selectedResidence.name : "Sélectionnez une résidence"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" onClick={() => handleFeatureClick("Modifier les informations")}>
-                  Modifier les informations
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Gérer les bâtiments")}>
-                  Gérer les bâtiments
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Paramètres de la résidence")}>
-                  Paramètres de la résidence
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Exporter les données")}>
-                  Exporter les données
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="buildings">
+          <BuildingsManagement />
         </TabsContent>
 
         <TabsContent value="lots">
