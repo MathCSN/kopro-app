@@ -1,1 +1,7 @@
 project_id = "siotixqzwlfcrseveiwd"
+
+[functions.test-stripe-connection]
+verify_jwt = false
+
+[functions.create-test-users]
+verify_jwt = false
