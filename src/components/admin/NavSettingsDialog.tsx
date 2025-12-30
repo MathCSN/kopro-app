@@ -1,5 +1,22 @@
 import { useState, useEffect } from "react";
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -10,21 +27,206 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { GripVertical, RotateCcw, Save, Eye, EyeOff, ChevronUp, ChevronDown } from "lucide-react";
+import { GripVertical, RotateCcw, Save, Eye, EyeOff } from "lucide-react";
 import { useNavSettings, NavSettings, NavCategory, NavItem, defaultNavSettings } from "@/hooks/useNavSettings";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface NavSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+interface SortableCategoryProps {
+  category: NavCategory;
+  items: NavItem[];
+  onTitleChange: (id: string, title: string) => void;
+  onVisibilityChange: (id: string, visible: boolean) => void;
+  onItemTitleChange: (id: string, title: string) => void;
+  onItemVisibilityChange: (id: string, visible: boolean) => void;
+  onItemsReorder: (categoryId: string, items: NavItem[]) => void;
+}
+
+interface SortableItemProps {
+  item: NavItem;
+  onTitleChange: (id: string, title: string) => void;
+  onVisibilityChange: (id: string, visible: boolean) => void;
+}
+
+function SortableItem({ item, onTitleChange, onVisibilityChange }: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center gap-2 p-2 rounded-md bg-muted/50",
+        isDragging && "opacity-50 shadow-lg z-50"
+      )}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <Input
+        value={item.title}
+        onChange={(e) => onTitleChange(item.id, e.target.value)}
+        className="flex-1 h-8 text-sm"
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => onVisibilityChange(item.id, !item.visible)}
+      >
+        {item.visible ? (
+          <Eye className="h-4 w-4 text-primary" />
+        ) : (
+          <EyeOff className="h-4 w-4 text-muted-foreground" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function SortableCategory({
+  category,
+  items,
+  onTitleChange,
+  onVisibilityChange,
+  onItemTitleChange,
+  onItemVisibilityChange,
+  onItemsReorder,
+}: SortableCategoryProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleItemDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
+      const reordered = arrayMove(items, oldIndex, newIndex).map((item, index) => ({
+        ...item,
+        order: index,
+      }));
+      onItemsReorder(category.id, reordered);
+    }
+  };
+
+  const sortedItems = [...items].sort((a, b) => a.order - b.order);
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={cn(isDragging && "opacity-50 shadow-lg")}
+    >
+      <CardHeader className="py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </button>
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground">Catégorie</Label>
+              <Input
+                value={category.title}
+                onChange={(e) => onTitleChange(category.id, e.target.value)}
+                className="h-8 font-medium"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Visible</Label>
+            <Switch
+              checked={category.visible}
+              onCheckedChange={(checked) => onVisibilityChange(category.id, checked)}
+            />
+          </div>
+        </div>
+      </CardHeader>
+
+      {category.visible && (
+        <CardContent className="pt-0">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleItemDragEnd}
+          >
+            <SortableContext
+              items={sortedItems.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {sortedItems.map((item) => (
+                  <SortableItem
+                    key={item.id}
+                    item={item}
+                    onTitleChange={onItemTitleChange}
+                    onVisibilityChange={onItemVisibilityChange}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 export function NavSettingsDialog({ open, onOpenChange }: NavSettingsDialogProps) {
   const { navSettings, updateSettings, resetToDefault, isSaving } = useNavSettings();
   const [localSettings, setLocalSettings] = useState<NavSettings>(navSettings);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (open) {
@@ -68,86 +270,31 @@ export function NavSettingsDialog({ open, onOpenChange }: NavSettingsDialogProps
     }));
   };
 
-  const moveCategoryUp = (categoryId: string) => {
-    setLocalSettings((prev) => {
-      const sortedCategories = [...prev.categories].sort((a, b) => a.order - b.order);
-      const index = sortedCategories.findIndex((c) => c.id === categoryId);
-      if (index <= 0) return prev;
-      
-      const newCategories = [...sortedCategories];
-      [newCategories[index - 1], newCategories[index]] = [newCategories[index], newCategories[index - 1]];
-      
-      return {
-        ...prev,
-        categories: newCategories.map((cat, i) => ({ ...cat, order: i })),
-      };
-    });
+  const handleItemsReorder = (categoryId: string, reorderedItems: NavItem[]) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      items: prev.items.map((item) => {
+        if (item.categoryId !== categoryId) return item;
+        const reorderedItem = reorderedItems.find((ri) => ri.id === item.id);
+        return reorderedItem || item;
+      }),
+    }));
   };
 
-  const moveCategoryDown = (categoryId: string) => {
-    setLocalSettings((prev) => {
-      const sortedCategories = [...prev.categories].sort((a, b) => a.order - b.order);
-      const index = sortedCategories.findIndex((c) => c.id === categoryId);
-      if (index >= sortedCategories.length - 1) return prev;
-      
-      const newCategories = [...sortedCategories];
-      [newCategories[index], newCategories[index + 1]] = [newCategories[index + 1], newCategories[index]];
-      
-      return {
-        ...prev,
-        categories: newCategories.map((cat, i) => ({ ...cat, order: i })),
-      };
-    });
-  };
-
-  const moveItemUp = (itemId: string) => {
-    setLocalSettings((prev) => {
-      const item = prev.items.find((i) => i.id === itemId);
-      if (!item) return prev;
-      
-      const categoryItems = prev.items
-        .filter((i) => i.categoryId === item.categoryId)
-        .sort((a, b) => a.order - b.order);
-      
-      const index = categoryItems.findIndex((i) => i.id === itemId);
-      if (index <= 0) return prev;
-      
-      const newCategoryItems = [...categoryItems];
-      [newCategoryItems[index - 1], newCategoryItems[index]] = [newCategoryItems[index], newCategoryItems[index - 1]];
-      
-      const updatedItems = prev.items.map((i) => {
-        if (i.categoryId !== item.categoryId) return i;
-        const newIndex = newCategoryItems.findIndex((ci) => ci.id === i.id);
-        return { ...i, order: newIndex };
+  const handleCategoryDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setLocalSettings((prev) => {
+        const sortedCategories = [...prev.categories].sort((a, b) => a.order - b.order);
+        const oldIndex = sortedCategories.findIndex((c) => c.id === active.id);
+        const newIndex = sortedCategories.findIndex((c) => c.id === over.id);
+        const reordered = arrayMove(sortedCategories, oldIndex, newIndex).map((cat, index) => ({
+          ...cat,
+          order: index,
+        }));
+        return { ...prev, categories: reordered };
       });
-      
-      return { ...prev, items: updatedItems };
-    });
-  };
-
-  const moveItemDown = (itemId: string) => {
-    setLocalSettings((prev) => {
-      const item = prev.items.find((i) => i.id === itemId);
-      if (!item) return prev;
-      
-      const categoryItems = prev.items
-        .filter((i) => i.categoryId === item.categoryId)
-        .sort((a, b) => a.order - b.order);
-      
-      const index = categoryItems.findIndex((i) => i.id === itemId);
-      if (index >= categoryItems.length - 1) return prev;
-      
-      const newCategoryItems = [...categoryItems];
-      [newCategoryItems[index], newCategoryItems[index + 1]] = [newCategoryItems[index + 1], newCategoryItems[index]];
-      
-      const updatedItems = prev.items.map((i) => {
-        if (i.categoryId !== item.categoryId) return i;
-        const newIndex = newCategoryItems.findIndex((ci) => ci.id === i.id);
-        return { ...i, order: newIndex };
-      });
-      
-      return { ...prev, items: updatedItems };
-    });
+    }
   };
 
   const handleSave = () => {
@@ -164,6 +311,10 @@ export function NavSettingsDialog({ open, onOpenChange }: NavSettingsDialogProps
 
   const sortedCategories = [...localSettings.categories].sort((a, b) => a.order - b.order);
 
+  const getItemsForCategory = (categoryId: string) => {
+    return localSettings.items.filter((item) => item.categoryId === categoryId);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh]">
@@ -173,112 +324,36 @@ export function NavSettingsDialog({ open, onOpenChange }: NavSettingsDialogProps
             Personnaliser la navigation
           </DialogTitle>
           <DialogDescription>
-            Modifiez les noms, l'ordre et la visibilité des éléments de navigation.
+            Glissez-déposez pour réorganiser les catégories et éléments. Modifiez les noms et la visibilité.
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-6">
-            {sortedCategories.map((category, catIndex) => (
-              <Card key={category.id}>
-                <CardHeader className="py-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          onClick={() => moveCategoryUp(category.id)}
-                          disabled={catIndex === 0}
-                        >
-                          <ChevronUp className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          onClick={() => moveCategoryDown(category.id)}
-                          disabled={catIndex === sortedCategories.length - 1}
-                        >
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <div className="flex-1">
-                        <Label className="text-xs text-muted-foreground">Catégorie</Label>
-                        <Input
-                          value={category.title}
-                          onChange={(e) => handleCategoryTitleChange(category.id, e.target.value)}
-                          className="h-8 font-medium"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground">Visible</Label>
-                      <Switch
-                        checked={category.visible}
-                        onCheckedChange={(checked) => handleCategoryVisibilityChange(category.id, checked)}
-                      />
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                {category.visible && (
-                  <CardContent className="pt-0">
-                    <div className="space-y-2">
-                      {localSettings.items
-                        .filter((item) => item.categoryId === category.id)
-                        .sort((a, b) => a.order - b.order)
-                        .map((item, itemIndex, arr) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-2 p-2 rounded-md bg-muted/50"
-                          >
-                            <div className="flex flex-col">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4"
-                                onClick={() => moveItemUp(item.id)}
-                                disabled={itemIndex === 0}
-                              >
-                                <ChevronUp className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4"
-                                onClick={() => moveItemDown(item.id)}
-                                disabled={itemIndex === arr.length - 1}
-                              >
-                                <ChevronDown className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <Input
-                              value={item.title}
-                              onChange={(e) => handleItemTitleChange(item.id, e.target.value)}
-                              className="flex-1 h-8 text-sm"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleItemVisibilityChange(item.id, !item.visible)}
-                            >
-                              {item.visible ? (
-                                <Eye className="h-4 w-4 text-primary" />
-                              ) : (
-                                <EyeOff className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleCategoryDragEnd}
+          >
+            <SortableContext
+              items={sortedCategories.map((c) => c.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                {sortedCategories.map((category) => (
+                  <SortableCategory
+                    key={category.id}
+                    category={category}
+                    items={getItemsForCategory(category.id)}
+                    onTitleChange={handleCategoryTitleChange}
+                    onVisibilityChange={handleCategoryVisibilityChange}
+                    onItemTitleChange={handleItemTitleChange}
+                    onItemVisibilityChange={handleItemVisibilityChange}
+                    onItemsReorder={handleItemsReorder}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </ScrollArea>
 
         <Separator />
