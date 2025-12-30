@@ -44,19 +44,21 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
             <span className="font-display font-semibold text-foreground">Kopro</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-72 [&>button]:hidden">
-                <AppSidebar userRole={userRole} onLogout={onLogout} />
-              </SheetContent>
-            </Sheet>
-          </div>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-10 w-10 border-border hover:bg-accent"
+                aria-label="Ouvrir le menu"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-72 [&>button]:hidden">
+              <AppSidebar userRole={userRole} onLogout={onLogout} />
+            </SheetContent>
+          </Sheet>
         </div>
         
         {/* Residence selector below header */}
