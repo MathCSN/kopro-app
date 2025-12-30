@@ -17,6 +17,7 @@ import {
   ChevronRight,
   LogOut,
   User,
+  UsersRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 const managementNavItems: NavItem[] = [
+  { title: "Mon foyer", href: "/household", icon: UsersRound },
   { title: "Assemblées & Votes", href: "/ag", icon: Vote },
   { title: "Charges & Paiements", href: "/payments", icon: CreditCard },
   { title: "Documents", href: "/documents", icon: FileText },
