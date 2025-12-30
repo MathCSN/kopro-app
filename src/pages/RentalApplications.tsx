@@ -33,8 +33,9 @@ interface Application {
   submitted_at: string | null;
 }
 
-export default function RentalApplications() {
-  const { user, profile, logout, canAccessRental } = useAuth();
+// Inner component that uses useResidence - must be inside AppLayout/ResidenceProvider
+function RentalApplicationsContent() {
+  const { user, canAccessRental } = useAuth();
   const { selectedResidence } = useResidence();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -96,15 +97,6 @@ export default function RentalApplications() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
-  if (!user || !profile || !canAccessRental()) {
-    return null;
-  }
-
   const filteredApplications = applications.filter(app => {
     const matchesSearch = 
       app.candidate_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -138,108 +130,127 @@ export default function RentalApplications() {
   };
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/rental')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="font-display text-2xl lg:text-3xl font-bold">Candidatures</h1>
-            <p className="text-muted-foreground">Gérez les candidatures de location</p>
-          </div>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/rental')}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="font-display text-2xl lg:text-3xl font-bold">Candidatures</h1>
+          <p className="text-muted-foreground">Gérez les candidatures de location</p>
         </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card 
-            className={`shadow-soft cursor-pointer transition-all ${statusFilter === 'new' ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'new' ? 'all' : 'new')}
-          >
-            <CardContent className="p-4">
-              <p className="text-2xl font-bold text-kopro-teal">{newCount}</p>
-              <p className="text-sm text-muted-foreground">Nouvelles</p>
-            </CardContent>
-          </Card>
-          <Card 
-            className={`shadow-soft cursor-pointer transition-all ${statusFilter === 'under_review' ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'under_review' ? 'all' : 'under_review')}
-          >
-            <CardContent className="p-4">
-              <p className="text-2xl font-bold text-kopro-amber">{reviewCount}</p>
-              <p className="text-sm text-muted-foreground">En cours</p>
-            </CardContent>
-          </Card>
-          <Card 
-            className={`shadow-soft cursor-pointer transition-all ${statusFilter === 'shortlist' ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setStatusFilter(statusFilter === 'shortlist' ? 'all' : 'shortlist')}
-          >
-            <CardContent className="p-4">
-              <p className="text-2xl font-bold text-kopro-purple">{shortlistCount}</p>
-              <p className="text-sm text-muted-foreground">Présélection</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher un candidat..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        {/* Applications list */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : filteredApplications.length === 0 ? (
-          <Card className="shadow-soft">
-            <CardContent className="p-8 text-center">
-              <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="font-semibold text-lg mb-2">Aucune candidature</h3>
-              <p className="text-muted-foreground">
-                {search || statusFilter !== 'all' 
-                  ? "Aucune candidature ne correspond à vos critères." 
-                  : "Les candidatures apparaîtront ici une fois reçues."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {filteredApplications.map(app => (
-              <Card 
-                key={app.id} 
-                className="shadow-soft hover:shadow-medium cursor-pointer transition-shadow"
-                onClick={() => navigate(`/rental/applications/${app.id}`)}
-              >
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-kopro-purple/10 flex items-center justify-center">
-                    <Users className="h-6 w-6 text-kopro-purple" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold">{app.candidate_name}</span>
-                      {getStatusBadge(app.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {app.vacancy?.title} · Apt {app.vacancy?.unit?.door}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(app.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
       </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card 
+          className={`shadow-soft cursor-pointer transition-all ${statusFilter === 'new' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'new' ? 'all' : 'new')}
+        >
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-kopro-teal">{newCount}</p>
+            <p className="text-sm text-muted-foreground">Nouvelles</p>
+          </CardContent>
+        </Card>
+        <Card 
+          className={`shadow-soft cursor-pointer transition-all ${statusFilter === 'under_review' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'under_review' ? 'all' : 'under_review')}
+        >
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-kopro-amber">{reviewCount}</p>
+            <p className="text-sm text-muted-foreground">En cours</p>
+          </CardContent>
+        </Card>
+        <Card 
+          className={`shadow-soft cursor-pointer transition-all ${statusFilter === 'shortlist' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'shortlist' ? 'all' : 'shortlist')}
+        >
+          <CardContent className="p-4">
+            <p className="text-2xl font-bold text-kopro-purple">{shortlistCount}</p>
+            <p className="text-sm text-muted-foreground">Présélection</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher un candidat..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Applications list */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : filteredApplications.length === 0 ? (
+        <Card className="shadow-soft">
+          <CardContent className="p-8 text-center">
+            <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="font-semibold text-lg mb-2">Aucune candidature</h3>
+            <p className="text-muted-foreground">
+              {search || statusFilter !== 'all' 
+                ? "Aucune candidature ne correspond à vos critères." 
+                : "Les candidatures apparaîtront ici une fois reçues."}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredApplications.map(app => (
+            <Card 
+              key={app.id} 
+              className="shadow-soft hover:shadow-medium cursor-pointer transition-shadow"
+              onClick={() => navigate(`/rental/applications/${app.id}`)}
+            >
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-kopro-purple/10 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-kopro-purple" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold">{app.candidate_name}</span>
+                    {getStatusBadge(app.status)}
+                  </div>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {app.vacancy?.title} · Apt {app.vacancy?.unit?.door}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(app.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
+                  </p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Wrapper component that provides ResidenceProvider via AppLayout
+export default function RentalApplications() {
+  const { user, profile, logout, canAccessRental } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (!user || !profile || !canAccessRental()) {
+    return null;
+  }
+
+  return (
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
+      <RentalApplicationsContent />
     </AppLayout>
   );
 }
