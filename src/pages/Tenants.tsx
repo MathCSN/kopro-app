@@ -36,7 +36,7 @@ interface Tenant {
   documents_count?: number;
 }
 
-const Tenants = () => {
+function TenantsContent() {
   const { selectedResidence, isAllResidences, residences } = useResidence();
   const [search, setSearch] = useState("");
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -154,7 +154,7 @@ const Tenants = () => {
   };
 
   return (
-    <AppLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -260,8 +260,14 @@ const Tenants = () => {
         onOpenChange={setDetailsOpen}
         onUpdate={fetchTenants}
       />
+    </>
+  );
+}
+
+export default function Tenants() {
+  return (
+    <AppLayout>
+      <TenantsContent />
     </AppLayout>
   );
-};
-
-export default Tenants;
+}
