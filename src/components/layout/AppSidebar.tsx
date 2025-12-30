@@ -206,6 +206,16 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
           {!collapsed && <span className="font-medium">Mon profil</span>}
         </NavLink>
 
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {!collapsed && <span className="ml-2">Réduire</span>}
+        </Button>
+
         {canCustomizeNav && (
           <Button
             variant="ghost"
@@ -220,16 +230,6 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
             {!collapsed && <span className="ml-2">Personnaliser</span>}
           </Button>
         )}
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          {!collapsed && <span className="ml-2">Réduire</span>}
-        </Button>
         
         {onLogout && (
           <Button
