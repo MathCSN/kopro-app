@@ -82,8 +82,8 @@ export function NotificationBell() {
         <Button variant="outline" size="sm" className="relative">
           <Bell className="h-4 w-4" />
           {counts.total > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] font-bold px-1">
-              {counts.total > 9 ? "9+" : counts.total}
+            <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse shadow-sm">
+              {counts.total > 99 ? "99+" : counts.total}
             </span>
           )}
         </Button>
