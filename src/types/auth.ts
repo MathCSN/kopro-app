@@ -1,4 +1,4 @@
-export type AppRole = 'owner' | 'manager' | 'cs' | 'resident';
+export type AppRole = 'owner' | 'admin' | 'manager' | 'cs' | 'resident';
 
 export interface UserProfile {
   id: string;
@@ -25,7 +25,8 @@ export interface DemoUser {
 }
 
 export const ROLE_LABELS: Record<AppRole, string> = {
-  owner: 'Administrateur',
+  owner: 'Propriétaire',
+  admin: 'Administrateur',
   manager: 'Gestionnaire',
   cs: 'Conseil Syndical',
   resident: 'Résident',
@@ -33,6 +34,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 
 export const ROLE_HIERARCHY: Record<AppRole, number> = {
   owner: 100,
+  admin: 80,
   manager: 60,
   cs: 40,
   resident: 20,

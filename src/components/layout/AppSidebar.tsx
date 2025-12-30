@@ -177,7 +177,7 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
             if (items.length === 0) return null;
             
             return (
-              <div key={category.id} className="space-y-1">
+              <div key={category.id} className="space-y-1" data-category={category.id}>
                 {!collapsed && (
                   <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
                     {category.title}
