@@ -374,6 +374,22 @@ export default function Newsfeed() {
     }
   };
 
+  const sendPushNotifications = async (residenceId: string, title: string, body: string) => {
+    try {
+      await supabase.functions.invoke('send-push-notification', {
+        body: {
+          title,
+          body,
+          residenceId,
+          url: '/newsfeed',
+          tag: 'announcement',
+        },
+      });
+    } catch (error) {
+      console.error('Error sending push notifications:', error);
+    }
+  };
+
   const handleCreatePost = async () => {
     if (!newPost.content.trim()) return;
     if (!newPost.sendToAllResidences && !selectedResidence) return;
@@ -392,6 +408,13 @@ export default function Newsfeed() {
         basePostData.event_location = newPost.event_location || null;
       }
 
+      const notificationTitle = newPost.type === 'announcement' 
+        ? 'Nouvelle annonce' 
+        : newPost.type === 'event' 
+        ? 'Nouvel événement' 
+        : 'Nouvelle publication';
+      const notificationBody = newPost.title || newPost.content.slice(0, 100);
+
       if (newPost.sendToAllResidences && isManager && allResidences.length > 0) {
         // Create post for all residences
         const postsToInsert = allResidences.map(residence => ({
@@ -405,6 +428,11 @@ export default function Newsfeed() {
 
         if (error) throw error;
 
+        // Send push notifications to all residences
+        for (const residence of allResidences) {
+          sendPushNotifications(residence.id, notificationTitle, notificationBody);
+        }
+
         toast.success(`Publication envoyée à ${allResidences.length} résidence(s)`);
       } else {
         // Create post for selected residence only
@@ -416,6 +444,9 @@ export default function Newsfeed() {
           });
 
         if (error) throw error;
+
+        // Send push notifications
+        sendPushNotifications(selectedResidence!.id, notificationTitle, notificationBody);
 
         toast.success('Publication créée');
       }
