@@ -200,8 +200,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isOwner = () => profile?.role === 'owner';
-  const isManager = () => profile?.role === 'manager' || profile?.role === 'owner';
-  const canAccessRental = () => isOwner() || profile?.role === 'manager';
+  const isManager = () => profile?.role === 'manager' || profile?.role === 'admin' || profile?.role === 'owner';
+  const canAccessRental = () => isOwner() || profile?.role === 'admin' || profile?.role === 'manager';
 
   return (
     <AuthContext.Provider value={{ 
