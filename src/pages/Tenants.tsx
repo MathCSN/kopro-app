@@ -27,6 +27,7 @@ interface Tenant {
     floor: number | null;
     surface: number | null;
     rooms: number | null;
+    join_code: string | null;
   } | null;
   type: string;
   is_active: boolean;
@@ -68,6 +69,7 @@ const Tenants = () => {
             floor,
             surface,
             rooms,
+            join_code,
             residence_id
           )
         `)

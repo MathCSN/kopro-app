@@ -26,7 +26,10 @@ import {
   Calendar,
   Edit2,
   Save,
-  X
+  X,
+  QrCode,
+  Copy,
+  RefreshCw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,6 +37,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { DocumentUpload } from "./DocumentUpload";
 import { EmailTemplateEditor } from "./EmailTemplateEditor";
+import { QRCodeSVG } from "qrcode.react";
 
 interface TenantProfile {
   first_name: string | null;
@@ -54,6 +58,7 @@ interface Tenant {
     floor: number | null;
     surface: number | null;
     rooms: number | null;
+    join_code: string | null;
   } | null;
   type: string;
   is_active: boolean;
@@ -93,6 +98,8 @@ export function TenantDetails({
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<TenantProfile | null>(null);
+  const [joinCode, setJoinCode] = useState<string | null>(null);
+  const [regeneratingCode, setRegeneratingCode] = useState(false);
   const [emailDialog, setEmailDialog] = useState<{
     open: boolean;
     type: "document_reminder" | "rent_receipt" | "rent_revision";
@@ -102,6 +109,7 @@ export function TenantDetails({
     if (tenant && open) {
       fetchDocuments();
       setEditedProfile(tenant.profile);
+      setJoinCode(tenant.lot?.join_code || null);
     }
   }, [tenant, open]);
 
@@ -149,6 +157,37 @@ export function TenantDetails({
     }
   };
 
+  const handleCopyCode = () => {
+    if (joinCode) {
+      navigator.clipboard.writeText(joinCode);
+      toast.success("Code copié dans le presse-papier");
+    }
+  };
+
+  const handleRegenerateCode = async () => {
+    if (!tenant?.lot?.id) return;
+    
+    setRegeneratingCode(true);
+    try {
+      const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      const { error } = await supabase
+        .from("lots")
+        .update({ join_code: newCode })
+        .eq("id", tenant.lot.id);
+
+      if (error) throw error;
+      
+      setJoinCode(newCode);
+      toast.success("Code d'accès régénéré");
+      onUpdate();
+    } catch (error) {
+      toast.error("Erreur lors de la régénération");
+    } finally {
+      setRegeneratingCode(false);
+    }
+  };
+
   if (!tenant) return null;
 
   const fullName = tenant.profile 
@@ -162,6 +201,14 @@ export function TenantDetails({
   const lotInfo = tenant.lot
     ? `Lot ${tenant.lot.lot_number}`
     : "Non assigné";
+
+  // Generate QR code data
+  const qrData = JSON.stringify({
+    type: "kopro_access",
+    code: joinCode,
+    lot: tenant.lot?.lot_number,
+    user: tenant.user_id,
+  });
 
   return (
     <>
@@ -192,18 +239,22 @@ export function TenantDetails({
           </SheetHeader>
 
           <Tabs defaultValue="info" className="mt-4">
-            <TabsList className="w-full">
-              <TabsTrigger value="info" className="flex-1">
-                <User className="h-4 w-4 mr-2" />
-                Infos
+            <TabsList className="w-full grid grid-cols-4">
+              <TabsTrigger value="info">
+                <User className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Infos</span>
               </TabsTrigger>
-              <TabsTrigger value="documents" className="flex-1">
-                <FileText className="h-4 w-4 mr-2" />
-                Documents
+              <TabsTrigger value="qrcode">
+                <QrCode className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">QR</span>
               </TabsTrigger>
-              <TabsTrigger value="actions" className="flex-1">
-                <Mail className="h-4 w-4 mr-2" />
-                Actions
+              <TabsTrigger value="documents">
+                <FileText className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Docs</span>
+              </TabsTrigger>
+              <TabsTrigger value="actions">
+                <Mail className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Actions</span>
               </TabsTrigger>
             </TabsList>
 
@@ -365,6 +416,74 @@ export function TenantDetails({
                         <Calendar className="h-4 w-4" />
                         {format(new Date(tenant.end_date), "dd MMMM yyyy", { locale: fr })}
                       </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* QR Code Tab */}
+            <TabsContent value="qrcode" className="mt-4 space-y-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <QrCode className="h-5 w-5" />
+                    Code d'accès
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {joinCode ? (
+                    <>
+                      {/* QR Code */}
+                      <div className="flex justify-center p-4 bg-white rounded-lg">
+                        <QRCodeSVG
+                          value={qrData}
+                          size={180}
+                          level="H"
+                          includeMargin
+                        />
+                      </div>
+
+                      {/* Access Code */}
+                      <div className="text-center space-y-2">
+                        <p className="text-sm text-muted-foreground">Code d'accès</p>
+                        <div className="flex items-center justify-center gap-2">
+                          <code className="text-2xl font-mono font-bold tracking-wider bg-muted px-4 py-2 rounded-lg">
+                            {joinCode}
+                          </code>
+                          <Button variant="ghost" size="icon" onClick={handleCopyCode}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex justify-center pt-2">
+                        <Button
+                          variant="outline"
+                          onClick={handleRegenerateCode}
+                          disabled={regeneratingCode}
+                        >
+                          <RefreshCw className={`h-4 w-4 mr-2 ${regeneratingCode ? "animate-spin" : ""}`} />
+                          Régénérer le code
+                        </Button>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground text-center">
+                        Ce QR code permet au locataire d'accéder à la résidence.
+                        Le code peut être partagé avec les membres du foyer.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <QrCode className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">
+                        Aucun code d'accès configuré pour ce lot
+                      </p>
+                      <Button onClick={handleRegenerateCode} disabled={regeneratingCode}>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${regeneratingCode ? "animate-spin" : ""}`} />
+                        Générer un code
+                      </Button>
                     </div>
                   )}
                 </CardContent>
