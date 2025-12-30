@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { SmtpConfigForm } from "@/components/settings/SmtpConfigForm";
+import { LotsManagement } from "@/components/admin/lots/LotsManagement";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -120,28 +121,7 @@ export function AdminContent() {
         </TabsContent>
 
         <TabsContent value="lots">
-          <Card>
-            <CardHeader>
-              <CardTitle>Lots & Tantièmes</CardTitle>
-              <CardDescription>Gérez les lots et leurs tantièmes</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" onClick={() => handleFeatureClick("Ajouter un lot")}>
-                  Ajouter un lot
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Importer depuis Excel")}>
-                  Importer depuis Excel
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Gérer les tantièmes")}>
-                  Gérer les tantièmes
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Exporter la liste")}>
-                  Exporter la liste
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <LotsManagement />
         </TabsContent>
 
         <TabsContent value="users">
