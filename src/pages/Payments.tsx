@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { CreditCard, Download, Clock, CheckCircle2, AlertCircle, ArrowLeft, Euro } from "lucide-react";
+import { CreditCard, Download, Clock, CheckCircle2, AlertCircle, ArrowLeft, Euro, Building2, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useResidence } from "@/contexts/ResidenceContext";
+import { Progress } from "@/components/ui/progress";
 
 interface Payment {
   id: string;
@@ -18,6 +20,19 @@ interface Payment {
   paid_at: string | null;
   status: string | null;
   user_id: string;
+  lot_id: string | null;
+}
+
+interface LotFinance {
+  lot_id: string;
+  lot_number: string;
+  building_name: string | null;
+  floor: number | null;
+  rent_target: number;
+  charges_target: number;
+  total_paid: number;
+  total_pending: number;
+  occupant_name: string | null;
 }
 
 function PaymentDetail({ id }: { id: string }) {
@@ -142,23 +157,34 @@ function PaymentDetail({ id }: { id: string }) {
 
 export default function Payments() {
   const { user, profile, logout, isManager } = useAuth();
+  const { selectedResidence } = useResidence();
   const navigate = useNavigate();
   const { id } = useParams();
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [lotFinances, setLotFinances] = useState<LotFinance[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user && !id) {
       fetchPayments();
+      if (isManager()) {
+        fetchLotFinances();
+      }
     }
-  }, [user, id]);
+  }, [user, id, selectedResidence]);
 
   const fetchPayments = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('payments')
         .select('*')
         .order('due_date', { ascending: false });
+      
+      if (selectedResidence) {
+        query = query.eq('residence_id', selectedResidence.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setPayments(data || []);
@@ -166,6 +192,64 @@ export default function Payments() {
       console.error('Error fetching payments:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLotFinances = async () => {
+    try {
+      // Fetch units with their financial targets
+      let unitsQuery = supabase
+        .from('units')
+        .select('id, building, floor, rent_target, charges_target');
+      
+      if (selectedResidence) {
+        unitsQuery = unitsQuery.eq('residence_id', selectedResidence.id);
+      }
+
+      const { data: units, error: unitsError } = await unitsQuery;
+      if (unitsError) throw unitsError;
+
+      // Fetch lots
+      let lotsQuery = supabase
+        .from('lots')
+        .select('id, lot_number, building_id, floor, buildings(name)');
+      
+      if (selectedResidence) {
+        lotsQuery = lotsQuery.eq('residence_id', selectedResidence.id);
+      }
+
+      const { data: lots, error: lotsError } = await lotsQuery;
+      if (lotsError) throw lotsError;
+
+      // Calculate finances per lot
+      const finances: LotFinance[] = (lots || []).map(lot => {
+        const lotPayments = payments.filter(p => p.lot_id === lot.id);
+        const paidAmount = lotPayments
+          .filter(p => p.status === 'paid')
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        const pendingAmount = lotPayments
+          .filter(p => p.status === 'pending')
+          .reduce((sum, p) => sum + Number(p.amount), 0);
+        
+        // Find matching unit for rent/charges targets
+        const unit = (units || []).find(u => u.building === (lot as any).buildings?.name && u.floor === lot.floor);
+        
+        return {
+          lot_id: lot.id,
+          lot_number: lot.lot_number,
+          building_name: (lot as any).buildings?.name || null,
+          floor: lot.floor,
+          rent_target: unit?.rent_target || 0,
+          charges_target: unit?.charges_target || 0,
+          total_paid: paidAmount,
+          total_pending: pendingAmount,
+          occupant_name: null,
+        };
+      });
+
+      setLotFinances(finances);
+    } catch (error) {
+      console.error('Error fetching lot finances:', error);
     }
   };
 
@@ -191,6 +275,12 @@ export default function Payments() {
   const arrearsUsers = isManager() 
     ? [...new Set(payments.filter(p => p.status === 'pending').map(p => p.user_id))]
     : [];
+
+  // Global stats for managers
+  const totalRentTarget = lotFinances.reduce((sum, l) => sum + l.rent_target, 0);
+  const totalChargesTarget = lotFinances.reduce((sum, l) => sum + l.charges_target, 0);
+  const totalPaid = lotFinances.reduce((sum, l) => sum + l.total_paid, 0);
+  const totalPending = lotFinances.reduce((sum, l) => sum + l.total_pending, 0);
 
   return (
     <AppLayout userRole={profile.role} onLogout={handleLogout}>
@@ -220,6 +310,7 @@ export default function Payments() {
         <Tabs defaultValue="my-payments">
           <TabsList>
             <TabsTrigger value="my-payments">Mes paiements</TabsTrigger>
+            {isManager() && <TabsTrigger value="by-unit">Par appartement</TabsTrigger>}
             {isManager() && <TabsTrigger value="arrears">Impayés</TabsTrigger>}
           </TabsList>
 
@@ -274,6 +365,125 @@ export default function Payments() {
               })
             )}
           </TabsContent>
+
+          {isManager() && (
+            <TabsContent value="by-unit" className="mt-4 space-y-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="shadow-soft">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Building2 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{lotFinances.length}</p>
+                        <p className="text-xs text-muted-foreground">Lots</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-soft">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-success/10">
+                        <TrendingUp className="h-5 w-5 text-success" />
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{totalRentTarget.toLocaleString()} €</p>
+                        <p className="text-xs text-muted-foreground">Loyers cibles</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-soft">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-secondary/50">
+                        <Euro className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{totalChargesTarget.toLocaleString()} €</p>
+                        <p className="text-xs text-muted-foreground">Charges cibles</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-soft">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-warning/10">
+                        <TrendingDown className="h-5 w-5 text-warning" />
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold">{totalPending.toLocaleString()} €</p>
+                        <p className="text-xs text-muted-foreground">En attente</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Lot Finance Cards */}
+              {lotFinances.length === 0 ? (
+                <Card className="shadow-soft">
+                  <CardContent className="p-8 text-center">
+                    <Building2 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">Aucun lot configuré</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {lotFinances.map((lot) => {
+                    const total = lot.rent_target + lot.charges_target;
+                    const paymentRatio = total > 0 ? (lot.total_paid / total) * 100 : 0;
+                    const hasDebt = lot.total_pending > 0;
+                    
+                    return (
+                      <Card key={lot.lot_id} className={`shadow-soft ${hasDebt ? 'border-warning/30' : ''}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <h3 className="font-semibold text-lg">Lot {lot.lot_number}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {lot.building_name && `${lot.building_name} • `}
+                                {lot.floor !== null && `Étage ${lot.floor}`}
+                              </p>
+                            </div>
+                            {hasDebt && (
+                              <Badge variant="destructive" className="gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                {lot.total_pending} € en attente
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="p-3 rounded-lg bg-muted/50">
+                              <p className="text-xs text-muted-foreground mb-1">Loyer cible</p>
+                              <p className="text-lg font-bold">{lot.rent_target.toLocaleString()} €</p>
+                            </div>
+                            <div className="p-3 rounded-lg bg-muted/50">
+                              <p className="text-xs text-muted-foreground mb-1">Charges cible</p>
+                              <p className="text-lg font-bold">{lot.charges_target.toLocaleString()} €</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Paiements reçus</span>
+                              <span className="font-medium">{lot.total_paid.toLocaleString()} € / {total.toLocaleString()} €</span>
+                            </div>
+                            <Progress value={Math.min(paymentRatio, 100)} className="h-2" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          )}
 
           {isManager() && (
             <TabsContent value="arrears" className="mt-4">
