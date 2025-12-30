@@ -208,17 +208,16 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
           {!collapsed && <span className="font-medium">Mon profil</span>}
         </NavLink>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          {!collapsed && <span className="ml-2">Réduire</span>}
-        </Button>
-
         <div className={cn("flex items-center gap-2", collapsed ? "flex-col" : "")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent px-2"
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+
           {canCustomizeNav && (
             <Button
               variant="ghost"
