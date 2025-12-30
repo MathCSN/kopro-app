@@ -1399,6 +1399,118 @@ export type Database = {
         }
         Relationships: []
       }
+      service_providers: {
+        Row: {
+          address: string | null
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          email: string | null
+          id: string
+          is_recommended: boolean | null
+          name: string
+          phone: string | null
+          rating: number | null
+          residence_id: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_recommended?: boolean | null
+          name: string
+          phone?: string | null
+          rating?: number | null
+          residence_id?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_recommended?: boolean | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          residence_id?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_providers_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smtp_configs: {
+        Row: {
+          created_at: string | null
+          from_email: string
+          from_name: string | null
+          host: string
+          id: string
+          is_active: boolean | null
+          password: string
+          port: number
+          residence_id: string
+          updated_at: string | null
+          use_tls: boolean | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_email: string
+          from_name?: string | null
+          host: string
+          id?: string
+          is_active?: boolean | null
+          password: string
+          port?: number
+          residence_id: string
+          updated_at?: string | null
+          use_tls?: boolean | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          from_email?: string
+          from_name?: string | null
+          host?: string
+          id?: string
+          is_active?: boolean | null
+          password?: string
+          port?: number
+          residence_id?: string
+          updated_at?: string | null
+          use_tls?: boolean | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smtp_configs_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: true
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_documents: {
         Row: {
           created_at: string | null
