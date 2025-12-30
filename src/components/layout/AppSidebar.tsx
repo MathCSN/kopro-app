@@ -41,7 +41,7 @@ const mainNavItems: NavItem[] = [
 ];
 
 const managementNavItems: NavItem[] = [
-  { title: "Mon foyer", href: "/household", icon: UsersRound },
+  { title: "Mon foyer", href: "/household", icon: UsersRound, roles: ["resident"] },
   { title: "Annuaire prestataires", href: "/providers", icon: Wrench },
   { title: "Assemblées & Votes", href: "/ag", icon: Vote },
   { title: "Charges & Paiements", href: "/payments", icon: CreditCard },
@@ -158,7 +158,7 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
                 Gestion
               </p>
             )}
-            {managementNavItems.map((item) => (
+            {filterByRole(managementNavItems).map((item) => (
               <NavItemLink key={item.href} item={item} />
             ))}
           </div>
