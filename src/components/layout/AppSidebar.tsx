@@ -19,48 +19,54 @@ import {
   User,
   UsersRound,
   Wrench,
+  Package,
+  UserCheck,
+  ShoppingBag,
+  Calendar,
+  Cog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResidenceSelector } from "./ResidenceSelector";
+import { useNavSettings } from "@/hooks/useNavSettings";
+import { NavSettingsDialog } from "@/components/admin/NavSettingsDialog";
 
-interface NavItem {
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: number;
-  roles?: string[];
-}
+// Icon mapping for dynamic rendering
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  dashboard: Home,
+  newsfeed: Newspaper,
+  tickets: Ticket,
+  documents: FileText,
+  reservations: Calendar,
+  directory: Users,
+  chat: MessageCircle,
+  marketplace: ShoppingBag,
+  household: UsersRound,
+  tenants: Users,
+  payments: CreditCard,
+  packages: Package,
+  visitors: UserCheck,
+  ag: Vote,
+  providers: Wrench,
+  units: Home,
+  vacancies: FileText,
+  applications: Users,
+  analytics: BarChart3,
+  admin: Settings,
+  vault: Lock,
+};
 
-const mainNavItems: NavItem[] = [
-  { title: "Tableau de bord", href: "/dashboard", icon: Home },
-  { title: "Actualités", href: "/newsfeed", icon: Newspaper },
-  { title: "Incidents", href: "/tickets", icon: Ticket },
-  { title: "Locataires", href: "/tenants", icon: Users, roles: ["manager", "admin", "owner"] },
-];
-
-const managementNavItems: NavItem[] = [
-  { title: "Mon foyer", href: "/household", icon: UsersRound, roles: ["resident"] },
-  { title: "Annuaire prestataires", href: "/providers", icon: Wrench },
-  { title: "Assemblées & Votes", href: "/ag", icon: Vote },
-  { title: "Charges & Paiements", href: "/payments", icon: CreditCard },
-  { title: "Documents", href: "/documents", icon: FileText },
-  { title: "Mon coffre-fort", href: "/vault", icon: Lock },
-  { title: "Messagerie", href: "/chat", icon: MessageCircle },
-];
-
-const rentalNavItems: NavItem[] = [
-  { title: "Gestion locative", href: "/rental", icon: Building2, roles: ["manager", "admin", "owner"] },
-  { title: "Logements", href: "/rental/units", icon: Home, roles: ["manager", "admin", "owner"] },
-  { title: "Annonces", href: "/rental/vacancies", icon: FileText, roles: ["manager", "admin", "owner"] },
-  { title: "Candidatures", href: "/rental/applications", icon: Users, roles: ["manager", "admin", "owner"] },
-];
-
-const adminNavItems: NavItem[] = [
-  { title: "Tableau de bord KPI", href: "/analytics", icon: BarChart3, roles: ["manager", "admin", "owner"] },
-  { title: "Gestion résidence", href: "/admin", icon: Settings, roles: ["manager", "admin", "owner"] },
-];
+// Role restrictions for items
+const itemRoleRestrictions: Record<string, string[]> = {
+  tenants: ["manager", "admin", "owner"],
+  units: ["manager", "admin", "owner"],
+  vacancies: ["manager", "admin", "owner"],
+  applications: ["manager", "admin", "owner"],
+  analytics: ["manager", "admin", "owner"],
+  admin: ["manager", "admin", "owner"],
+  household: ["resident"],
+};
 
 interface AppSidebarProps {
   userRole?: string;
@@ -69,41 +75,50 @@ interface AppSidebarProps {
 
 export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [navSettingsOpen, setNavSettingsOpen] = useState(false);
   const location = useLocation();
+  const { navSettings, isLoading } = useNavSettings();
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + "/");
 
-  const filterByRole = (items: NavItem[]) =>
-    items.filter((item) => !item.roles || item.roles.includes(userRole));
+  const canCustomizeNav = ["owner", "admin", "manager"].includes(userRole);
 
-  const NavItemLink = ({ item }: { item: NavItem }) => (
-    <NavLink
-      to={item.href}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
-        isActive(item.href)
-          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-soft"
-          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-      )}
-    >
-      <item.icon className={cn("h-5 w-5 shrink-0", collapsed && "mx-auto")} />
-      {!collapsed && (
-        <>
-          <span className="font-medium truncate">{item.title}</span>
-          {item.badge && (
-            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-semibold px-1.5">
-              {item.badge}
-            </span>
-          )}
-        </>
-      )}
-      {collapsed && item.badge && (
-        <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] font-bold px-1">
-          {item.badge}
-        </span>
-      )}
-    </NavLink>
-  );
+  // Filter items by role
+  const filterByRole = (itemId: string) => {
+    const restrictions = itemRoleRestrictions[itemId];
+    if (!restrictions) return true;
+    return restrictions.includes(userRole);
+  };
+
+  // Get sorted and visible categories
+  const visibleCategories = navSettings.categories
+    .filter((cat) => cat.visible)
+    .sort((a, b) => a.order - b.order);
+
+  // Get items for a category
+  const getItemsForCategory = (categoryId: string) => {
+    return navSettings.items
+      .filter((item) => item.categoryId === categoryId && item.visible && filterByRole(item.id))
+      .sort((a, b) => a.order - b.order);
+  };
+
+  const NavItemLink = ({ item }: { item: { id: string; title: string; href: string } }) => {
+    const Icon = iconMap[item.id] || FileText;
+    return (
+      <NavLink
+        to={item.href}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+          isActive(item.href)
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-soft"
+            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        )}
+      >
+        <Icon className={cn("h-5 w-5 shrink-0", collapsed && "mx-auto")} />
+        {!collapsed && <span className="font-medium truncate">{item.title}</span>}
+      </NavLink>
+    );
+  };
 
   return (
     <aside
@@ -139,57 +154,23 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-6">
-          {/* Main Section */}
-          <div className="space-y-1">
-            {!collapsed && (
-              <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
-                Principal
-              </p>
-            )}
-            {filterByRole(mainNavItems).map((item) => (
-              <NavItemLink key={item.href} item={item} />
-            ))}
-          </div>
-
-          {/* Management Section */}
-          <div className="space-y-1">
-            {!collapsed && (
-              <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
-                Gestion
-              </p>
-            )}
-            {filterByRole(managementNavItems).map((item) => (
-              <NavItemLink key={item.href} item={item} />
-            ))}
-          </div>
-
-          {/* Rental Section - Manager/Owner only */}
-          {filterByRole(rentalNavItems).length > 0 && (
-            <div className="space-y-1">
-              {!collapsed && (
-                <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
-                  Location
-                </p>
-              )}
-              {filterByRole(rentalNavItems).map((item) => (
-                <NavItemLink key={item.href} item={item} />
-              ))}
-            </div>
-          )}
-
-          {/* Admin Section */}
-          {filterByRole(adminNavItems).length > 0 && (
-            <div className="space-y-1">
-              {!collapsed && (
-                <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
-                  Administration
-                </p>
-              )}
-              {filterByRole(adminNavItems).map((item) => (
-                <NavItemLink key={item.href} item={item} />
-              ))}
-            </div>
-          )}
+          {visibleCategories.map((category) => {
+            const items = getItemsForCategory(category.id);
+            if (items.length === 0) return null;
+            
+            return (
+              <div key={category.id} className="space-y-1">
+                {!collapsed && (
+                  <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
+                    {category.title}
+                  </p>
+                )}
+                {items.map((item) => (
+                  <NavItemLink key={item.id} item={item} />
+                ))}
+              </div>
+            );
+          })}
         </nav>
       </ScrollArea>
 
@@ -207,6 +188,21 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
           <User className={cn("h-5 w-5 shrink-0", collapsed && "mx-auto")} />
           {!collapsed && <span className="font-medium">Mon profil</span>}
         </NavLink>
+
+        {canCustomizeNav && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setNavSettingsOpen(true)}
+            className={cn(
+              "w-full text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+              collapsed ? "justify-center" : "justify-start"
+            )}
+          >
+            <Cog className="h-4 w-4" />
+            {!collapsed && <span className="ml-2">Personnaliser</span>}
+          </Button>
+        )}
 
         <Button
           variant="ghost"
@@ -233,6 +229,9 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
           </Button>
         )}
       </div>
+
+      {/* Nav Settings Dialog */}
+      <NavSettingsDialog open={navSettingsOpen} onOpenChange={setNavSettingsOpen} />
     </aside>
   );
 }
