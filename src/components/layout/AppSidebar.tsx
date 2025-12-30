@@ -218,35 +218,33 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
           {!collapsed && <span className="ml-2">Réduire</span>}
         </Button>
 
-        {canCustomizeNav && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setNavSettingsOpen(true)}
-            className={cn(
-              "w-full text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent",
-              collapsed ? "justify-center" : "justify-start"
-            )}
-          >
-            <Cog className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">Personnaliser</span>}
-          </Button>
-        )}
-        
-        {onLogout && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onLogout}
-            className={cn(
-              "w-full text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10",
-              collapsed ? "justify-center" : "justify-start"
-            )}
-          >
-            <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">Déconnexion</span>}
-          </Button>
-        )}
+        <div className={cn("flex items-center gap-2", collapsed ? "flex-col" : "")}>
+          {canCustomizeNav && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setNavSettingsOpen(true)}
+              className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent px-2"
+            >
+              <Cog className="h-4 w-4" />
+            </Button>
+          )}
+          
+          {onLogout && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onLogout}
+              className={cn(
+                "flex-1 text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10",
+                collapsed ? "justify-center px-2" : "justify-start"
+              )}
+            >
+              <LogOut className="h-4 w-4" />
+              {!collapsed && <span className="ml-2">Déconnexion</span>}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Nav Settings Dialog */}
