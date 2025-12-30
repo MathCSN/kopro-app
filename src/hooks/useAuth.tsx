@@ -19,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
   loginWithGoogle: () => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
   hasRole: (requiredRole: AppRole) => boolean;
   canAccessRental: () => boolean;
@@ -174,6 +175,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
+  const resetPassword = async (email: string): Promise<{ error: Error | null }> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+    
+    if (error) {
+      return { error };
+    }
+    
+    return { error: null };
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -199,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       loginWithGoogle,
       signUp,
+      resetPassword,
       logout, 
       hasRole,
       canAccessRental,
