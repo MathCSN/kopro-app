@@ -15,11 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Newsfeed from "./pages/Newsfeed";
 import Tickets from "./pages/Tickets";
 import NewTicket from "./pages/NewTicket";
-import Reservations from "./pages/Reservations";
 import Documents from "./pages/Documents";
-import Packages from "./pages/Packages";
-import Visitors from "./pages/Visitors";
-import Marketplace from "./pages/Marketplace";
 import AG from "./pages/AG";
 import Payments from "./pages/Payments";
 import Vault from "./pages/Vault";
@@ -93,19 +89,11 @@ const App = () => (
             {/* Tenants - Manager only */}
             <Route path="/tenants" element={<ProtectedRoute requiredRole="manager"><Tenants /></ProtectedRoute>} />
             
-            {/* Reservations */}
-            <Route path="/reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
-            <Route path="/reservations/:resourceId" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
-            
-            {/* Packages */}
-            <Route path="/packages" element={<ProtectedRoute><Packages /></ProtectedRoute>} />
-            
-            {/* Visitors */}
-            <Route path="/visitors" element={<ProtectedRoute><Visitors /></ProtectedRoute>} />
-            
-            {/* Marketplace */}
-            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-            <Route path="/marketplace/:id" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+            {/* Legacy redirects - features removed */}
+            <Route path="/reservations" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/packages" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/visitors" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/marketplace" element={<Navigate to="/dashboard" replace />} />
             
             {/* AG / Votes */}
             <Route path="/ag" element={<ProtectedRoute><AG /></ProtectedRoute>} />

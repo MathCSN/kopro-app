@@ -54,9 +54,9 @@ const defaultTemplates: EmailTemplate[] = [
   },
   {
     id: '3',
-    name: 'Notification colis',
-    subject: 'Un colis vous attend',
-    content: 'Bonjour {{nom}},\n\nUn colis est arrivé pour vous à la loge.\n\nCordialement,\nL\'équipe de gestion',
+    name: 'Demande de document',
+    subject: 'Document requis pour votre dossier',
+    content: 'Bonjour {{nom}},\n\nNous avons besoin du document suivant pour compléter votre dossier : {{document}}.\n\nMerci de nous le transmettre dans les meilleurs délais.\n\nCordialement,\nL\'équipe de gestion',
     type: 'notification',
     createdAt: new Date().toISOString(),
   },

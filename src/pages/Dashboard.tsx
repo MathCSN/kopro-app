@@ -3,18 +3,16 @@ import { useState, useEffect } from "react";
 import {
   Newspaper,
   Ticket,
-  Calendar,
-  Package,
   Vote,
   CreditCard,
   FileText,
   ArrowUpRight,
   AlertCircle,
-  CheckCircle2,
   Clock,
   TrendingUp,
   Building2,
   Users,
+  MessageCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,10 +32,10 @@ const quickActions = [
     color: "bg-kopro-rose/10 text-kopro-rose",
   },
   {
-    title: "Réserver un espace",
-    description: "Salle, parking visiteur...",
-    icon: Calendar,
-    href: "/reservations",
+    title: "Messagerie",
+    description: "Contacter la gestion",
+    icon: MessageCircle,
+    href: "/chat",
     color: "bg-kopro-teal/10 text-kopro-teal",
   },
   {
@@ -81,7 +79,6 @@ export default function Dashboard() {
     openTickets: 0,
     inProgressTickets: 0,
     myTickets: [] as any[],
-    upcomingReservations: [] as any[],
     pendingPayments: 0,
     openVacancies: 0,
     pendingApplications: 0,
@@ -107,14 +104,6 @@ export default function Dashboard() {
       const openTickets = (tickets || []).filter(t => t.status === 'open').length;
       const inProgressTickets = (tickets || []).filter(t => t.status === 'in_progress').length;
 
-      // Fetch reservations
-      const { data: reservations } = await supabase
-        .from('reservations')
-        .select('*')
-        .eq('user_id', user!.id)
-        .gte('start_time', new Date().toISOString())
-        .order('start_time', { ascending: true })
-        .limit(3);
 
       // Fetch pending payments
       const { data: payments } = await supabase
@@ -153,7 +142,6 @@ export default function Dashboard() {
         openTickets,
         inProgressTickets,
         myTickets,
-        upcomingReservations: reservations || [],
         pendingPayments,
         openVacancies,
         pendingApplications,
@@ -203,10 +191,10 @@ export default function Dashboard() {
         {/* Manager KPI Summary */}
         {isManager() && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
+          {[
               { label: "Incidents ouverts", value: String(stats.openTickets), change: "", icon: Ticket, color: "text-kopro-rose" },
               { label: "En cours", value: String(stats.inProgressTickets), change: "", icon: TrendingUp, color: "text-kopro-teal" },
-              { label: "Réservations", value: String(stats.upcomingReservations.length), change: "", icon: Calendar, color: "text-kopro-purple" },
+              { label: "Candidatures", value: String(stats.pendingApplications), change: "", icon: Users, color: "text-kopro-purple" },
               { label: "Paiements en attente", value: `${stats.pendingPayments}€`, change: "", icon: CreditCard, color: "text-kopro-amber" },
             ].map((stat, i) => (
               <Card key={i} className="shadow-soft">
@@ -411,38 +399,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Upcoming Reservations */}
-            <Card className="shadow-soft">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="font-display text-lg">Réservations</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/reservations")}>
-                  <ArrowUpRight className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <p className="text-center text-muted-foreground py-4">Chargement...</p>
-                ) : stats.upcomingReservations.length > 0 ? (
-                  <div className="space-y-3">
-                    {stats.upcomingReservations.map((res) => (
-                      <div key={res.id} className="p-3 rounded-lg bg-kopro-teal/5 border border-kopro-teal/20">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium text-sm text-foreground">{res.resource_name}</p>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {res.status === 'confirmed' ? 'Confirmé' : 'En attente'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(res.start_time).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">Aucune réservation à venir</p>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </div>
 
