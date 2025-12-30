@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -8,6 +8,9 @@ import {
   Key,
   Phone,
   Loader2,
+  Mail,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +21,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { OwnerLayout } from "@/components/layout/OwnerLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function OwnerSettings() {
   const { user, logout } = useAuth();
@@ -30,6 +35,79 @@ export default function OwnerSettings() {
   const [verificationCode, setVerificationCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+
+  // Email sender config state
+  const [emailConfig, setEmailConfig] = useState({
+    senderName: "KOPRO",
+    senderEmail: "",
+    replyToEmail: "",
+  });
+  const [isLoadingEmailConfig, setIsLoadingEmailConfig] = useState(true);
+  const [isSavingEmailConfig, setIsSavingEmailConfig] = useState(false);
+
+  // Load email config on mount
+  useEffect(() => {
+    const loadEmailConfig = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("app_config")
+          .select("key, value")
+          .in("key", ["email_sender_name", "email_sender_email", "email_reply_to"]);
+
+        if (error) throw error;
+
+        const config: Record<string, string> = {};
+        data?.forEach(item => {
+          config[item.key] = item.value || "";
+        });
+
+        setEmailConfig({
+          senderName: config.email_sender_name || "KOPRO",
+          senderEmail: config.email_sender_email || "",
+          replyToEmail: config.email_reply_to || "",
+        });
+      } catch (error) {
+        console.error("Error loading email config:", error);
+      } finally {
+        setIsLoadingEmailConfig(false);
+      }
+    };
+
+    loadEmailConfig();
+  }, []);
+
+  const handleSaveEmailConfig = async () => {
+    setIsSavingEmailConfig(true);
+    try {
+      const configs = [
+        { key: "email_sender_name", value: emailConfig.senderName },
+        { key: "email_sender_email", value: emailConfig.senderEmail },
+        { key: "email_reply_to", value: emailConfig.replyToEmail },
+      ];
+
+      for (const config of configs) {
+        const { error } = await supabase
+          .from("app_config")
+          .upsert({ key: config.key, value: config.value }, { onConflict: "key" });
+        
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Configuration enregistrée",
+        description: "Les paramètres d'envoi d'email ont été mis à jour.",
+      });
+    } catch (error) {
+      console.error("Error saving email config:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder la configuration.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingEmailConfig(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -92,6 +170,7 @@ export default function OwnerSettings() {
         <Tabs defaultValue="general">
           <TabsList className="mb-6">
             <TabsTrigger value="general">Général</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="security">Sécurité</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
@@ -149,6 +228,91 @@ export default function OwnerSettings() {
                 <Button onClick={() => toast({ title: "Paramètres enregistrés" })}>
                   Enregistrer
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="email" className="space-y-6">
+            <Card className="shadow-soft">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Configuration de l'expéditeur
+                </CardTitle>
+                <CardDescription>
+                  Personnalisez l'adresse email utilisée pour envoyer les emails
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isLoadingEmailConfig ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Pour utiliser un domaine personnalisé, vous devez d'abord le valider sur{" "}
+                        <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                          resend.com/domains
+                        </a>
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Nom de l'expéditeur</Label>
+                        <Input
+                          value={emailConfig.senderName}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, senderName: e.target.value })}
+                          placeholder="KOPRO"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Affiché comme nom de l'expéditeur dans les emails
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email de l'expéditeur</Label>
+                        <Input
+                          type="email"
+                          value={emailConfig.senderEmail}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, senderEmail: e.target.value })}
+                          placeholder="noreply@votre-domaine.com"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Laissez vide pour utiliser l'adresse par défaut
+                        </p>
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Email de réponse (Reply-To)</Label>
+                        <Input
+                          type="email"
+                          value={emailConfig.replyToEmail}
+                          onChange={(e) => setEmailConfig({ ...emailConfig, replyToEmail: e.target.value })}
+                          placeholder="contact@votre-domaine.com"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Les réponses des destinataires seront envoyées à cette adresse
+                        </p>
+                      </div>
+                    </div>
+
+                    {emailConfig.senderEmail && (
+                      <div className="p-4 rounded-lg bg-muted/50 border">
+                        <p className="text-sm font-medium mb-2">Aperçu de l'expéditeur</p>
+                        <p className="text-sm text-muted-foreground">
+                          {emailConfig.senderName} &lt;{emailConfig.senderEmail}&gt;
+                        </p>
+                      </div>
+                    )}
+
+                    <Button onClick={handleSaveEmailConfig} disabled={isSavingEmailConfig}>
+                      {isSavingEmailConfig && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Enregistrer la configuration
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
