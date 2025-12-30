@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
@@ -32,10 +33,12 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + "/");
 
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   return (
     <>
       {/* Top Header Bar */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 glass-strong border-b border-border bg-background">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
@@ -44,13 +47,14 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
             <span className="font-display font-semibold text-foreground">Kopro</span>
           </div>
 
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="h-10 w-10 border-border hover:bg-accent"
+                className="h-10 w-10 border-border hover:bg-accent touch-manipulation"
                 aria-label="Ouvrir le menu"
+                onClick={() => setSheetOpen(true)}
               >
                 <Menu className="h-6 w-6" />
               </Button>
