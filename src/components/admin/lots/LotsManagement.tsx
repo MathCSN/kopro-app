@@ -7,11 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, Trash2, Edit, Upload, Home } from "lucide-react";
+import { Plus, Search, Building2, Trash2, Edit, Upload, Home, X } from "lucide-react";
 import { toast } from "sonner";
 import { LotFormDialog } from "./LotFormDialog";
 import { BulkCreateDialog } from "./BulkCreateDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +50,7 @@ export function LotsManagement() {
   const { selectedResidence } = useResidence();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [editingLot, setEditingLot] = useState<Lot | null>(null);
@@ -94,14 +102,25 @@ export function LotsManagement() {
     },
   });
 
-  const filteredLots = lots?.filter(
-    (lot) =>
-      lot.lot_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lot.door?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lot.buildings?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLots = lots?.filter((lot) => {
+    // Filter by building
+    if (selectedBuildingId && lot.building_id !== selectedBuildingId) {
+      return false;
+    }
+    // Filter by search term
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        lot.lot_number.toLowerCase().includes(search) ||
+        lot.door?.toLowerCase().includes(search) ||
+        lot.buildings?.name?.toLowerCase().includes(search)
+      );
+    }
+    return true;
+  });
 
   const totalTantiemes = lots?.reduce((sum, lot) => sum + (lot.tantiemes || 0), 0) || 0;
+  const filteredTantiemes = filteredLots?.reduce((sum, lot) => sum + (lot.tantiemes || 0), 0) || 0;
 
   if (!selectedResidence) {
     return (
@@ -116,25 +135,58 @@ export function LotsManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher un lot..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsBulkOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Création en masse
-          </Button>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un lot
-          </Button>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="flex flex-1 gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher un lot..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedBuildingId || "all"}
+                onValueChange={(value) => setSelectedBuildingId(value === "all" ? null : value)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Tous les bâtiments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les bâtiments</SelectItem>
+                  {buildings?.map((building) => (
+                    <SelectItem key={building.id} value={building.id}>
+                      {building.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedBuildingId && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedBuildingId(null)}
+                  className="h-9 w-9"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsBulkOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Création en masse</span>
+            </Button>
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Ajouter un lot</span>
+            </Button>
+          </div>
         </div>
       </div>
 
