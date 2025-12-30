@@ -1,14 +1,22 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { MessageCircle, Send } from "lucide-react";
+import { MessageCircle, Send, AlertTriangle, Info, Megaphone } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { NewConversationDialog } from "@/components/chat/NewConversationDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface Conversation {
   id: string;
@@ -22,7 +30,15 @@ interface Message {
   content: string;
   sender_id: string;
   created_at: string;
+  message_type?: string | null;
 }
+
+const messageTypeConfig: Record<string, { icon: typeof Send; color: string; bg: string }> = {
+  normal: { icon: Send, color: "", bg: "" },
+  announcement: { icon: Megaphone, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+  important: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+  info: { icon: Info, color: "text-green-500", bg: "bg-green-500/10 border-green-500/20" },
+};
 
 export default function Chat() {
   const { user, profile, logout } = useAuth();
@@ -32,6 +48,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("normal");
 
   useEffect(() => {
     if (user) {
@@ -101,11 +118,13 @@ export default function Chat() {
           conversation_id: id,
           sender_id: user!.id,
           content: message.trim(),
+          message_type: messageType,
         });
 
       if (error) throw error;
       
       setMessage("");
+      setMessageType("normal");
       fetchMessages(id);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -138,29 +157,54 @@ export default function Chat() {
             ) : messages.length === 0 ? (
               <p className="text-center text-muted-foreground text-sm">Début de la conversation</p>
             ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
-                >
+              messages.map((msg) => {
+                const typeConfig = messageTypeConfig[msg.message_type || 'normal'] || messageTypeConfig.normal;
+                const TypeIcon = typeConfig.icon;
+                return (
                   <div
-                    className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                      msg.sender_id === user.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-secondary-foreground'
-                    }`}
+                    key={msg.id}
+                    className={`flex ${msg.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="text-sm">{msg.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    <div
+                      className={cn(
+                        "max-w-[70%] rounded-lg px-4 py-2 border",
+                        msg.message_type && msg.message_type !== 'normal'
+                          ? typeConfig.bg
+                          : msg.sender_id === user.id
+                            ? 'bg-primary text-primary-foreground border-transparent'
+                            : 'bg-secondary text-secondary-foreground border-transparent'
+                      )}
+                    >
+                      {msg.message_type && msg.message_type !== 'normal' && (
+                        <div className={`flex items-center gap-1 text-xs mb-1 ${typeConfig.color}`}>
+                          <TypeIcon className="h-3 w-3" />
+                          <span className="capitalize">{msg.message_type}</span>
+                        </div>
+                      )}
+                      <p className="text-sm">{msg.content}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
           <div className="flex gap-2 pt-4 border-t">
+            <Select value={messageType} onValueChange={setMessageType}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="announcement">Annonce</SelectItem>
+                <SelectItem value="important">Important</SelectItem>
+                <SelectItem value="info">Info</SelectItem>
+              </SelectContent>
+            </Select>
             <Input 
+              className="flex-1"
               placeholder="Votre message..." 
               value={message} 
               onChange={e => setMessage(e.target.value)}

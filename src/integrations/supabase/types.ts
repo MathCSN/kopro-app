@@ -399,6 +399,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_broadcast: boolean | null
           name: string | null
           residence_id: string | null
           type: string | null
@@ -407,6 +408,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_broadcast?: boolean | null
           name?: string | null
           residence_id?: string | null
           type?: string | null
@@ -415,6 +417,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_broadcast?: boolean | null
           name?: string | null
           residence_id?: string | null
           type?: string | null
@@ -810,6 +813,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          message_type: string | null
           sender_id: string
           updated_at: string
         }
@@ -819,6 +823,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          message_type?: string | null
           sender_id: string
           updated_at?: string
         }
@@ -828,6 +833,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          message_type?: string | null
           sender_id?: string
           updated_at?: string
         }
@@ -1962,6 +1968,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vault_documents: {
+        Row: {
+          category: string | null
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       visitors: {
         Row: {

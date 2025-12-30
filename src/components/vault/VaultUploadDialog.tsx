@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Plus, Upload, FileText, X } from "lucide-react";
+import { Plus, Upload, FileText, X, Loader2 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import {
   Dialog,
@@ -67,7 +67,7 @@ export function VaultUploadDialog({ onUploaded }: VaultUploadDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!file) {
+    if (!file || !user) {
       toast.error("Veuillez sélectionner un fichier");
       return;
     }
@@ -75,33 +75,48 @@ export function VaultUploadDialog({ onUploaded }: VaultUploadDialogProps) {
     setLoading(true);
 
     try {
-      // Upload to storage
+      // Build the file path: userId/timestamp_filename.ext
       const fileExt = file.name.split(".").pop();
-      const fileName = `${user!.id}/${Date.now()}_${customName || file.name}`;
-      const filePath = `vault/${fileName}.${fileExt}`;
+      const timestamp = Date.now();
+      const safeName = (customName || file.name.replace(/\.[^/.]+$/, "")).replace(/[^a-zA-Z0-9_-]/g, "_");
+      const storagePath = `${user.id}/${timestamp}_${safeName}.${fileExt}`;
 
+      // Upload to vault bucket
       const { error: uploadError } = await supabase.storage
-        .from("user-vault")
-        .upload(filePath, file);
+        .from("vault")
+        .upload(storagePath, file);
 
       if (uploadError) {
-        // If bucket doesn't exist, create the record anyway with a placeholder URL
-        console.warn("Storage upload failed, bucket may not exist:", uploadError);
+        console.error("Storage upload error:", uploadError);
+        throw new Error("Échec de l'upload du fichier");
       }
 
-      const { data: urlData } = supabase.storage
-        .from("user-vault")
-        .getPublicUrl(filePath);
+      // Create database record
+      const { error: dbError } = await supabase
+        .from("vault_documents")
+        .insert({
+          user_id: user.id,
+          file_name: `${customName || file.name.replace(/\.[^/.]+$/, "")}.${fileExt}`,
+          file_url: storagePath,
+          file_size: file.size,
+          category: categories.find(c => c.value === category)?.label || category,
+          mime_type: file.type,
+        });
 
-      // For now, we'll store vault files info locally since we don't have a vault_files table
-      // In production, you'd want to create this table
+      if (dbError) {
+        console.error("Database insert error:", dbError);
+        // Try to clean up the uploaded file
+        await supabase.storage.from("vault").remove([storagePath]);
+        throw new Error("Échec de l'enregistrement");
+      }
+
       toast.success("Document ajouté au coffre-fort");
       setOpen(false);
       resetForm();
       onUploaded?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
-      toast.error("Erreur lors de l'ajout du document");
+      toast.error(error.message || "Erreur lors de l'ajout du document");
     } finally {
       setLoading(false);
     }
@@ -210,11 +225,18 @@ export function VaultUploadDialog({ onUploaded }: VaultUploadDialogProps) {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Annuler
             </Button>
             <Button type="submit" disabled={loading || !file}>
-              {loading ? "Ajout..." : "Ajouter"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Ajout...
+                </>
+              ) : (
+                "Ajouter"
+              )}
             </Button>
           </div>
         </form>

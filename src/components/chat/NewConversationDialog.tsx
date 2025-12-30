@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Users, User, Send } from "lucide-react";
+import { Plus, Users, User, Send, AlertTriangle, Info, Megaphone } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +38,13 @@ interface UserProfile {
   email: string | null;
 }
 
+const messageTypes = [
+  { value: "normal", label: "Normal", icon: Send, color: "" },
+  { value: "announcement", label: "Annonce", icon: Megaphone, color: "text-blue-500" },
+  { value: "important", label: "Important", icon: AlertTriangle, color: "text-amber-500" },
+  { value: "info", label: "Info", icon: Info, color: "text-green-500" },
+];
+
 export function NewConversationDialog({ onCreated }: NewConversationDialogProps) {
   const { user } = useAuth();
   const { selectedResidence, residences, isAllResidences } = useResidence();
@@ -41,6 +55,7 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
   const [conversationType, setConversationType] = useState<"direct" | "group">("direct");
   const [groupName, setGroupName] = useState("");
   const [firstMessage, setFirstMessage] = useState("");
+  const [messageType, setMessageType] = useState("normal");
   const [sendToAllResidences, setSendToAllResidences] = useState(false);
 
   useEffect(() => {
@@ -126,6 +141,7 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
           conversation_id: conversation.id,
           sender_id: user!.id,
           content: firstMessage.trim(),
+          message_type: messageType,
         });
 
         if (msgError) throw msgError;
@@ -148,6 +164,7 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
     setConversationType("direct");
     setGroupName("");
     setFirstMessage("");
+    setMessageType("normal");
     setSendToAllResidences(false);
   };
 
@@ -301,6 +318,29 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
                 {selectedUsers.length} sélectionné(s)
               </p>
             )}
+          </div>
+
+          {/* Message Type */}
+          <div className="space-y-2">
+            <Label>Type de message</Label>
+            <Select value={messageType} onValueChange={setMessageType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {messageTypes.map((type) => {
+                  const Icon = type.icon;
+                  return (
+                    <SelectItem key={type.value} value={type.value}>
+                      <div className="flex items-center gap-2">
+                        <Icon className={`h-4 w-4 ${type.color}`} />
+                        {type.label}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* First Message */}
