@@ -118,8 +118,34 @@ export default function Newsfeed() {
     type: "info",
     event_date: "",
     event_location: "",
+    sendToAllResidences: false,
   });
   const [posting, setPosting] = useState(false);
+  const [allResidences, setAllResidences] = useState<{id: string; name: string}[]>([]);
+
+  // Check if user is manager or owner
+  const isManager = profile?.role === 'manager' || profile?.role === 'owner';
+
+  // Fetch all residences for managers
+  useEffect(() => {
+    if (isManager && user) {
+      fetchAllResidences();
+    }
+  }, [isManager, user]);
+
+  const fetchAllResidences = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('residences')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      setAllResidences(data || []);
+    } catch (error) {
+      console.error('Error fetching residences:', error);
+    }
+  };
 
   // Comments
   const [expandedComments, setExpandedComments] = useState<string | null>(null);
@@ -349,32 +375,53 @@ export default function Newsfeed() {
   };
 
   const handleCreatePost = async () => {
-    if (!newPost.content.trim() || !selectedResidence) return;
+    if (!newPost.content.trim()) return;
+    if (!newPost.sendToAllResidences && !selectedResidence) return;
 
     setPosting(true);
     try {
-      const postData: any = {
+      const basePostData: any = {
         title: newPost.title || null,
         content: newPost.content,
         type: newPost.type,
         author_id: user!.id,
-        residence_id: selectedResidence.id,
       };
 
       if (newPost.type === 'event' && newPost.event_date) {
-        postData.event_date = new Date(newPost.event_date).toISOString();
-        postData.event_location = newPost.event_location || null;
+        basePostData.event_date = new Date(newPost.event_date).toISOString();
+        basePostData.event_location = newPost.event_location || null;
       }
 
-      const { error } = await supabase
-        .from('posts')
-        .insert(postData);
+      if (newPost.sendToAllResidences && isManager && allResidences.length > 0) {
+        // Create post for all residences
+        const postsToInsert = allResidences.map(residence => ({
+          ...basePostData,
+          residence_id: residence.id,
+        }));
 
-      if (error) throw error;
+        const { error } = await supabase
+          .from('posts')
+          .insert(postsToInsert);
 
-      toast.success('Publication créée');
+        if (error) throw error;
+
+        toast.success(`Publication envoyée à ${allResidences.length} résidence(s)`);
+      } else {
+        // Create post for selected residence only
+        const { error } = await supabase
+          .from('posts')
+          .insert({
+            ...basePostData,
+            residence_id: selectedResidence!.id,
+          });
+
+        if (error) throw error;
+
+        toast.success('Publication créée');
+      }
+
       setShowNewPost(false);
-      setNewPost({ title: "", content: "", type: "info", event_date: "", event_location: "" });
+      setNewPost({ title: "", content: "", type: "info", event_date: "", event_location: "", sendToAllResidences: false });
       fetchPosts();
     } catch (error: any) {
       toast.error('Erreur lors de la création');
@@ -752,6 +799,25 @@ export default function Newsfeed() {
                     />
                   </div>
                 </>
+              )}
+
+              {/* Send to all residences - Manager only */}
+              {isManager && allResidences.length > 1 && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                  <input
+                    type="checkbox"
+                    id="sendToAll"
+                    checked={newPost.sendToAllResidences}
+                    onChange={(e) => setNewPost({ ...newPost, sendToAllResidences: e.target.checked })}
+                    className="h-4 w-4 rounded border-border"
+                  />
+                  <label htmlFor="sendToAll" className="flex-1 cursor-pointer">
+                    <span className="font-medium text-sm">Envoyer à tout mon parc</span>
+                    <p className="text-xs text-muted-foreground">
+                      Cette publication sera envoyée à {allResidences.length} résidence(s)
+                    </p>
+                  </label>
+                </div>
               )}
             </div>
             <DialogFooter>
