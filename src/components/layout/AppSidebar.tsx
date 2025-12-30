@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Calendar,
   Cog,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   reservations: Calendar,
   directory: Users,
   chat: MessageCircle,
+  assistant: Bot,
   marketplace: ShoppingBag,
   household: UsersRound,
   tenants: Users,
