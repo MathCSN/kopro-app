@@ -245,6 +245,59 @@ export default function Dashboard() {
           </Card>
         )}
 
+        {/* Getting Started - Manager only */}
+        {isManager() && (
+          <Card className="shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-lg">Démarrer avec Kopro</CardTitle>
+              <CardDescription>Configurez votre espace de gestion en quelques étapes</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div 
+                className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                onClick={() => navigate("/tenants")}
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Gérer vos locataires</p>
+                  <p className="text-sm text-muted-foreground">Ajoutez et suivez vos locataires</p>
+                </div>
+                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+              
+              <div 
+                className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                onClick={() => navigate("/rental")}
+              >
+                <div className="w-10 h-10 rounded-lg bg-kopro-teal/10 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-kopro-teal" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Module location</p>
+                  <p className="text-sm text-muted-foreground">Gérez vos biens et candidatures</p>
+                </div>
+                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+              
+              <div 
+                className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                onClick={() => navigate("/tickets")}
+              >
+                <div className="w-10 h-10 rounded-lg bg-kopro-rose/10 flex items-center justify-center">
+                  <Ticket className="h-5 w-5 text-kopro-rose" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Suivre les incidents</p>
+                  <p className="text-sm text-muted-foreground">Consultez et traitez les signalements</p>
+                </div>
+                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quick Actions */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action) => (

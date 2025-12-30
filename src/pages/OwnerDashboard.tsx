@@ -159,60 +159,9 @@ export default function OwnerDashboard() {
           </Card>
         </div>
 
+        {/* Quick Actions */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Getting Started / Empty state */}
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle className="font-display text-lg">Démarrer avec Kopro</CardTitle>
-              <CardDescription>Configurez votre plateforme en quelques étapes</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div 
-                className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
-                onClick={() => navigate("/owner/residences")}
-              >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">Créer votre première résidence</p>
-                  <p className="text-sm text-muted-foreground">Ajoutez une copropriété à gérer</p>
-                </div>
-                <Plus className="h-5 w-5 text-muted-foreground" />
-              </div>
-              
-              <div 
-                className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
-                onClick={() => navigate("/owner/managers")}
-              >
-                <div className="w-10 h-10 rounded-lg bg-kopro-purple/10 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-kopro-purple" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">Ajouter des gestionnaires</p>
-                  <p className="text-sm text-muted-foreground">Invitez votre équipe de gestion</p>
-                </div>
-                <Plus className="h-5 w-5 text-muted-foreground" />
-              </div>
-              
-              <div 
-                className="flex items-center gap-4 p-4 rounded-lg bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
-                onClick={() => navigate("/owner/settings")}
-              >
-                <div className="w-10 h-10 rounded-lg bg-kopro-teal/10 flex items-center justify-center">
-                  <Settings className="h-5 w-5 text-kopro-teal" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">Configurer la plateforme</p>
-                  <p className="text-sm text-muted-foreground">Personnalisez les paramètres globaux</p>
-                </div>
-                <Settings className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="shadow-soft">
+          <Card className="shadow-soft lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="font-display text-lg">Actions rapides</CardTitle>
               <CardDescription>Accédez rapidement aux fonctionnalités principales</CardDescription>
