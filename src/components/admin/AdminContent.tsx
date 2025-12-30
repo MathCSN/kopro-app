@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { SmtpConfigForm } from "@/components/settings/SmtpConfigForm";
 import { LotsManagement } from "@/components/admin/lots/LotsManagement";
+import { UsersManagement } from "@/components/admin/users/UsersManagement";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -125,28 +126,7 @@ export function AdminContent() {
         </TabsContent>
 
         <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>Utilisateurs</CardTitle>
-              <CardDescription>Gérez les utilisateurs de la résidence</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" onClick={() => handleFeatureClick("Ajouter un utilisateur")}>
-                  Ajouter un utilisateur
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Inviter par email")}>
-                  Inviter par email
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Gérer les rôles")}>
-                  Gérer les rôles
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Exporter la liste")}>
-                  Exporter la liste
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <UsersManagement />
         </TabsContent>
 
         <TabsContent value="templates">
