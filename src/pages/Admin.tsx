@@ -8,7 +8,7 @@ import { SmtpConfigForm } from "@/components/settings/SmtpConfigForm";
 import { AdminContent } from "@/components/admin/AdminContent";
 
 export default function Admin() {
-  const { user, logout, isManager } = useAuth();
+  const { user, profile, logout, isManager } = useAuth();
   const navigate = useNavigate();
 
   if (!user || !isManager()) {
@@ -17,7 +17,7 @@ export default function Admin() {
   }
 
   return (
-    <AppLayout userRole={user.role} onLogout={logout}>
+    <AppLayout userRole={profile?.role || "resident"} onLogout={logout}>
       <AdminContent />
     </AppLayout>
   );
