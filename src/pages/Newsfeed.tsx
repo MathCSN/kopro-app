@@ -102,8 +102,8 @@ const categoryIcons: Record<string, any> = {
   "request": HelpCircle,
 };
 
-export default function Newsfeed() {
-  const { user, profile, logout } = useAuth();
+function NewsfeedContent() {
+  const { user, profile } = useAuth();
   const { selectedResidence } = useResidence();
   const [posts, setPosts] = useState<PostWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -462,10 +462,6 @@ export default function Newsfeed() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -500,8 +496,7 @@ export default function Newsfeed() {
   if (!user || !profile) return null;
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -863,8 +858,25 @@ export default function Newsfeed() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
-      </div>
+      </Dialog>
+    </div>
+  );
+}
+
+export default function Newsfeed() {
+  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (!user || !profile) return null;
+
+  return (
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
+      <NewsfeedContent />
     </AppLayout>
   );
 }

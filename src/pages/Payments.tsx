@@ -155,8 +155,8 @@ function PaymentDetail({ id }: { id: string }) {
   );
 }
 
-export default function Payments() {
-  const { user, profile, logout, isManager } = useAuth();
+function PaymentsContent() {
+  const { user, profile, isManager } = useAuth();
   const { selectedResidence } = useResidence();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -253,15 +253,7 @@ export default function Payments() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
-  if (!user || !profile) {
-    navigate("/auth");
-    return null;
-  }
+  if (!user || !profile) return null;
 
   if (id) {
     return <PaymentDetail id={id} />;
@@ -283,8 +275,7 @@ export default function Payments() {
   const totalPending = lotFinances.reduce((sum, l) => sum + l.total_pending, 0);
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Paiements & Charges</h1>
@@ -522,6 +513,31 @@ export default function Payments() {
           )}
         </Tabs>
       </div>
+  );
+}
+
+export default function Payments() {
+  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (!user || !profile) {
+    navigate("/auth");
+    return null;
+  }
+
+  if (id) {
+    return <PaymentDetail id={id} />;
+  }
+
+  return (
+    <AppLayout userRole={profile.role} onLogout={handleLogout}>
+      <PaymentsContent />
     </AppLayout>
   );
 }
