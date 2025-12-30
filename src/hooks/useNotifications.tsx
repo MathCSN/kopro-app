@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export interface Notification {
   id: string;
@@ -34,13 +35,7 @@ export function useNotifications() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -184,7 +179,105 @@ export function useNotifications() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user, fetchNotifications]);
+
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    console.log("Setting up realtime notification subscriptions");
+
+    const channel = supabase
+      .channel('notifications-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'packages' },
+        (payload) => {
+          console.log("New package received:", payload);
+          toast.info("Nouveau colis reçu", {
+            description: `Colis pour ${payload.new.recipient_name}`,
+          });
+          fetchNotifications();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'tickets' },
+        (payload) => {
+          console.log("New ticket created:", payload);
+          toast.info("Nouveau ticket", {
+            description: payload.new.title,
+          });
+          fetchNotifications();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        (payload) => {
+          console.log("New post created:", payload);
+          // Don't notify for own posts
+          if (payload.new.author_id !== user.id) {
+            toast.info("Nouvelle publication", {
+              description: payload.new.title || "Nouveau contenu dans le fil d'actualités",
+            });
+          }
+          fetchNotifications();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'payments' },
+        (payload) => {
+          console.log("New payment created:", payload);
+          if (payload.new.user_id === user.id) {
+            toast.info("Nouveau paiement", {
+              description: `${payload.new.description || "Paiement"} - ${payload.new.amount}€`,
+            });
+            fetchNotifications();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          console.log("New message received:", payload);
+          // Don't notify for own messages
+          if (payload.new.sender_id !== user.id) {
+            toast.info("Nouveau message", {
+              description: "Vous avez reçu un nouveau message",
+            });
+            fetchNotifications();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'packages' },
+        () => fetchNotifications()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'tickets' },
+        () => fetchNotifications()
+      )
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
+
+    return () => {
+      console.log("Cleaning up realtime notification subscriptions");
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchNotifications]);
 
   const refresh = () => {
     setLoading(true);
