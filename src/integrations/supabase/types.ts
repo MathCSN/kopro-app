@@ -1363,6 +1363,68 @@ export type Database = {
           },
         ]
       }
+      residence_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string | null
+          first_name: string | null
+          id: string
+          invited_by: string | null
+          last_name: string | null
+          message: string | null
+          residence_id: string
+          role: string
+          status: string
+          token: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          first_name?: string | null
+          id?: string
+          invited_by?: string | null
+          last_name?: string | null
+          message?: string | null
+          residence_id: string
+          role?: string
+          status?: string
+          token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          first_name?: string | null
+          id?: string
+          invited_by?: string | null
+          last_name?: string | null
+          message?: string | null
+          residence_id?: string
+          role?: string
+          status?: string
+          token?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "residence_invitations_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       residences: {
         Row: {
           address: string | null

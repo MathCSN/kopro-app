@@ -62,6 +62,9 @@ export function InviteUserDialog({
         throw new Error("Email invalide");
       }
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Check if user already exists
       const { data: existingProfile } = await supabase
         .from("profiles")
@@ -94,6 +97,38 @@ export function InviteUserDialog({
         return { type: "existing" as const };
       }
 
+      // Check if invitation already exists
+      const { data: existingInvitation } = await supabase
+        .from("residence_invitations")
+        .select("id, status")
+        .eq("residence_id", residenceId)
+        .eq("email", email.toLowerCase())
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (existingInvitation) {
+        throw new Error("Une invitation est déjà en attente pour cet email");
+      }
+
+      // Create invitation record
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const { error: inviteError } = await supabase
+        .from("residence_invitations")
+        .insert({
+          residence_id: residenceId,
+          email: email.toLowerCase(),
+          first_name: firstName || null,
+          last_name: lastName || null,
+          role: role,
+          message: message || null,
+          invited_by: user?.id || null,
+          expires_at: expiresAt.toISOString(),
+        });
+
+      if (inviteError) throw inviteError;
+
       // Send invitation email via edge function
       const { error: emailError } = await supabase.functions.invoke("send-email", {
         body: {
@@ -104,6 +139,7 @@ export function InviteUserDialog({
             <p>Vous êtes invité(e) à rejoindre la résidence <strong>${residenceName}</strong> en tant que <strong>${ROLE_LABELS[role]}</strong>.</p>
             ${message ? `<p>Message du gestionnaire : ${message}</p>` : ""}
             <p>Pour accepter cette invitation, créez votre compte sur notre plateforme.</p>
+            <p>Cette invitation expire dans 7 jours.</p>
             <p>Cordialement,<br/>L'équipe de gestion</p>
           `,
         },
@@ -111,28 +147,13 @@ export function InviteUserDialog({
 
       if (emailError) {
         console.error("Email error:", emailError);
-        // Don't throw here, continue to create pending invitation record
       }
-
-      // Store invitation in audit_logs for tracking
-      await supabase.from("audit_logs").insert({
-        action: "user_invited",
-        entity_type: "invitation",
-        residence_id: residenceId,
-        metadata: {
-          email: email.toLowerCase(),
-          role,
-          first_name: firstName,
-          last_name: lastName,
-          message,
-          invited_at: new Date().toISOString(),
-        },
-      });
 
       return { type: "invited" as const, emailSent: !emailError };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["residence-users"] });
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
       
       if (result.type === "existing") {
         toast.success("Rôle ajouté à l'utilisateur existant");
