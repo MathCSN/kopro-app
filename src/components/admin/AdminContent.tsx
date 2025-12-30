@@ -20,34 +20,34 @@ export function AdminContent() {
       <h1 className="font-display text-2xl lg:text-3xl font-bold">Administration</h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="overview">
-            <Settings className="h-4 w-4 mr-2" />
-            Aperçu
+        <TabsList className="h-auto flex-wrap gap-1 p-1">
+          <TabsTrigger value="overview" className="gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Aperçu</span>
           </TabsTrigger>
-          <TabsTrigger value="residence">
-            <Building2 className="h-4 w-4 mr-2" />
-            Résidence
+          <TabsTrigger value="residence" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Résidence</span>
           </TabsTrigger>
-          <TabsTrigger value="lots">
-            <Home className="h-4 w-4 mr-2" />
-            Lots & Tantièmes
+          <TabsTrigger value="lots" className="gap-2">
+            <Home className="h-4 w-4" />
+            <span className="hidden sm:inline">Lots</span>
           </TabsTrigger>
-          <TabsTrigger value="users">
-            <Users className="h-4 w-4 mr-2" />
-            Utilisateurs
+          <TabsTrigger value="users" className="gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Utilisateurs</span>
           </TabsTrigger>
-          <TabsTrigger value="templates">
-            <FileText className="h-4 w-4 mr-2" />
-            Templates
+          <TabsTrigger value="templates" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Templates</span>
           </TabsTrigger>
-          <TabsTrigger value="smtp">
-            <Mail className="h-4 w-4 mr-2" />
-            Emails (SMTP)
+          <TabsTrigger value="smtp" className="gap-2">
+            <Mail className="h-4 w-4" />
+            <span className="hidden sm:inline">SMTP</span>
           </TabsTrigger>
-          <TabsTrigger value="integrations">
-            <Wrench className="h-4 w-4 mr-2" />
-            Intégrations
+          <TabsTrigger value="integrations" className="gap-2">
+            <Wrench className="h-4 w-4" />
+            <span className="hidden sm:inline">Intégrations</span>
           </TabsTrigger>
         </TabsList>
 
