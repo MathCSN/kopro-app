@@ -129,12 +129,39 @@ function AIAssistantContent() {
     );
   }
 
+  const handleActivateAI = async () => {
+    if (!selectedResidence) return;
+    
+    try {
+      const { error } = await supabase
+        .from("residence_ai_settings")
+        .upsert({
+          residence_id: selectedResidence.id,
+          enabled: true,
+          welcome_message: "Bonjour ! Je suis votre assistant résidence. Comment puis-je vous aider ?",
+        }, { onConflict: "residence_id" });
+
+      if (error) throw error;
+
+      setAiEnabled(true);
+      setWelcomeMessage("Bonjour ! Je suis votre assistant résidence. Comment puis-je vous aider ?");
+      toast.success("Assistant IA activé avec succès !");
+    } catch (error) {
+      console.error("Error activating AI:", error);
+      toast.error("Erreur lors de l'activation de l'assistant");
+    }
+  };
+
   if (aiEnabled === false) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <Bot className="h-16 w-16 text-muted-foreground mb-4" />
         <h2 className="text-xl font-semibold mb-2">Assistant non disponible</h2>
-        <p className="text-muted-foreground">L'assistant IA n'est pas activé pour cette résidence.</p>
+        <p className="text-muted-foreground mb-6">L'assistant IA n'est pas activé pour cette résidence.</p>
+        <Button onClick={handleActivateAI} className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          Activer l'assistant IA
+        </Button>
       </div>
     );
   }
