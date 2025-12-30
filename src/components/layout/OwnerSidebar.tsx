@@ -89,7 +89,7 @@ function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
       className={cn(
         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
         isActive(item.href)
-          ? "bg-kopro-amber text-white shadow-soft"
+          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-soft"
           : "text-slate-300 hover:bg-slate-800 hover:text-white"
       )}
     >
@@ -98,7 +98,7 @@ function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
         <>
           <span className="font-medium truncate">{item.title}</span>
           {item.badge && (
-            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 text-white text-xs font-semibold px-1.5">
+            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 text-sidebar-primary-foreground text-xs font-semibold px-1.5">
               {item.badge}
             </span>
           )}

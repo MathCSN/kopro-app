@@ -14,8 +14,8 @@ export function AppLayout({ children, userRole = "resident", onLogout }: AppLayo
   return (
     <ResidenceProvider>
       <div className="flex min-h-screen w-full bg-background">
-        {/* Desktop Sidebar - Fixed position */}
-        <div className="hidden md:block">
+        {/* Desktop Sidebar - Fixed position, full height */}
+        <div className="hidden md:block shrink-0">
           <AppSidebar userRole={userRole} onLogout={onLogout} />
         </div>
 
@@ -23,7 +23,7 @@ export function AppLayout({ children, userRole = "resident", onLogout }: AppLayo
         <MobileNav userRole={userRole} onLogout={onLogout} />
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-h-screen w-full">
+        <main className="flex-1 flex flex-col min-h-screen w-full overflow-hidden">
           {/* Mobile top padding - increased for residence selector */}
           <div className="h-[104px] md:hidden shrink-0" />
           

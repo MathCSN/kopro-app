@@ -52,7 +52,7 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
                   <span className="sr-only">Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-72">
+              <SheetContent side="left" className="p-0 w-72 [&>button]:hidden">
                 <AppSidebar userRole={userRole} onLogout={onLogout} />
               </SheetContent>
             </Sheet>
