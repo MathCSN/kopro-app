@@ -33,6 +33,7 @@ import NotFound from "./pages/NotFound";
 import Tenants from "./pages/Tenants";
 import Profile from "./pages/Profile";
 import Household from "./pages/Household";
+import ServiceProviders from "./pages/ServiceProviders";
 
 // Owner Pages
 import OwnerDashboard from "./pages/OwnerDashboard";
@@ -128,6 +129,7 @@ const App = () => (
             <Route path="/admin/templates" element={<ProtectedRoute requiredRole="manager"><Admin /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/household" element={<ProtectedRoute><Household /></ProtectedRoute>} />
+            <Route path="/providers" element={<ProtectedRoute><ServiceProviders /></ProtectedRoute>} />
             <Route path="/settings" element={<Navigate to="/admin" replace />} />
             <Route path="/analytics" element={<ProtectedRoute requiredRole="manager"><Dashboard /></ProtectedRoute>} />
             
