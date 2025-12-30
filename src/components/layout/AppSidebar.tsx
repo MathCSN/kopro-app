@@ -19,8 +19,6 @@ import {
   User,
   UsersRound,
   Wrench,
-  Package,
-  UserCheck,
   ShoppingBag,
   Calendar,
   Cog,
@@ -45,8 +43,6 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   household: UsersRound,
   tenants: Users,
   payments: CreditCard,
-  packages: Package,
-  visitors: UserCheck,
   ag: Vote,
   providers: Wrench,
   units: Home,
@@ -66,6 +62,7 @@ const itemRoleRestrictions: Record<string, string[]> = {
   analytics: ["manager", "admin", "owner"],
   admin: ["manager", "admin", "owner"],
   household: ["resident"],
+  marketplace: ["resident", "cs"],
 };
 
 interface AppSidebarProps {
