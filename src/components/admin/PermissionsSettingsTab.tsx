@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useResidence } from "@/contexts/ResidenceContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -77,25 +76,22 @@ const PERMISSIONS: Permission[] = [
 ];
 
 export function PermissionsSettingsTab() {
-  const { selectedResidence } = useResidence();
   const queryClient = useQueryClient();
   const [pendingChanges, setPendingChanges] = useState<Record<string, boolean>>({});
 
-  // Fetch current permissions
+  // Fetch global agency permissions (residence_id IS NULL)
   const { data: permissions = [], isLoading } = useQuery({
-    queryKey: ["role-permissions", selectedResidence?.id],
+    queryKey: ["role-permissions-global"],
     queryFn: async () => {
-      if (!selectedResidence) return [];
       const { data, error } = await supabase
         .from("role_permissions")
         .select("*")
-        .eq("residence_id", selectedResidence.id)
+        .is("residence_id", null)
         .eq("role", "cs");
       
       if (error) throw error;
       return data || [];
     },
-    enabled: !!selectedResidence,
   });
 
   // Build permissions map
