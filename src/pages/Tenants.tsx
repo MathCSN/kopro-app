@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
 import { ResidenceShareDialog } from "@/components/residence/ResidenceShareDialog";
+import { InviteUserDialog } from "@/components/admin/users/InviteUserDialog";
 
 interface Tenant {
   id: string;
@@ -48,6 +49,7 @@ function TenantsContent() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (selectedResidence || isAllResidences) {
@@ -186,7 +188,11 @@ function TenantsContent() {
                 </Button>
               </>
             )}
-            <Button className="gap-2" disabled={!selectedResidence && !isAllResidences}>
+            <Button 
+              className="gap-2" 
+              disabled={!selectedResidence}
+              onClick={() => setInviteDialogOpen(true)}
+            >
               <UserPlus className="h-4 w-4" />
               Ajouter un locataire
             </Button>
@@ -250,8 +256,12 @@ function TenantsContent() {
                   ? "Aucun locataire ne correspond à votre recherche."
                   : "Les locataires apparaîtront ici lorsqu'ils rejoindront la résidence."}
               </p>
-              {!search && (
-                <Button variant="outline" className="gap-2">
+              {!search && selectedResidence && (
+                <Button 
+                  variant="outline" 
+                  className="gap-2"
+                  onClick={() => setInviteDialogOpen(true)}
+                >
                   <UserPlus className="h-4 w-4" />
                   Ajouter un locataire
                 </Button>
@@ -297,6 +307,16 @@ function TenantsContent() {
           residenceName={selectedResidence.name}
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
+        />
+      )}
+
+      {/* Invite Dialog */}
+      {selectedResidence && (
+        <InviteUserDialog
+          residenceId={selectedResidence.id}
+          residenceName={selectedResidence.name}
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
         />
       )}
     </>
