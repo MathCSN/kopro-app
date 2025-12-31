@@ -25,6 +25,7 @@ import Admin from "./pages/Admin";
 import Rental from "./pages/Rental";
 import RentalUnits from "./pages/RentalUnits";
 import NewUnit from "./pages/NewUnit";
+import EditUnit from "./pages/EditUnit";
 import RentalVacancies from "./pages/RentalVacancies";
 import RentalApplications from "./pages/RentalApplications";
 import NewVacancy from "./pages/NewVacancy";
@@ -141,6 +142,7 @@ const App = () => (
             <Route path="/rental" element={<ProtectedRoute requireRental><Rental /></ProtectedRoute>} />
             <Route path="/rental/units" element={<ProtectedRoute requireRental><RentalUnits /></ProtectedRoute>} />
             <Route path="/rental/units/new" element={<ProtectedRoute requireRental><NewUnit /></ProtectedRoute>} />
+            <Route path="/rental/units/:id/edit" element={<ProtectedRoute requireRental><EditUnit /></ProtectedRoute>} />
             <Route path="/rental/vacancies" element={<ProtectedRoute requireRental><RentalVacancies /></ProtectedRoute>} />
             <Route path="/rental/vacancies/new" element={<ProtectedRoute requireRental><NewVacancy /></ProtectedRoute>} />
             <Route path="/rental/vacancies/:id" element={<ProtectedRoute requireRental><Rental /></ProtectedRoute>} />
