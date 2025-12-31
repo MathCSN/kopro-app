@@ -165,9 +165,11 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
       </div>
 
       {/* Residence Selector */}
-      <div className="px-3 py-3 border-b border-sidebar-border">
-        <ResidenceSelector collapsed={collapsed} />
-      </div>
+      {userRole !== "owner" && (
+        <div className="px-3 py-3 border-b border-sidebar-border">
+          <ResidenceSelector collapsed={collapsed} />
+        </div>
+      )}
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4" ref={scrollRef}>
