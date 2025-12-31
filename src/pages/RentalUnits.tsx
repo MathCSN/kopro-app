@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, Loader2, Search } from "lucide-react";
+import { Home, Plus, Loader2, Search, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -154,7 +154,7 @@ function RentalUnitsContent() {
       ) : (
         <div className="space-y-3">
           {filteredUnits.map(unit => (
-            <Card key={unit.id} className="shadow-soft hover:shadow-medium cursor-pointer transition-shadow">
+            <Card key={unit.id} className="shadow-soft hover:shadow-medium transition-shadow">
               <CardContent className="p-4 flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                   unit.status === 'vacant' ? 'bg-kopro-amber/10' : 'bg-success/10'
@@ -178,14 +178,16 @@ function RentalUnitsContent() {
                     {unit.rent_target && ` · ${unit.rent_target}€/mois`}
                   </p>
                 </div>
-                {unit.status === 'vacant' && (
-                  <Button size="sm" variant="outline" onClick={(e) => {
-                    e.stopPropagation();
-                    navigate('/rental/vacancies/new');
-                  }}>
-                    Créer annonce
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => navigate(`/rental/units/${unit.id}/edit`)}>
+                    <Edit className="h-4 w-4" />
                   </Button>
-                )}
+                  {unit.status === 'vacant' && (
+                    <Button size="sm" variant="outline" onClick={() => navigate('/rental/vacancies/new')}>
+                      Créer annonce
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
