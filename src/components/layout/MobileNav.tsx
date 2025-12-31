@@ -15,13 +15,21 @@ import { Button } from "@/components/ui/button";
 import { AppSidebar } from "./AppSidebar";
 import { ResidenceSelector } from "./ResidenceSelector";
 
-const mobileNavItems = [
-  { title: "Accueil", href: "/dashboard", icon: Home },
-  { title: "Actus", href: "/newsfeed", icon: Newspaper },
-  { title: "Incidents", href: "/tickets", icon: Ticket },
-  { title: "Locataires", href: "/tenants", icon: Users },
-  { title: "Messages", href: "/chat", icon: MessageCircle },
-];
+const getMobileNavItems = (userRole?: string) => {
+  const baseItems = [
+    { title: "Accueil", href: "/dashboard", icon: Home },
+    { title: "Actus", href: "/newsfeed", icon: Newspaper },
+    { title: "Incidents", href: "/tickets", icon: Ticket },
+    { title: "Messages", href: "/chat", icon: MessageCircle },
+  ];
+  
+  // Add Tenants only for managers/admin/owner
+  if (userRole === "manager" || userRole === "admin" || userRole === "owner") {
+    baseItems.splice(3, 0, { title: "Locataires", href: "/tenants", icon: Users });
+  }
+  
+  return baseItems;
+};
 
 interface MobileNavProps {
   userRole?: string;
@@ -76,7 +84,7 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
       {/* Bottom Navigation Bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border bg-background">
         <div className="flex items-center justify-around h-16 px-2">
-          {mobileNavItems.map((item) => (
+          {getMobileNavItems(userRole).map((item) => (
             <NavLink
               key={item.href}
               to={item.href}

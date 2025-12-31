@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Users, Search, MessageCircle, Mail, Phone, Building2 } from "lucide-react";
+import { useResidence } from "@/contexts/ResidenceContext";
+import { Search, MessageCircle, Mail, Phone, Building2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +63,8 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function Directory() {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
+  const { selectedResidence } = useResidence();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -70,6 +72,8 @@ export default function Directory() {
     navigate("/auth");
     return null;
   }
+  
+  const userRole = profile?.role || "resident";
 
   const filteredResidents = sampleResidents.filter(r =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -77,7 +81,7 @@ export default function Directory() {
   );
 
   return (
-    <AppLayout userRole={user.role} onLogout={logout}>
+    <AppLayout userRole={userRole} onLogout={logout}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

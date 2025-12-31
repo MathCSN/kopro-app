@@ -246,9 +246,10 @@ export default function Household() {
   };
 
   if (!user) return null;
+  const userRole = profile?.role || "resident";
 
   return (
-    <AppLayout userRole="resident" onLogout={logout}>
+    <AppLayout userRole={userRole} onLogout={logout}>
       <div className="space-y-6 animate-fade-in">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Mon Foyer</h1>

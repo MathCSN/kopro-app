@@ -139,7 +139,7 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Tickets actifs</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/billing")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/quotes")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="h-5 w-5 text-success" />
@@ -148,7 +148,7 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Revenus / mois</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/billing")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/quotes")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <CreditCard className="h-5 w-5 text-warning" />
@@ -175,7 +175,7 @@ export default function OwnerDashboard() {
                 <Users className="h-5 w-5" />
                 <span className="text-sm">Gestionnaires</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/billing")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/quotes")}>
                 <CreditCard className="h-5 w-5" />
                 <span className="text-sm">Facturation</span>
               </Button>
