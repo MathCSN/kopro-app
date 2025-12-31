@@ -569,14 +569,14 @@ export default function Auth() {
                 className="text-xs"
               >
                 <User className="h-3 w-3 mr-1" />
-                Resp. Agence
+                Responsable
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={async () => {
                   setIsLoading(true);
-                  const { error } = await login("syndic@kopro.fr", "test1234");
+                  const { error } = await login("collaborateur@kopro.fr", "test1234");
                   setIsLoading(false);
                   if (error) {
                     toast({
@@ -590,7 +590,7 @@ export default function Auth() {
                 className="text-xs"
               >
                 <User className="h-3 w-3 mr-1" />
-                Syndic
+                Collaborateur
               </Button>
               <Button
                 variant="outline"
