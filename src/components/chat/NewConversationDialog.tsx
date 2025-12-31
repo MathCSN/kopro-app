@@ -180,11 +180,12 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
     }
   };
 
-  const getUserName = (user: UserProfile) => {
-    if (user.first_name || user.last_name) {
-      return `${user.first_name || ""} ${user.last_name || ""}`.trim();
+  const getUserName = (u: UserProfile) => {
+    if (u.first_name || u.last_name) {
+      return `${u.first_name || ""} ${u.last_name || ""}`.trim();
     }
-    return user.email || "Utilisateur";
+    // Masquer les emails personnels - afficher "Contacter SAV KOPRO"
+    return "Contacter SAV KOPRO";
   };
 
   const getUserInitials = (user: UserProfile) => {
@@ -297,9 +298,9 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
                         <p className="text-sm font-medium truncate">
                           {getUserName(u)}
                         </p>
-                        {u.email && (
+                        {(u.first_name || u.last_name) && u.email && (
                           <p className="text-xs text-muted-foreground truncate">
-                            {u.email}
+                            support@kopro.fr
                           </p>
                         )}
                       </div>
