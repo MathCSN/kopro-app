@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, Trash2, Edit, Upload, Home, X, Download } from "lucide-react";
+import { Plus, Search, Building2, Trash2, Edit, Upload, Home, X, Download, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { exportToCsv } from "@/lib/exportCsv";
 import { LotFormDialog } from "./LotFormDialog";
 import { BulkCreateDialog } from "./BulkCreateDialog";
+import { AssignLotDialog } from "./AssignLotDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -54,6 +55,8 @@ export function LotsManagement() {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [assignLotId, setAssignLotId] = useState<string | null>(null);
   const [editingLot, setEditingLot] = useState<Lot | null>(null);
   const [deletingLotId, setDeletingLotId] = useState<string | null>(null);
 
@@ -221,6 +224,10 @@ export function LotsManagement() {
               <Upload className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Création en masse</span>
             </Button>
+            <Button variant="outline" onClick={() => setIsAssignOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Attribuer</span>
+            </Button>
             <Button onClick={() => setIsFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Ajouter un lot</span>
@@ -308,7 +315,18 @@ export function LotsManagement() {
                         </code>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setAssignLotId(lot.id);
+                              setIsAssignOpen(true);
+                            }}
+                            title="Attribuer un résident"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -352,6 +370,16 @@ export function LotsManagement() {
         onOpenChange={setIsBulkOpen}
         residenceId={selectedResidence.id}
         buildings={buildings || []}
+      />
+
+      <AssignLotDialog
+        open={isAssignOpen}
+        onOpenChange={(open) => {
+          setIsAssignOpen(open);
+          if (!open) setAssignLotId(null);
+        }}
+        preselectedLotId={assignLotId}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lots"] })}
       />
 
       <AlertDialog open={!!deletingLotId} onOpenChange={() => setDeletingLotId(null)}>
