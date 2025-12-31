@@ -13,6 +13,7 @@ import {
   Building2,
   Users,
   MessageCircle,
+  Shield,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,7 @@ const roleBadges: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { user, profile, logout, isManager, canAccessRental } = useAuth();
+  const { user, profile, logout, isManager, isAdmin, canAccessRental } = useAuth();
   const navigate = useNavigate();
   
   const [stats, setStats] = useState({
@@ -186,6 +187,27 @@ export default function Dashboard() {
             </Badge>
           </div>
         </div>
+
+        {/* Admin Quick Access */}
+        {isAdmin() && (
+          <Card className="shadow-soft border-kopro-amber/30 bg-kopro-amber/5">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 rounded-xl bg-kopro-amber/20 flex items-center justify-center shrink-0">
+                <Shield className="h-6 w-6 text-kopro-amber" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground">Administration KOPRO</h3>
+                <p className="text-sm text-muted-foreground">
+                  Accéder à la gestion des devis, CRM, comptabilité et paramètres de la plateforme
+                </p>
+              </div>
+              <Button variant="default" size="sm" onClick={() => navigate("/admin/platform")}>
+                <Shield className="h-4 w-4 mr-2" />
+                Espace Admin
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Manager KPI Summary */}
         {isManager() && (
