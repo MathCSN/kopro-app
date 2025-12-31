@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, Users, FileText, CreditCard, MessageCircle, Calendar, Book } from "lucide-react";
+import { Loader2, Shield, Users, FileText, CreditCard, MessageCircle, Calendar, Book, Info } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Permission {
   key: string;
@@ -100,11 +101,9 @@ export function PermissionsSettingsTab() {
     return acc;
   }, {} as Record<string, boolean>);
 
-  // Mutation to update permission
+  // Mutation to update global permission
   const updatePermissionMutation = useMutation({
     mutationFn: async ({ key, enabled }: { key: string; enabled: boolean }) => {
-      if (!selectedResidence) throw new Error("Aucune résidence sélectionnée");
-
       const existing = permissions.find(p => p.permission_key === key);
       
       if (existing) {
@@ -114,10 +113,11 @@ export function PermissionsSettingsTab() {
           .eq("id", existing.id);
         if (error) throw error;
       } else {
+        // Create new global permission (residence_id = null)
         const { error } = await supabase
           .from("role_permissions")
           .insert({
-            residence_id: selectedResidence.id,
+            residence_id: null,
             role: "cs",
             permission_key: key,
             enabled,
@@ -126,7 +126,7 @@ export function PermissionsSettingsTab() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["role-permissions"] });
+      queryClient.invalidateQueries({ queryKey: ["role-permissions-global"] });
       toast.success("Permission mise à jour");
     },
     onError: (error: Error) => {
@@ -151,19 +151,6 @@ export function PermissionsSettingsTab() {
     return acc;
   }, {} as Record<string, Permission[]>);
 
-  if (!selectedResidence) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">
-            Sélectionnez une résidence pour gérer les permissions
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <Card>
@@ -175,18 +162,26 @@ export function PermissionsSettingsTab() {
             <div>
               <CardTitle>Permissions des Collaborateurs</CardTitle>
               <CardDescription>
-                Définissez les droits d'accès pour le rôle Collaborateur dans cette résidence
+                Définissez les droits d'accès globaux pour le rôle Collaborateur
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          <Alert className="mb-6 bg-blue-500/10 border-blue-500/20">
+            <Info className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-blue-600 dark:text-blue-400">
+              Ces permissions s'appliquent automatiquement à <strong>toutes les résidences</strong> de l'agence. 
+              Toute modification sera effective immédiatement pour tous les collaborateurs.
+            </AlertDescription>
+          </Alert>
+
           <div className="flex items-center gap-2 mb-6">
             <Badge variant="secondary" className="bg-kopro-amber/10 text-kopro-amber">
               Collaborateur
             </Badge>
             <span className="text-sm text-muted-foreground">
-              Ces permissions s'appliquent à tous les collaborateurs de {selectedResidence.name}
+              Permissions globales agence
             </span>
           </div>
 

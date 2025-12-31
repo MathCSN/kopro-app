@@ -84,22 +84,52 @@ export default function AdminAccounting() {
   };
 
   const handleExport = () => {
-    const exportData = filteredEntries.map((e) => ({
-      Date: new Date(e.created_at).toLocaleDateString("fr-FR"),
-      Type: TYPE_LABELS[e.type] || e.type,
-      Description: e.description || "",
-      "Montant catalogue": e.catalog_amount,
-      "Remise (%)": e.discount_percent,
-      "Montant remise": e.discount_amount,
-      "Montant final HT": e.final_amount,
-      "TVA": e.vat_amount || 0,
-      "Total TTC": e.total_ttc || e.final_amount * 1.2,
-      Statut: e.paid_at ? "Payé" : "En attente",
-      "Date paiement": e.paid_at ? new Date(e.paid_at).toLocaleDateString("fr-FR") : "",
-      "Méthode": e.payment_method || "",
+    type ExportRow = {
+      date: string;
+      type: string;
+      description: string;
+      catalog_amount: number;
+      discount_percent: number;
+      discount_amount: number;
+      final_amount: number;
+      vat_amount: number;
+      total_ttc: number;
+      status: string;
+      paid_at: string;
+      payment_method: string;
+    };
+
+    const exportData: ExportRow[] = filteredEntries.map((e) => ({
+      date: new Date(e.created_at).toLocaleDateString("fr-FR"),
+      type: TYPE_LABELS[e.type] || e.type,
+      description: e.description || "",
+      catalog_amount: e.catalog_amount,
+      discount_percent: e.discount_percent,
+      discount_amount: e.discount_amount,
+      final_amount: e.final_amount,
+      vat_amount: e.vat_amount || 0,
+      total_ttc: e.total_ttc || e.final_amount * 1.2,
+      status: e.paid_at ? "Payé" : "En attente",
+      paid_at: e.paid_at ? new Date(e.paid_at).toLocaleDateString("fr-FR") : "",
+      payment_method: e.payment_method || "",
     }));
 
-    exportToCsv(exportData, `comptabilite_kopro_${new Date().toISOString().split("T")[0]}`);
+    const columns: { key: keyof ExportRow; header: string }[] = [
+      { key: "date", header: "Date" },
+      { key: "type", header: "Type" },
+      { key: "description", header: "Description" },
+      { key: "catalog_amount", header: "Montant catalogue" },
+      { key: "discount_percent", header: "Remise (%)" },
+      { key: "discount_amount", header: "Montant remise" },
+      { key: "final_amount", header: "Montant final HT" },
+      { key: "vat_amount", header: "TVA" },
+      { key: "total_ttc", header: "Total TTC" },
+      { key: "status", header: "Statut" },
+      { key: "paid_at", header: "Date paiement" },
+      { key: "payment_method", header: "Méthode" },
+    ];
+
+    exportToCsv(exportData, `comptabilite_kopro_${new Date().toISOString().split("T")[0]}`, columns);
   };
 
   if (!user) return null;

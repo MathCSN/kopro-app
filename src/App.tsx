@@ -50,7 +50,11 @@ import AdminIntegrations from "./pages/AdminIntegrations";
 import AdminEmails from "./pages/AdminEmails";
 import AdminStorage from "./pages/AdminStorage";
 import AdminAudit from "./pages/AdminAudit";
+import AdminPricing from "./pages/AdminPricing";
+import AdminCRM from "./pages/AdminCRM";
+import AdminAccounting from "./pages/AdminAccounting";
 import QuotePublic from "./pages/QuotePublic";
+import AgencySignup from "./pages/AgencySignup";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +72,7 @@ const App = () => (
             <Route path="/pending" element={<Pending />} />
             <Route path="/join" element={<JoinResidence />} />
             <Route path="/quote/:quoteNumber" element={<QuotePublic />} />
+            <Route path="/agency-signup" element={<AgencySignup />} />
             
             {/* Admin routes - Global platform admin (formerly /owner) */}
             <Route path="/admin/platform" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
@@ -76,6 +81,9 @@ const App = () => (
             <Route path="/admin/managers" element={<AdminRoute><AdminManagers /></AdminRoute>} />
             <Route path="/admin/global-users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
             <Route path="/admin/quotes" element={<AdminRoute><AdminQuotes /></AdminRoute>} />
+            <Route path="/admin/pricing" element={<AdminRoute><AdminPricing /></AdminRoute>} />
+            <Route path="/admin/crm" element={<AdminRoute><AdminCRM /></AdminRoute>} />
+            <Route path="/admin/accounting" element={<AdminRoute><AdminAccounting /></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
             <Route path="/admin/global-settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
             <Route path="/admin/integrations" element={<AdminRoute><AdminIntegrations /></AdminRoute>} />
