@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +20,7 @@ import { InviteUserDialog } from "./InviteUserDialog";
 import { InvitationsHistory } from "./InvitationsHistory";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-
-type AppRole = "admin" | "manager" | "cs" | "resident";
+import { AppRole, ROLE_LABELS, ASSIGNABLE_ROLES } from "@/types/auth";
 
 interface UserWithRole {
   id: string;
@@ -36,13 +36,6 @@ interface UserWithRole {
   }[];
 }
 
-const ROLE_LABELS: Record<AppRole, string> = {
-  admin: "Admin",
-  manager: "Responsable",
-  cs: "Collaborateur",
-  resident: "Résident",
-};
-
 const ROLE_COLORS: Record<AppRole, string> = {
   admin: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   manager: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -52,12 +45,17 @@ const ROLE_COLORS: Record<AppRole, string> = {
 
 export function UsersManagement() {
   const { selectedResidence } = useResidence();
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [newRole, setNewRole] = useState<AppRole>("resident");
+  
+  // Get assignable roles based on current user's role
+  const currentUserRole = profile?.role || 'resident';
+  const assignableRoles = ASSIGNABLE_ROLES[currentUserRole] || [];
 
   // Fetch users with their roles for the selected residence
   const { data: users = [], isLoading } = useQuery({
@@ -261,23 +259,27 @@ export function UsersManagement() {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {user.roles.map((role) => (
-                                <Badge
-                                  key={role.id}
-                                  variant="secondary"
-                                  className={`${ROLE_COLORS[role.role]} cursor-pointer hover:opacity-80`}
-                                  onClick={() => {
-                                    if (role.role !== "admin" && confirm(`Supprimer le rôle ${ROLE_LABELS[role.role]} ?`)) {
-                                      removeRoleMutation.mutate(role.id);
-                                    }
-                                  }}
-                                >
-                                  {ROLE_LABELS[role.role]}
-                                  {role.role !== "admin" && (
-                                    <Trash2 className="h-3 w-3 ml-1" />
-                                  )}
-                                </Badge>
-                              ))}
+                              {user.roles.map((role) => {
+                                // Can only delete role if it's in assignable roles (not admin unless you're admin)
+                                const canDeleteRole = role.role !== 'admin' && assignableRoles.includes(role.role);
+                                return (
+                                  <Badge
+                                    key={role.id}
+                                    variant="secondary"
+                                    className={`${ROLE_COLORS[role.role]} ${canDeleteRole ? 'cursor-pointer hover:opacity-80' : ''}`}
+                                    onClick={() => {
+                                      if (canDeleteRole && confirm(`Supprimer le rôle ${ROLE_LABELS[role.role]} ?`)) {
+                                        removeRoleMutation.mutate(role.id);
+                                      }
+                                    }}
+                                  >
+                                    {ROLE_LABELS[role.role]}
+                                    {canDeleteRole && (
+                                      <Trash2 className="h-3 w-3 ml-1" />
+                                    )}
+                                  </Badge>
+                                );
+                              })}
                               {user.roles.length === 0 && (
                                 <span className="text-muted-foreground text-sm">Aucun rôle</span>
                               )}
@@ -344,11 +346,18 @@ export function UsersManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="resident">Résident</SelectItem>
-                  <SelectItem value="cs">Collaborateur</SelectItem>
-                  <SelectItem value="manager">Responsable</SelectItem>
+                  {assignableRoles.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {assignableRoles.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Vous n'avez pas les permissions pour attribuer des rôles.
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -357,11 +366,11 @@ export function UsersManagement() {
             </Button>
             <Button
               onClick={() => {
-                if (selectedUser) {
+                if (selectedUser && assignableRoles.includes(newRole)) {
                   addRoleMutation.mutate({ userId: selectedUser.id, role: newRole });
                 }
               }}
-              disabled={addRoleMutation.isPending}
+              disabled={addRoleMutation.isPending || assignableRoles.length === 0}
             >
               {addRoleMutation.isPending ? "Ajout..." : "Ajouter le rôle"}
             </Button>
