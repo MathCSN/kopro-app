@@ -15,6 +15,9 @@ import {
   Database,
   BarChart3,
   Plug,
+  DollarSign,
+  UserCheck,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,7 +37,10 @@ const mainNavItems: NavItem[] = [
 ];
 
 const financeNavItems: NavItem[] = [
+  { title: "Tarification", href: "/admin/pricing", icon: DollarSign },
   { title: "Facturation & Devis", href: "/admin/quotes", icon: CreditCard },
+  { title: "CRM", href: "/admin/crm", icon: UserCheck },
+  { title: "Comptabilité", href: "/admin/accounting", icon: Calculator },
   { title: "Rapports", href: "/admin/reports", icon: BarChart3 },
 ];
 
