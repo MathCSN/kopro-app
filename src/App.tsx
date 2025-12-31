@@ -39,17 +39,17 @@ import ServiceProviders from "./pages/ServiceProviders";
 import AIAssistant from "./pages/AIAssistant";
 
 // Admin Pages (global platform admin)
-import OwnerDashboard from "./pages/OwnerDashboard";
-import OwnerResidences from "./pages/OwnerResidences";
-import OwnerManagers from "./pages/OwnerManagers";
-import OwnerUsers from "./pages/OwnerUsers";
-import OwnerQuotes from "./pages/OwnerQuotes";
-import OwnerReports from "./pages/OwnerReports";
-import OwnerSettings from "./pages/OwnerSettings";
-import OwnerIntegrations from "./pages/OwnerIntegrations";
-import OwnerEmails from "./pages/OwnerEmails";
-import OwnerStorage from "./pages/OwnerStorage";
-import OwnerAudit from "./pages/OwnerAudit";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminResidences from "./pages/AdminResidences";
+import AdminManagers from "./pages/AdminManagers";
+import AdminUsers from "./pages/AdminUsers";
+import AdminQuotes from "./pages/AdminQuotes";
+import AdminReports from "./pages/AdminReports";
+import AdminSettings from "./pages/AdminSettings";
+import AdminIntegrations from "./pages/AdminIntegrations";
+import AdminEmails from "./pages/AdminEmails";
+import AdminStorage from "./pages/AdminStorage";
+import AdminAudit from "./pages/AdminAudit";
 import QuotePublic from "./pages/QuotePublic";
 
 const queryClient = new QueryClient();
@@ -70,18 +70,18 @@ const App = () => (
             <Route path="/quote/:quoteNumber" element={<QuotePublic />} />
             
             {/* Admin routes - Global platform admin (formerly /owner) */}
-            <Route path="/admin/platform" element={<AdminRoute><OwnerDashboard /></AdminRoute>} />
-            <Route path="/admin/residences" element={<AdminRoute><OwnerResidences /></AdminRoute>} />
-            <Route path="/admin/residences/:id" element={<AdminRoute><OwnerResidences /></AdminRoute>} />
-            <Route path="/admin/managers" element={<AdminRoute><OwnerManagers /></AdminRoute>} />
-            <Route path="/admin/global-users" element={<AdminRoute><OwnerUsers /></AdminRoute>} />
-            <Route path="/admin/quotes" element={<AdminRoute><OwnerQuotes /></AdminRoute>} />
-            <Route path="/admin/reports" element={<AdminRoute><OwnerReports /></AdminRoute>} />
-            <Route path="/admin/global-settings" element={<AdminRoute><OwnerSettings /></AdminRoute>} />
-            <Route path="/admin/integrations" element={<AdminRoute><OwnerIntegrations /></AdminRoute>} />
-            <Route path="/admin/emails" element={<AdminRoute><OwnerEmails /></AdminRoute>} />
-            <Route path="/admin/storage" element={<AdminRoute><OwnerStorage /></AdminRoute>} />
-            <Route path="/admin/audit" element={<AdminRoute><OwnerAudit /></AdminRoute>} />
+            <Route path="/admin/platform" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/residences" element={<AdminRoute><AdminResidences /></AdminRoute>} />
+            <Route path="/admin/residences/:id" element={<AdminRoute><AdminResidences /></AdminRoute>} />
+            <Route path="/admin/managers" element={<AdminRoute><AdminManagers /></AdminRoute>} />
+            <Route path="/admin/global-users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+            <Route path="/admin/quotes" element={<AdminRoute><AdminQuotes /></AdminRoute>} />
+            <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
+            <Route path="/admin/global-settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+            <Route path="/admin/integrations" element={<AdminRoute><AdminIntegrations /></AdminRoute>} />
+            <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
+            <Route path="/admin/storage" element={<AdminRoute><AdminStorage /></AdminRoute>} />
+            <Route path="/admin/audit" element={<AdminRoute><AdminAudit /></AdminRoute>} />
             <Route path="/admin/impersonate/:id" element={<AdminRoute><Dashboard /></AdminRoute>} />
             
             {/* Legacy /owner redirects */}
