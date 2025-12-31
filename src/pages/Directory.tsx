@@ -56,10 +56,9 @@ const sampleResidents = [
 
 const roleLabels: Record<string, string> = {
   resident: "Résident",
-  cs: "Conseil Syndical",
-  manager: "Gestionnaire",
+  cs: "Collaborateur",
+  manager: "Responsable",
   admin: "Admin",
-  owner: "Fondateur",
 };
 
 export default function Directory() {

@@ -31,9 +31,9 @@ export default function Pending() {
       if (error) throw error;
 
       if (roles && roles.length > 0) {
-        const hasOwnerRole = roles.some(r => r.role === 'owner');
-        if (hasOwnerRole) {
-          navigate("/owner");
+        const hasAdminRole = roles.some(r => r.role === 'admin');
+        if (hasAdminRole) {
+          navigate("/admin");
         } else {
           navigate("/dashboard");
         }

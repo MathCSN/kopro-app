@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Settings, Users, FileText, Mail, Bot } from "lucide-react";
+import { Settings, Users, FileText, Mail, Bot, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResidence } from "@/contexts/ResidenceContext";
@@ -9,6 +9,7 @@ import { AISettingsTab } from "@/components/admin/AISettingsTab";
 import { EmailTemplatesManagement } from "@/components/admin/EmailTemplatesManagement";
 import { PropertyManagement } from "@/components/admin/PropertyManagement";
 import { ApartmentRequestsManagement } from "@/components/admin/ApartmentRequestsManagement";
+import { PermissionsSettingsTab } from "@/components/admin/PermissionsSettingsTab";
 import { toast } from "sonner";
 
 export function AdminContent() {
@@ -54,6 +55,10 @@ export function AdminContent() {
           <TabsTrigger value="smtp" className="gap-2">
             <Mail className="h-4 w-4" />
             <span className="hidden sm:inline">SMTP</span>
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Permissions</span>
           </TabsTrigger>
         </TabsList>
 
@@ -130,6 +135,10 @@ export function AdminContent() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="permissions" className="mt-0" tabIndex={-1}>
+            <PermissionsSettingsTab />
           </TabsContent>
         </div>
       </Tabs>

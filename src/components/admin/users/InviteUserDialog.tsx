@@ -21,9 +21,9 @@ interface InviteUserDialogProps {
 type AppRole = "admin" | "manager" | "cs" | "resident";
 
 const ROLE_LABELS: Record<AppRole, string> = {
-  admin: "Administrateur",
-  manager: "Gestionnaire",
-  cs: "Conseil Syndical",
+  admin: "Admin",
+  manager: "Responsable",
+  cs: "Collaborateur",
   resident: "Résident",
 };
 
@@ -249,9 +249,8 @@ export function InviteUserDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="resident">Résident</SelectItem>
-                <SelectItem value="cs">Conseil Syndical</SelectItem>
-                <SelectItem value="manager">Gestionnaire</SelectItem>
-                <SelectItem value="admin">Administrateur</SelectItem>
+                <SelectItem value="cs">Collaborateur</SelectItem>
+                <SelectItem value="manager">Responsable</SelectItem>
               </SelectContent>
             </Select>
           </div>

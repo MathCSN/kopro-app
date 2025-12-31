@@ -28,37 +28,37 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { title: "Vue d'ensemble", href: "/owner", icon: LayoutDashboard },
-  { title: "Résidences", href: "/owner/residences", icon: Building2 },
-  { title: "Gestionnaires", href: "/owner/managers", icon: Users },
-  { title: "Utilisateurs globaux", href: "/owner/users", icon: Shield },
+  { title: "Vue d'ensemble", href: "/admin", icon: LayoutDashboard },
+  { title: "Résidences", href: "/admin/residences", icon: Building2 },
+  { title: "Gestionnaires", href: "/admin/managers", icon: Users },
+  { title: "Utilisateurs globaux", href: "/admin/users", icon: Shield },
 ];
 
 const financeNavItems: NavItem[] = [
-  { title: "Facturation & Devis", href: "/owner/quotes", icon: CreditCard },
-  { title: "Rapports", href: "/owner/reports", icon: BarChart3 },
+  { title: "Facturation & Devis", href: "/admin/quotes", icon: CreditCard },
+  { title: "Rapports", href: "/admin/reports", icon: BarChart3 },
 ];
 
 const settingsNavItems: NavItem[] = [
-  { title: "Paramètres globaux", href: "/owner/settings", icon: Settings },
-  { title: "Intégrations", href: "/owner/integrations", icon: Plug },
-  { title: "Emails & Templates", href: "/owner/emails", icon: Mail },
-  { title: "Stockage", href: "/owner/storage", icon: Database },
-  { title: "Journal d'audit", href: "/owner/audit", icon: Activity },
+  { title: "Paramètres globaux", href: "/admin/settings", icon: Settings },
+  { title: "Intégrations", href: "/admin/integrations", icon: Plug },
+  { title: "Emails & Templates", href: "/admin/emails", icon: Mail },
+  { title: "Stockage", href: "/admin/storage", icon: Database },
+  { title: "Journal d'audit", href: "/admin/audit", icon: Activity },
 ];
 
-interface OwnerSidebarProps {
+interface AdminSidebarProps {
   onLogout?: () => void;
 }
 
-interface OwnerSidebarContentProps {
+interface AdminSidebarContentProps {
   collapsed: boolean;
   setCollapsed: (value: boolean) => void;
   onLogout?: () => void;
   isMobile?: boolean;
 }
 
-function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = false }: OwnerSidebarContentProps) {
+function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = false }: AdminSidebarContentProps) {
   const location = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -78,8 +78,8 @@ function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
   }, []);
 
   const isActive = (href: string) => {
-    if (href === "/owner") {
-      return location.pathname === "/owner";
+    if (href === "/admin") {
+      return location.pathname === "/admin";
     }
     return location.pathname.startsWith(href);
   };
@@ -203,7 +203,7 @@ function OwnerSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
   );
 }
 
-export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
+export function AdminSidebar({ onLogout }: AdminSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -213,7 +213,7 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
         collapsed ? "w-[72px]" : "w-64"
       )}
     >
-      <OwnerSidebarContent 
+      <AdminSidebarContent 
         collapsed={collapsed} 
         setCollapsed={setCollapsed} 
         onLogout={onLogout} 
@@ -222,9 +222,9 @@ export function OwnerSidebar({ onLogout }: OwnerSidebarProps) {
   );
 }
 
-export function OwnerMobileSidebar({ onLogout }: OwnerSidebarProps) {
+export function AdminMobileSidebar({ onLogout }: AdminSidebarProps) {
   return (
-    <OwnerSidebarContent 
+    <AdminSidebarContent 
       collapsed={false} 
       setCollapsed={() => {}} 
       onLogout={onLogout}

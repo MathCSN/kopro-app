@@ -124,7 +124,7 @@ function NewsfeedContent() {
   const [allResidences, setAllResidences] = useState<{id: string; name: string}[]>([]);
 
   // Check if user is manager or owner
-  const isManager = profile?.role === 'manager' || profile?.role === 'owner';
+  const isManager = profile?.role === 'manager' || profile?.role === 'admin';
 
   // Fetch all residences for managers
   useEffect(() => {

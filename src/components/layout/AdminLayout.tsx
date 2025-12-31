@@ -1,19 +1,19 @@
 import { ReactNode } from "react";
-import { OwnerSidebar, OwnerMobileSidebar } from "./OwnerSidebar";
+import { AdminSidebar, AdminMobileSidebar } from "./AdminSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, Shield } from "lucide-react";
 
-interface OwnerLayoutProps {
+interface AdminLayoutProps {
   children: ReactNode;
   onLogout?: () => void;
 }
 
-export function OwnerLayout({ children, onLogout }: OwnerLayoutProps) {
+export function AdminLayout({ children, onLogout }: AdminLayoutProps) {
   return (
     <div className="flex min-h-screen w-full bg-background">
       {/* Desktop Sidebar */}
-      <OwnerSidebar onLogout={onLogout} />
+      <AdminSidebar onLogout={onLogout} />
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800">
@@ -32,7 +32,7 @@ export function OwnerLayout({ children, onLogout }: OwnerLayoutProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-72 bg-slate-900 border-slate-800 [&>button]:hidden">
-              <OwnerMobileSidebar onLogout={onLogout} />
+              <AdminMobileSidebar onLogout={onLogout} />
             </SheetContent>
           </Sheet>
         </div>

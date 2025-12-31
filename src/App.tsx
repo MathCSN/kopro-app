@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { OwnerRoute } from "@/components/auth/OwnerRoute";
+import { AdminRoute } from "@/components/auth/AdminRoute";
 
 // Pages
 import Auth from "./pages/Auth";
@@ -37,7 +37,7 @@ import Household from "./pages/Household";
 import ServiceProviders from "./pages/ServiceProviders";
 import AIAssistant from "./pages/AIAssistant";
 
-// Owner Pages
+// Admin Pages (global platform admin)
 import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerResidences from "./pages/OwnerResidences";
 import OwnerManagers from "./pages/OwnerManagers";
@@ -66,20 +66,25 @@ const App = () => (
             <Route path="/pending" element={<Pending />} />
             <Route path="/join" element={<JoinResidence />} />
             <Route path="/quote/:quoteNumber" element={<QuotePublic />} />
-            {/* Owner routes - Global platform admin */}
-            <Route path="/owner" element={<OwnerRoute><OwnerDashboard /></OwnerRoute>} />
-            <Route path="/owner/residences" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
-            <Route path="/owner/residences/:id" element={<OwnerRoute><OwnerResidences /></OwnerRoute>} />
-            <Route path="/owner/managers" element={<OwnerRoute><OwnerManagers /></OwnerRoute>} />
-            <Route path="/owner/users" element={<OwnerRoute><OwnerUsers /></OwnerRoute>} />
-            <Route path="/owner/quotes" element={<OwnerRoute><OwnerQuotes /></OwnerRoute>} />
-            <Route path="/owner/reports" element={<OwnerRoute><OwnerReports /></OwnerRoute>} />
-            <Route path="/owner/settings" element={<OwnerRoute><OwnerSettings /></OwnerRoute>} />
-            <Route path="/owner/integrations" element={<OwnerRoute><OwnerIntegrations /></OwnerRoute>} />
-            <Route path="/owner/emails" element={<OwnerRoute><OwnerEmails /></OwnerRoute>} />
-            <Route path="/owner/storage" element={<OwnerRoute><OwnerStorage /></OwnerRoute>} />
-            <Route path="/owner/audit" element={<OwnerRoute><OwnerAudit /></OwnerRoute>} />
-            <Route path="/owner/impersonate/:id" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
+            
+            {/* Admin routes - Global platform admin (formerly /owner) */}
+            <Route path="/admin/platform" element={<AdminRoute><OwnerDashboard /></AdminRoute>} />
+            <Route path="/admin/residences" element={<AdminRoute><OwnerResidences /></AdminRoute>} />
+            <Route path="/admin/residences/:id" element={<AdminRoute><OwnerResidences /></AdminRoute>} />
+            <Route path="/admin/managers" element={<AdminRoute><OwnerManagers /></AdminRoute>} />
+            <Route path="/admin/global-users" element={<AdminRoute><OwnerUsers /></AdminRoute>} />
+            <Route path="/admin/quotes" element={<AdminRoute><OwnerQuotes /></AdminRoute>} />
+            <Route path="/admin/reports" element={<AdminRoute><OwnerReports /></AdminRoute>} />
+            <Route path="/admin/global-settings" element={<AdminRoute><OwnerSettings /></AdminRoute>} />
+            <Route path="/admin/integrations" element={<AdminRoute><OwnerIntegrations /></AdminRoute>} />
+            <Route path="/admin/emails" element={<AdminRoute><OwnerEmails /></AdminRoute>} />
+            <Route path="/admin/storage" element={<AdminRoute><OwnerStorage /></AdminRoute>} />
+            <Route path="/admin/audit" element={<AdminRoute><OwnerAudit /></AdminRoute>} />
+            <Route path="/admin/impersonate/:id" element={<AdminRoute><Dashboard /></AdminRoute>} />
+            
+            {/* Legacy /owner redirects */}
+            <Route path="/owner" element={<Navigate to="/admin/platform" replace />} />
+            <Route path="/owner/*" element={<Navigate to="/admin/platform" replace />} />
             
             {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -126,7 +131,7 @@ const App = () => (
             {/* AI Assistant */}
             <Route path="/assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
             
-            {/* Admin - requires manager role */}
+            {/* Admin - requires manager role (residence admin) */}
             <Route path="/admin" element={<ProtectedRoute requiredRole="manager"><Admin /></ProtectedRoute>} />
             <Route path="/admin/residence" element={<ProtectedRoute requiredRole="manager"><Admin /></ProtectedRoute>} />
             <Route path="/admin/lots" element={<ProtectedRoute requiredRole="manager"><Admin /></ProtectedRoute>} />
@@ -138,7 +143,7 @@ const App = () => (
             <Route path="/settings" element={<Navigate to="/admin" replace />} />
             <Route path="/analytics" element={<ProtectedRoute requiredRole="manager"><Dashboard /></ProtectedRoute>} />
             
-            {/* Rental module - requires manager/owner */}
+            {/* Rental module - requires manager/admin */}
             <Route path="/rental" element={<ProtectedRoute requireRental><Rental /></ProtectedRoute>} />
             <Route path="/rental/units" element={<ProtectedRoute requireRental><RentalUnits /></ProtectedRoute>} />
             <Route path="/rental/units/new" element={<ProtectedRoute requireRental><NewUnit /></ProtectedRoute>} />

@@ -3,24 +3,24 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 
-interface OwnerRouteProps {
+interface AdminRouteProps {
   children: React.ReactNode;
 }
 
-export function OwnerRoute({ children }: OwnerRouteProps) {
-  const { user, profile, isLoading, isOwner } = useAuth();
+export function AdminRoute({ children }: AdminRouteProps) {
+  const { user, profile, isLoading, isAdmin } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isLoading && user && profile && !isOwner()) {
+    if (!isLoading && user && profile && !isAdmin()) {
       toast({
         title: "Accès refusé",
         description: "Cette section est réservée aux administrateurs de la plateforme.",
         variant: "destructive",
       });
     }
-  }, [isLoading, user, profile, isOwner, toast]);
+  }, [isLoading, user, profile, isAdmin, toast]);
 
   if (isLoading) {
     return (
@@ -43,7 +43,7 @@ export function OwnerRoute({ children }: OwnerRouteProps) {
     );
   }
 
-  if (!isOwner()) {
+  if (!isAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
 
