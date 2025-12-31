@@ -56,7 +56,7 @@ function AIAssistantContent() {
     }
 
     setAiEnabled(data?.enabled || false);
-    setWelcomeMessage(data?.welcome_message || "Bonjour ! Je suis votre assistant résidence. Comment puis-je vous aider ?");
+    setWelcomeMessage(data?.welcome_message || "Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?");
   };
 
   const handleSend = async () => {
@@ -138,13 +138,13 @@ function AIAssistantContent() {
         .upsert({
           residence_id: selectedResidence.id,
           enabled: true,
-          welcome_message: "Bonjour ! Je suis votre assistant résidence. Comment puis-je vous aider ?",
+          welcome_message: "Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?",
         }, { onConflict: "residence_id" });
 
       if (error) throw error;
 
       setAiEnabled(true);
-      setWelcomeMessage("Bonjour ! Je suis votre assistant résidence. Comment puis-je vous aider ?");
+      setWelcomeMessage("Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?");
       toast.success("Assistant IA activé avec succès !");
     } catch (error) {
       console.error("Error activating AI:", error);
@@ -174,8 +174,8 @@ function AIAssistantContent() {
           <Bot className="h-6 w-6 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="font-display text-xl font-bold">Assistant Résidence</h1>
-          <p className="text-sm text-muted-foreground">{selectedResidence.name}</p>
+          <h1 className="font-display text-xl font-bold">Kopy 🤖</h1>
+          <p className="text-sm text-muted-foreground">L'assistant intelligent de {selectedResidence.name}</p>
         </div>
         <Sparkles className="h-5 w-5 text-primary ml-auto" />
       </div>

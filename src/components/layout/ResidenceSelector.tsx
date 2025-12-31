@@ -35,6 +35,11 @@ export function ResidenceSelector({ collapsed = false }: ResidenceSelectorProps)
     ? "Toutes les résidences"
     : selectedResidence?.name || "Sélectionner...";
 
+  // Ne pas afficher le sélecteur si l'utilisateur n'a qu'une seule résidence
+  if (residences.length <= 1 && selectedResidence) {
+    return null;
+  }
+
   if (collapsed) {
     return (
       <Popover open={open} onOpenChange={setOpen}>
