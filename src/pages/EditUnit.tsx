@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Home, Save, Loader2, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Home, Save, Loader2, Trash2, User, Mail, Phone, Calendar, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -27,6 +30,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 function EditUnitContent() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +55,7 @@ function EditUnitContent() {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<"vacant" | "occupied">("vacant");
   const [residenceId, setResidenceId] = useState<string | null>(null);
+  const [lotId, setLotId] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) fetchUnit();
@@ -83,6 +89,7 @@ function EditUnitContent() {
       setNotes(data.notes || "");
       setStatus(data.status as "vacant" | "occupied" || "vacant");
       setResidenceId(data.residence_id);
+      setLotId(data.lot_id || null);
     } catch (error) {
       console.error('Error fetching unit:', error);
       toast({ title: "Erreur", description: "Impossible de charger le logement.", variant: "destructive" });
@@ -91,6 +98,47 @@ function EditUnitContent() {
       setLoading(false);
     }
   };
+
+  // Fetch current tenant if unit is occupied
+  const { data: currentTenant } = useQuery({
+    queryKey: ["unit-tenant", lotId],
+    queryFn: async () => {
+      if (!lotId) return null;
+      
+      // Get active occupancy for this lot
+      const { data: occupancy, error: occupancyError } = await supabase
+        .from("occupancies")
+        .select(`
+          id,
+          user_id,
+          type,
+          start_date,
+          end_date
+        `)
+        .eq("lot_id", lotId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (occupancyError || !occupancy) return null;
+
+      // Get tenant profile
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email, phone, avatar_url")
+        .eq("id", occupancy.user_id)
+        .single();
+
+      if (profileError || !profile) return null;
+
+      return {
+        ...profile,
+        occupancy_type: occupancy.type,
+        start_date: occupancy.start_date,
+        end_date: occupancy.end_date
+      };
+    },
+    enabled: !!lotId && status === "occupied"
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,6 +220,85 @@ function EditUnitContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Current Tenant Card - only show if occupied */}
+        {status === "occupied" && (
+          <Card className="shadow-soft border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Locataire actuel
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {currentTenant ? (
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-14 w-14">
+                    <AvatarImage src={currentTenant.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {(currentTenant.first_name?.[0] || "") + (currentTenant.last_name?.[0] || "")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <p className="font-semibold text-lg">
+                        {currentTenant.first_name} {currentTenant.last_name}
+                      </p>
+                      <Badge variant="secondary" className="text-xs">
+                        {currentTenant.occupancy_type === "owner" ? "Propriétaire" : "Locataire"}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      {currentTenant.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          <span className="truncate">{currentTenant.email}</span>
+                        </div>
+                      )}
+                      {currentTenant.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          <span>{currentTenant.phone}</span>
+                        </div>
+                      )}
+                      {currentTenant.start_date && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>Depuis le {format(new Date(currentTenant.start_date), "dd MMM yyyy", { locale: fr })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/tenants`)}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    Voir le dossier
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <User className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground text-sm">Aucun locataire trouvé pour ce logement.</p>
+                  <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate("/tenants")}>
+                    Attribuer un locataire
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {status === "vacant" && (
+          <Card className="shadow-soft border-dashed border-2 border-muted">
+            <CardContent className="py-6 text-center">
+              <User className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground font-medium">Logement vacant</p>
+              <p className="text-sm text-muted-foreground mb-3">Aucun locataire n'occupe ce logement actuellement.</p>
+              <Button variant="outline" size="sm" onClick={() => navigate("/tenants")}>
+                Attribuer un locataire
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Informations principales */}
         <Card className="shadow-soft">
           <CardHeader>

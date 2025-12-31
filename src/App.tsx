@@ -9,6 +9,7 @@ import { AdminRoute } from "@/components/auth/AdminRoute";
 
 // Pages
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Pending from "./pages/Pending";
 import JoinResidence from "./pages/JoinResidence";
 import Dashboard from "./pages/Dashboard";
@@ -63,6 +64,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending" element={<Pending />} />
             <Route path="/join" element={<JoinResidence />} />
             <Route path="/quote/:quoteNumber" element={<QuotePublic />} />

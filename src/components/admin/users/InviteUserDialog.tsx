@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Mail, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { AppRole, ROLE_LABELS, ASSIGNABLE_ROLES } from "@/types/auth";
 
 interface InviteUserDialogProps {
   open: boolean;
@@ -17,15 +19,6 @@ interface InviteUserDialogProps {
   residenceId: string;
   residenceName: string;
 }
-
-type AppRole = "admin" | "manager" | "cs" | "resident";
-
-const ROLE_LABELS: Record<AppRole, string> = {
-  admin: "Admin",
-  manager: "Responsable",
-  cs: "Collaborateur",
-  resident: "Résident",
-};
 
 const emailSchema = z.string().email("Adresse email invalide");
 
@@ -35,6 +28,7 @@ export function InviteUserDialog({
   residenceId,
   residenceName,
 }: InviteUserDialogProps) {
+  const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AppRole>("resident");
@@ -42,6 +36,10 @@ export function InviteUserDialog({
   const [lastName, setLastName] = useState("");
   const [message, setMessage] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
+  
+  // Get assignable roles based on current user's role
+  const currentUserRole = profile?.role || 'resident';
+  const assignableRoles = ASSIGNABLE_ROLES[currentUserRole] || [];
 
   const validateEmail = (value: string) => {
     try {
@@ -248,11 +246,18 @@ export function InviteUserDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="resident">Résident</SelectItem>
-                <SelectItem value="cs">Collaborateur</SelectItem>
-                <SelectItem value="manager">Responsable</SelectItem>
+                {assignableRoles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            {assignableRoles.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Vous n'avez pas les permissions pour inviter des utilisateurs.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -270,7 +275,7 @@ export function InviteUserDialog({
             <Button type="button" variant="outline" onClick={handleClose}>
               Annuler
             </Button>
-            <Button type="submit" disabled={inviteMutation.isPending || !email}>
+            <Button type="submit" disabled={inviteMutation.isPending || !email || assignableRoles.length === 0}>
               {inviteMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NavItem {
   title: string;
@@ -60,22 +59,6 @@ interface AdminSidebarContentProps {
 
 function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = false }: AdminSidebarContentProps) {
   const location = useLocation();
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Preserve scroll position during navigation
-  const handleNavClick = useCallback(() => {
-    const scrollElement = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-    if (scrollElement) {
-      const scrollTop = scrollElement.scrollTop;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (scrollElement) {
-            scrollElement.scrollTop = scrollTop;
-          }
-        });
-      });
-    }
-  }, []);
 
   const isActive = (href: string) => {
     if (href === "/admin") {
@@ -87,7 +70,6 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
   const NavItemLink = ({ item }: { item: NavItem }) => (
     <NavLink
       to={item.href}
-      onClick={handleNavClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
         isActive(item.href)
@@ -130,7 +112,7 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4" ref={scrollRef}>
+      <div className="flex-1 px-3 py-4 overflow-y-auto">
         <nav className="space-y-6">
           {/* Main Section */}
           <div className="space-y-1">
@@ -168,7 +150,7 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
             ))}
           </div>
         </nav>
-      </ScrollArea>
+      </div>
 
       {/* Footer */}
       <div className="p-3 border-t border-slate-800 space-y-2">
