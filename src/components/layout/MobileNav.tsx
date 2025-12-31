@@ -66,9 +66,11 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
         </div>
         
         {/* Residence selector below header */}
-        <div className="px-4 pb-3 border-b border-border bg-background">
-          <ResidenceSelector />
-        </div>
+        {userRole !== "owner" && (
+          <div className="px-4 pb-3 border-b border-border bg-background">
+            <ResidenceSelector />
+          </div>
+        )}
       </header>
 
       {/* Bottom Navigation Bar */}
