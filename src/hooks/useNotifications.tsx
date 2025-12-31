@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 export interface Notification {
   id: string;
-  type: "package" | "ticket" | "post" | "payment" | "message";
+  type: "package" | "ticket" | "post" | "payment" | "message" | "apartment_request";
   title: string;
   description: string;
   href: string;
@@ -19,6 +19,7 @@ export interface NotificationCounts {
   posts: number;
   messages: number;
   payments: number;
+  apartmentRequests: number;
   total: number;
 }
 
@@ -31,6 +32,7 @@ export function useNotifications() {
     posts: 0,
     messages: 0,
     payments: 0,
+    apartmentRequests: 0,
     total: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -172,6 +174,7 @@ export function useNotifications() {
         posts: postCount,
         messages: messageCount,
         payments: paymentCount,
+        apartmentRequests: 0,
         total: packageCount + ticketCount + postCount + messageCount + paymentCount,
       });
     } catch (error) {

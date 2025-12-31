@@ -169,6 +169,63 @@ export type Database = {
           },
         ]
       }
+      apartment_requests: {
+        Row: {
+          assigned_lot_id: string | null
+          created_at: string
+          id: string
+          manager_response: string | null
+          message: string | null
+          processed_at: string | null
+          processed_by: string | null
+          residence_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_lot_id?: string | null
+          created_at?: string
+          id?: string
+          manager_response?: string | null
+          message?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          residence_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_lot_id?: string | null
+          created_at?: string
+          id?: string
+          manager_response?: string | null
+          message?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          residence_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apartment_requests_assigned_lot_id_fkey"
+            columns: ["assigned_lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apartment_requests_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_config: {
         Row: {
           created_at: string | null

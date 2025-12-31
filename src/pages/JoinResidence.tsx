@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { NoApartmentAvailable } from "@/components/residence/NoApartmentAvailable";
 
 type Lot = {
   id: string;
@@ -28,19 +29,20 @@ type Residence = {
 };
 
 export default function JoinResidence() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const residenceId = searchParams.get("residence");
   
-  const [status, setStatus] = useState<"loading" | "select_lot" | "enter_code" | "success" | "error" | "login_required">("loading");
+  const [status, setStatus] = useState<"loading" | "select_lot" | "enter_code" | "success" | "error" | "login_required" | "no_apartments">("loading");
   const [residence, setResidence] = useState<Residence | null>(null);
   const [lots, setLots] = useState<Lot[]>([]);
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null);
   const [apartmentCode, setApartmentCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [managerEmail, setManagerEmail] = useState<string | undefined>();
 
   useEffect(() => {
     if (!residenceId) {
@@ -94,6 +96,26 @@ export default function JoinResidence() {
 
       setResidence(residenceData);
 
+      // Fetch manager email for contact
+      const { data: managerRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('residence_id', residenceId)
+        .in('role', ['manager', 'admin'])
+        .limit(1);
+
+      if (managerRoles && managerRoles.length > 0) {
+        const { data: managerProfile } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', managerRoles[0].user_id)
+          .single();
+        
+        if (managerProfile?.email) {
+          setManagerEmail(managerProfile.email);
+        }
+      }
+
       // Fetch lots for this residence
       const { data: lotsData, error: lotsError } = await supabase
         .from('lots')
@@ -104,8 +126,14 @@ export default function JoinResidence() {
 
       if (lotsError) throw lotsError;
 
-      setLots(lotsData || []);
-      setStatus("select_lot");
+      // If no lots available, show no apartments screen
+      if (!lotsData || lotsData.length === 0) {
+        setStatus("no_apartments");
+      } else {
+        setLots(lotsData);
+        setStatus("select_lot");
+      }
+      
       localStorage.removeItem("pending_join_residence");
     } catch (error: any) {
       setStatus("error");
@@ -260,6 +288,30 @@ export default function JoinResidence() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // No apartments available
+  if (status === "no_apartments" && residence && user) {
+    const userName = profile?.first_name && profile?.last_name
+      ? `${profile.first_name} ${profile.last_name}`
+      : profile?.email || user.email || "Résident";
+    const userEmail = profile?.email || user.email || "";
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <NoApartmentAvailable
+          residenceId={residenceId!}
+          residenceName={residence.name}
+          userId={user.id}
+          userName={userName}
+          userEmail={userEmail}
+          managerEmail={managerEmail}
+          onRequestSent={() => {
+            // Optionally redirect or show different UI after request sent
+          }}
+        />
       </div>
     );
   }

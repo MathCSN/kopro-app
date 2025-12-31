@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, Users, Building2, FileText, Home, Mail, Wrench, Landmark, Bot } from "lucide-react";
+import { Settings, Users, Building2, FileText, Home, Mail, Wrench, Landmark, Bot, UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResidence } from "@/contexts/ResidenceContext";
@@ -10,6 +10,7 @@ import { BuildingsManagement } from "@/components/admin/buildings/BuildingsManag
 import { AISettingsTab } from "@/components/admin/AISettingsTab";
 import { EmailTemplatesManagement } from "@/components/admin/EmailTemplatesManagement";
 import { ResidencesManagement } from "@/components/admin/ResidencesManagement";
+import { ApartmentRequestsManagement } from "@/components/admin/ApartmentRequestsManagement";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -62,6 +63,7 @@ export function AdminContent() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          <ApartmentRequestsManagement />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card 
               className="cursor-pointer hover:shadow-medium transition-shadow" 
