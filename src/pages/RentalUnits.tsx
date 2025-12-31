@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, Plus, Loader2, Search, ArrowLeft } from "lucide-react";
+import { Home, Plus, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { BulkCreateUnitsDialog } from "@/components/admin/units/BulkCreateUnitsDialog";
 
 interface Unit {
   id: string;
@@ -83,17 +84,17 @@ function RentalUnitsContent() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/rental')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
         <div className="flex-1">
-          <h1 className="font-display text-2xl lg:text-3xl font-bold">Logements</h1>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold">Biens immobiliers</h1>
           <p className="text-muted-foreground">Gérez votre parc immobilier</p>
         </div>
-        <Button onClick={() => navigate('/rental/units/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau logement
-        </Button>
+        <div className="flex gap-2">
+          <BulkCreateUnitsDialog onCreated={fetchUnits} />
+          <Button onClick={() => navigate('/rental/units/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau bien
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

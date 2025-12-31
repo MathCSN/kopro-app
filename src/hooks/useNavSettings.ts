@@ -26,7 +26,7 @@ export interface NavSettings {
 const defaultCategories: NavCategory[] = [
   { id: "main", title: "Principal", visible: true, order: 0 },
   { id: "management", title: "Gestion", visible: true, order: 1 },
-  { id: "rental", title: "Location", visible: true, order: 2 },
+  { id: "rental", title: "Gestion locative", visible: true, order: 2 },
   { id: "admin", title: "Administration", visible: true, order: 3 },
 ];
 
@@ -35,7 +35,6 @@ const defaultItems: NavItem[] = [
   { id: "newsfeed", title: "Fil d'actualité", href: "/newsfeed", visible: true, order: 1, categoryId: "main" },
   { id: "tickets", title: "Tickets", href: "/tickets", visible: true, order: 2, categoryId: "main" },
   { id: "documents", title: "Documents", href: "/documents", visible: true, order: 3, categoryId: "main" },
-  { id: "reservations", title: "Réservations", href: "/reservations", visible: true, order: 4, categoryId: "main" },
   { id: "directory", title: "Annuaire", href: "/directory", visible: true, order: 5, categoryId: "main" },
   { id: "chat", title: "Messages", href: "/chat", visible: true, order: 6, categoryId: "main" },
   { id: "assistant", title: "Assistant IA", href: "/assistant", visible: true, order: 7, categoryId: "main" },
@@ -45,8 +44,8 @@ const defaultItems: NavItem[] = [
   { id: "payments", title: "Paiements", href: "/payments", visible: true, order: 1, categoryId: "management" },
   { id: "ag", title: "Assemblées", href: "/ag", visible: true, order: 2, categoryId: "management" },
   { id: "providers", title: "Prestataires", href: "/providers", visible: true, order: 3, categoryId: "management" },
-  { id: "units", title: "Biens", href: "/rental/units", visible: true, order: 0, categoryId: "rental" },
-  { id: "vacancies", title: "Annonces", href: "/rental/vacancies", visible: true, order: 1, categoryId: "rental" },
+  { id: "units", title: "Biens immobiliers", href: "/rental/units", visible: true, order: 0, categoryId: "rental" },
+  { id: "vacancies", title: "Offres de location", href: "/rental/vacancies", visible: true, order: 1, categoryId: "rental" },
   { id: "applications", title: "Candidatures", href: "/rental/applications", visible: true, order: 2, categoryId: "rental" },
   { id: "analytics", title: "Tableau de bord KPI", href: "/analytics", visible: true, order: 0, categoryId: "admin" },
   { id: "admin", title: "Gestion résidence", href: "/admin", visible: true, order: 1, categoryId: "admin" },

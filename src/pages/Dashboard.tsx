@@ -220,9 +220,9 @@ export default function Dashboard() {
                 <Building2 className="h-6 w-6 text-kopro-teal" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-foreground">Module Location</h3>
+                <h3 className="font-semibold text-foreground">Gestion locative</h3>
                 <p className="text-sm text-muted-foreground">
-                  {stats.openVacancies} vacance(s) ouverte(s) · {stats.pendingApplications} candidature(s) en attente
+                  {stats.openVacancies} offre{stats.openVacancies > 1 ? 's' : ''} de location active{stats.openVacancies > 1 ? 's' : ''} · {stats.pendingApplications} candidature{stats.pendingApplications > 1 ? 's' : ''} en attente
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={() => navigate("/rental")}>

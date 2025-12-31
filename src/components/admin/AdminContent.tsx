@@ -35,7 +35,7 @@ export function AdminContent() {
           </TabsTrigger>
           <TabsTrigger value="lots" className="gap-2">
             <Home className="h-4 w-4" />
-            <span className="hidden sm:inline">Lots</span>
+            <span className="hidden sm:inline">Copropriété</span>
           </TabsTrigger>
           <TabsTrigger value="users" className="gap-2">
             <Users className="h-4 w-4" />
@@ -76,7 +76,7 @@ export function AdminContent() {
             >
               <CardContent className="p-6 text-center">
                 <Home className="h-8 w-8 mx-auto mb-2 text-primary" />
-                <p className="font-medium">Lots & Tantièmes</p>
+                <p className="font-medium">Copropriété</p>
               </CardContent>
             </Card>
             <Card 

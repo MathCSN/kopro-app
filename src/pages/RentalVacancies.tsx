@@ -119,12 +119,9 @@ function RentalVacanciesContent() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/rental')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
         <div className="flex-1">
-          <h1 className="font-display text-2xl lg:text-3xl font-bold">Annonces</h1>
-          <p className="text-muted-foreground">Gérez vos annonces de location</p>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold">Annonces de location</h1>
+          <p className="text-muted-foreground">Gérez vos offres de location</p>
         </div>
         <Button onClick={() => navigate('/rental/vacancies/new')}>
           <Plus className="h-4 w-4 mr-2" />
@@ -207,7 +204,7 @@ function RentalVacanciesContent() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Apt {vacancy.unit?.door} · {vacancy.applications_count || 0} candidature(s)
+                    Apt {vacancy.unit?.door} · {vacancy.applications_count || 0} candidature{(vacancy.applications_count || 0) > 1 ? 's' : ''}
                   </p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-muted-foreground" />
