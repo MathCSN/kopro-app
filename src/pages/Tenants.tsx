@@ -3,12 +3,15 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Users, Search, Plus, Building2, UserPlus } from "lucide-react";
+import { Users, Search, Plus, Building2, UserPlus, Share2, QrCode } from "lucide-react";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { TenantCard } from "@/components/tenants/TenantCard";
 import { TenantDetails } from "@/components/tenants/TenantDetails";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
+import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
+import { ResidenceShareDialog } from "@/components/residence/ResidenceShareDialog";
 
 interface Tenant {
   id: string;
@@ -43,6 +46,8 @@ function TenantsContent() {
   const [loading, setLoading] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   useEffect(() => {
     if (selectedResidence || isAllResidences) {
@@ -168,10 +173,24 @@ function TenantsContent() {
                 : "Sélectionnez une résidence"}
             </p>
           </div>
-          <Button className="gap-2" disabled={!selectedResidence && !isAllResidences}>
-            <UserPlus className="h-4 w-4" />
-            Ajouter un locataire
-          </Button>
+          <div className="flex gap-2">
+            {selectedResidence && (
+              <>
+                <Button variant="outline" className="gap-2" onClick={() => setQrDialogOpen(true)}>
+                  <QrCode className="h-4 w-4" />
+                  QR Code
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={() => setShareDialogOpen(true)}>
+                  <Share2 className="h-4 w-4" />
+                  Partager
+                </Button>
+              </>
+            )}
+            <Button className="gap-2" disabled={!selectedResidence && !isAllResidences}>
+              <UserPlus className="h-4 w-4" />
+              Ajouter un locataire
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -260,13 +279,35 @@ function TenantsContent() {
         onOpenChange={setDetailsOpen}
         onUpdate={fetchTenants}
       />
+
+      {/* QR Code Dialog */}
+      {selectedResidence && (
+        <ResidenceQRDialog
+          residenceId={selectedResidence.id}
+          residenceName={selectedResidence.name}
+          open={qrDialogOpen}
+          onOpenChange={setQrDialogOpen}
+        />
+      )}
+
+      {/* Share Dialog */}
+      {selectedResidence && (
+        <ResidenceShareDialog
+          residenceId={selectedResidence.id}
+          residenceName={selectedResidence.name}
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+        />
+      )}
     </>
   );
 }
 
 export default function Tenants() {
+  const { profile, logout } = useAuth();
+  
   return (
-    <AppLayout>
+    <AppLayout userRole={profile?.role || "resident"} onLogout={logout}>
       <TenantsContent />
     </AppLayout>
   );

@@ -8,6 +8,8 @@ import { LotsManagement } from "@/components/admin/lots/LotsManagement";
 import { UsersManagement } from "@/components/admin/users/UsersManagement";
 import { BuildingsManagement } from "@/components/admin/buildings/BuildingsManagement";
 import { AISettingsTab } from "@/components/admin/AISettingsTab";
+import { EmailTemplatesManagement } from "@/components/admin/EmailTemplatesManagement";
+import { ResidencesManagement } from "@/components/admin/ResidencesManagement";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -29,6 +31,10 @@ export function AdminContent() {
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Aperçu</span>
           </TabsTrigger>
+          <TabsTrigger value="residences" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Résidences</span>
+          </TabsTrigger>
           <TabsTrigger value="buildings" className="gap-2">
             <Landmark className="h-4 w-4" />
             <span className="hidden sm:inline">Bâtiments</span>
@@ -47,15 +53,11 @@ export function AdminContent() {
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Templates</span>
+            <span className="hidden sm:inline">Emails</span>
           </TabsTrigger>
           <TabsTrigger value="smtp" className="gap-2">
             <Mail className="h-4 w-4" />
             <span className="hidden sm:inline">SMTP</span>
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="gap-2">
-            <Wrench className="h-4 w-4" />
-            <span className="hidden sm:inline">Intégrations</span>
           </TabsTrigger>
         </TabsList>
 
@@ -100,6 +102,10 @@ export function AdminContent() {
           </div>
         </TabsContent>
 
+        <TabsContent value="residences">
+          <ResidencesManagement />
+        </TabsContent>
+
         <TabsContent value="buildings">
           <BuildingsManagement />
         </TabsContent>
@@ -117,28 +123,7 @@ export function AdminContent() {
         </TabsContent>
 
         <TabsContent value="templates">
-          <Card>
-            <CardHeader>
-              <CardTitle>Templates d'emails</CardTitle>
-              <CardDescription>Personnalisez vos modèles d'emails</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" onClick={() => handleFeatureClick("Créer un template")}>
-                  Créer un template
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Templates par défaut")}>
-                  Templates par défaut
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Prévisualiser")}>
-                  Prévisualiser
-                </Button>
-                <Button variant="outline" onClick={() => handleFeatureClick("Importer un template")}>
-                  Importer un template
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <EmailTemplatesManagement />
         </TabsContent>
 
         <TabsContent value="smtp">
@@ -154,18 +139,6 @@ export function AdminContent() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-
-        <TabsContent value="integrations">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Wrench className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Intégrations à venir</h3>
-              <p className="text-muted-foreground">
-                Connectez vos outils préférés : comptabilité, banque, etc.
-              </p>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
