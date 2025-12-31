@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResidenceSelector } from "./ResidenceSelector";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { NavSettingsDialog } from "@/components/admin/NavSettingsDialog";
@@ -77,24 +76,6 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
   const [navSettingsOpen, setNavSettingsOpen] = useState(false);
   const location = useLocation();
   const { navSettings, isLoading } = useNavSettings();
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Preserve scroll position during navigation
-  const handleNavClick = useCallback(() => {
-    // Store current scroll position before navigation
-    const scrollElement = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-    if (scrollElement) {
-      const scrollTop = scrollElement.scrollTop;
-      // Use requestAnimationFrame to restore after React re-render
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (scrollElement) {
-            scrollElement.scrollTop = scrollTop;
-          }
-        });
-      });
-    }
-  }, []);
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + "/");
 
@@ -124,7 +105,6 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
     return (
       <NavLink
         to={item.href}
-        onClick={handleNavClick}
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
           isActive(item.href)
@@ -172,7 +152,7 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
       )}
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 px-3 py-4" ref={scrollRef}>
+      <div className="flex-1 px-3 py-4 overflow-y-auto">
         <nav className="space-y-6">
           {visibleCategories.map((category) => {
             const items = getItemsForCategory(category.id);
@@ -192,13 +172,12 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
             );
           })}
         </nav>
-      </ScrollArea>
+      </div>
 
       {/* Footer */}
       <div className="p-3 border-t border-sidebar-border space-y-2">
         <NavLink
           to="/profile"
-          onClick={handleNavClick}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
             location.pathname === "/profile"
