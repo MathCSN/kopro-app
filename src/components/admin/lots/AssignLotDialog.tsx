@@ -43,6 +43,7 @@ interface AssignLotDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   preselectedLotId?: string | null;
+  residenceId?: string | null;
 }
 
 interface Lot {
@@ -70,9 +71,11 @@ export function AssignLotDialog({
   open, 
   onOpenChange, 
   onSuccess,
-  preselectedLotId 
+  preselectedLotId,
+  residenceId: propResidenceId
 }: AssignLotDialogProps) {
   const { selectedResidence } = useResidence();
+  const effectiveResidenceId = propResidenceId || selectedResidence?.id;
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -91,16 +94,16 @@ export function AssignLotDialog({
   const [userOpen, setUserOpen] = useState(false);
 
   useEffect(() => {
-    if (open && selectedResidence) {
+    if (open && effectiveResidenceId) {
       fetchData();
       if (preselectedLotId) {
         setSelectedLotId(preselectedLotId);
       }
     }
-  }, [open, selectedResidence, preselectedLotId]);
+  }, [open, effectiveResidenceId, preselectedLotId]);
 
   const fetchData = async () => {
-    if (!selectedResidence) return;
+    if (!effectiveResidenceId) return;
     setLoading(true);
     
     try {
@@ -108,7 +111,7 @@ export function AssignLotDialog({
       const { data: lotsData, error: lotsError } = await supabase
         .from("lots")
         .select("id, lot_number, floor, door, buildings(name)")
-        .eq("residence_id", selectedResidence.id)
+        .eq("residence_id", effectiveResidenceId)
         .order("lot_number");
       
       if (lotsError) throw lotsError;
@@ -127,7 +130,7 @@ export function AssignLotDialog({
       const { data: userRoles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id")
-        .eq("residence_id", selectedResidence.id);
+        .eq("residence_id", effectiveResidenceId);
       
       if (rolesError) throw rolesError;
       
@@ -153,7 +156,7 @@ export function AssignLotDialog({
   };
 
   const handleSubmit = async () => {
-    if (!selectedLotId || !selectedUserId || !selectedResidence) {
+    if (!selectedLotId || !selectedUserId || !effectiveResidenceId) {
       toast.error("Veuillez sélectionner un lot et un résident");
       return;
     }

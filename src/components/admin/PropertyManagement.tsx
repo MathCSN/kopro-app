@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BuildingFormDialog } from "./buildings/BuildingFormDialog";
 import { LotFormDialog } from "./lots/LotFormDialog";
 import { AssignLotDialog } from "./lots/AssignLotDialog";
@@ -33,6 +34,17 @@ interface Building {
   residence_id: string;
 }
 
+interface Occupancy {
+  id: string;
+  type: string;
+  is_active: boolean | null;
+  user: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+  } | null;
+}
+
 interface Lot {
   id: string;
   lot_number: string;
@@ -45,6 +57,7 @@ interface Lot {
   building_id: string | null;
   residence_id: string;
   notes: string | null;
+  occupancies?: Occupancy[];
 }
 
 export function PropertyManagement() {
@@ -116,7 +129,45 @@ export function PropertyManagement() {
         .eq("building_id", expandedBuildingId)
         .order("lot_number");
       if (error) throw error;
-      return data as Lot[];
+      
+      // Fetch occupancies separately
+      const lotIds = data.map(l => l.id);
+      if (lotIds.length === 0) return data as Lot[];
+      
+      const { data: occupancies } = await supabase
+        .from("occupancies")
+        .select("id, lot_id, type, is_active, user_id")
+        .in("lot_id", lotIds)
+        .eq("is_active", true);
+      
+      // Fetch profiles for active occupancies
+      const userIds = [...new Set((occupancies || []).map(o => o.user_id))];
+      let profiles: Record<string, { first_name: string | null; last_name: string | null; email: string | null }> = {};
+      
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, email")
+          .in("id", userIds);
+        
+        profiles = (profilesData || []).reduce((acc, p) => {
+          acc[p.id] = { first_name: p.first_name, last_name: p.last_name, email: p.email };
+          return acc;
+        }, {} as Record<string, { first_name: string | null; last_name: string | null; email: string | null }>);
+      }
+      
+      // Merge occupancies with lots
+      return data.map(lot => ({
+        ...lot,
+        occupancies: (occupancies || [])
+          .filter(o => o.lot_id === lot.id)
+          .map(o => ({
+            id: o.id,
+            type: o.type,
+            is_active: o.is_active,
+            user: profiles[o.user_id] || null
+          }))
+      })) as Lot[];
     },
     enabled: !!expandedResidenceId && !!expandedBuildingId
   });
@@ -329,11 +380,12 @@ export function PropertyManagement() {
             Résidences → Bâtiments → Lots
           </p>
         </div>
-        <Button onClick={openNewResidence}>
+        <Button type="button" onClick={(e) => { e.preventDefault(); openNewResidence(); }}>
           <Plus className="h-4 w-4 mr-2" />
           Nouvelle résidence
         </Button>
       </div>
+
 
       {/* Hierarchical list */}
       <div className="space-y-2">
@@ -471,40 +523,69 @@ export function PropertyManagement() {
                                         <TableHead>Lot</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Étage</TableHead>
-                                        <TableHead>Porte</TableHead>
                                         <TableHead>Surface</TableHead>
-                                        <TableHead>Pièces</TableHead>
-                                        <TableHead>Tantièmes</TableHead>
+                                        <TableHead>Résident</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                      {lots.map((lot) => (
-                                        <TableRow key={lot.id}>
-                                          <TableCell className="font-medium">{lot.lot_number}</TableCell>
-                                          <TableCell>
-                                            <Badge variant="outline">{lot.type || "—"}</Badge>
-                                          </TableCell>
-                                          <TableCell>{lot.floor ?? "—"}</TableCell>
-                                          <TableCell>{lot.door || "—"}</TableCell>
-                                          <TableCell>{lot.surface ? `${lot.surface} m²` : "—"}</TableCell>
-                                          <TableCell>{lot.rooms ?? "—"}</TableCell>
-                                          <TableCell>{lot.tantiemes ?? "—"}</TableCell>
-                                          <TableCell className="text-right">
-                                            <div className="flex justify-end gap-1">
-                                              <Button variant="ghost" size="sm" onClick={() => openAssignDialog(lot.id)}>
-                                                <Users className="h-4 w-4" />
-                                              </Button>
-                                              <Button variant="ghost" size="sm" onClick={() => openEditLot(lot)}>
-                                                <Edit className="h-4 w-4" />
-                                              </Button>
-                                              <Button variant="ghost" size="sm" onClick={() => setDeleteLotId(lot.id)}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                              </Button>
-                                            </div>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
+                                      {lots.map((lot) => {
+                                        const activeOccupancy = lot.occupancies?.find(o => o.is_active && o.user);
+                                        const occupantName = activeOccupancy?.user 
+                                          ? `${activeOccupancy.user.first_name || ""} ${activeOccupancy.user.last_name || ""}`.trim() || activeOccupancy.user.email || "—"
+                                          : null;
+                                        const occupantInitials = activeOccupancy?.user
+                                          ? (activeOccupancy.user.first_name && activeOccupancy.user.last_name 
+                                              ? `${activeOccupancy.user.first_name[0]}${activeOccupancy.user.last_name[0]}`.toUpperCase()
+                                              : activeOccupancy.user.email?.[0]?.toUpperCase() || "?")
+                                          : null;
+                                        
+                                        return (
+                                          <TableRow 
+                                            key={lot.id} 
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => openAssignDialog(lot.id)}
+                                          >
+                                            <TableCell className="font-medium">{lot.lot_number}</TableCell>
+                                            <TableCell>
+                                              <Badge variant="outline">{lot.type || "—"}</Badge>
+                                            </TableCell>
+                                            <TableCell>{lot.floor ?? "—"}</TableCell>
+                                            <TableCell>{lot.surface ? `${lot.surface} m²` : "—"}</TableCell>
+                                            <TableCell>
+                                              {activeOccupancy ? (
+                                                <div className="flex items-center gap-2">
+                                                  <Avatar className="h-6 w-6">
+                                                    <AvatarFallback className="text-xs">{occupantInitials}</AvatarFallback>
+                                                  </Avatar>
+                                                  <div className="flex flex-col">
+                                                    <span className="text-sm font-medium">{occupantName}</span>
+                                                    <Badge variant="secondary" className="w-fit text-xs">
+                                                      {activeOccupancy.type === "owner" ? "Propriétaire" : 
+                                                       activeOccupancy.type === "tenant" ? "Locataire" : "Occupant"}
+                                                    </Badge>
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <span className="text-muted-foreground italic text-sm">Vacant</span>
+                                              )}
+                                            </TableCell>
+                                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                              <div className="flex justify-end gap-1">
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => openAssignDialog(lot.id)}>
+                                                  <Users className="h-4 w-4" />
+                                                </Button>
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => openEditLot(lot)}>
+                                                  <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button type="button" variant="ghost" size="sm" onClick={() => setDeleteLotId(lot.id)}>
+                                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
                                     </TableBody>
                                   </Table>
                                 )}
@@ -610,6 +691,11 @@ export function PropertyManagement() {
         open={assignDialogOpen}
         onOpenChange={setAssignDialogOpen}
         preselectedLotId={assigningLotId}
+        residenceId={expandedResidenceId}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["lots"] });
+          queryClient.invalidateQueries({ queryKey: ["occupancies"] });
+        }}
       />
 
       {/* Bulk Create Dialog */}
