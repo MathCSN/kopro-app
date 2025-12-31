@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { MobileNav } from "./MobileNav";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResidenceProvider } from "@/contexts/ResidenceContext";
 
 interface AppLayoutProps {
@@ -27,11 +26,11 @@ export function AppLayout({ children, userRole = "resident", onLogout }: AppLayo
           {/* Mobile top padding - increased for residence selector */}
           <div className="h-[104px] md:hidden shrink-0" />
           
-          <ScrollArea className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
               {children}
             </div>
-          </ScrollArea>
+          </div>
           
           {/* Mobile bottom padding */}
           <div className="h-20 md:hidden shrink-0" />

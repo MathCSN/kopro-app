@@ -58,7 +58,7 @@ export function AdminContent() {
         </TabsList>
 
         <div ref={contentRef}>
-          <TabsContent value="overview" className="space-y-6 mt-0">
+          <TabsContent value="overview" className="space-y-6 mt-0" tabIndex={-1}>
             <ApartmentRequestsManagement />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card 
@@ -101,23 +101,23 @@ export function AdminContent() {
             </div>
           </TabsContent>
 
-          <TabsContent value="patrimoine" className="mt-0">
+          <TabsContent value="patrimoine" className="mt-0" tabIndex={-1}>
             <PropertyManagement />
           </TabsContent>
 
-          <TabsContent value="users" className="mt-0">
+          <TabsContent value="users" className="mt-0" tabIndex={-1}>
             <UsersManagement />
           </TabsContent>
 
-          <TabsContent value="ai" className="mt-0">
+          <TabsContent value="ai" className="mt-0" tabIndex={-1}>
             <AISettingsTab />
           </TabsContent>
 
-          <TabsContent value="templates" className="mt-0">
+          <TabsContent value="templates" className="mt-0" tabIndex={-1}>
             <EmailTemplatesManagement />
           </TabsContent>
 
-          <TabsContent value="smtp" className="mt-0">
+          <TabsContent value="smtp" className="mt-0" tabIndex={-1}>
             {selectedResidence ? (
               <SmtpConfigForm residenceId={selectedResidence.id} />
             ) : (
