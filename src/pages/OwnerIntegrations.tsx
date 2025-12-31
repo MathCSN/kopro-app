@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { OwnerLayout } from "@/components/layout/OwnerLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -313,7 +313,7 @@ export default function OwnerIntegrations() {
   };
 
   return (
-    <OwnerLayout onLogout={handleLogout}>
+    <AdminLayout onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Intégrations</h1>
@@ -455,6 +455,6 @@ export default function OwnerIntegrations() {
           )}
         </DialogContent>
       </Dialog>
-    </OwnerLayout>
+    </AdminLayout>
   );
 }

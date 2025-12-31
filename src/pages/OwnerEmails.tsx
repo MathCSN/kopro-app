@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { OwnerLayout } from "@/components/layout/OwnerLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useToast } from "@/hooks/use-toast";
 import { useSendEmail } from "@/hooks/useSendEmail";
 import { supabase } from "@/integrations/supabase/client";
@@ -220,7 +220,7 @@ export default function OwnerEmails() {
   };
 
   return (
-    <OwnerLayout onLogout={handleLogout}>
+    <AdminLayout onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -491,6 +491,6 @@ export default function OwnerEmails() {
           </DialogContent>
         </Dialog>
       </div>
-    </OwnerLayout>
+    </AdminLayout>
   );
 }

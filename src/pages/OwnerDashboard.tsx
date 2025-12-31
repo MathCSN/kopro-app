@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { OwnerLayout } from "@/components/layout/OwnerLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function OwnerDashboard() {
@@ -81,7 +81,7 @@ export default function OwnerDashboard() {
   }
 
   return (
-    <OwnerLayout onLogout={handleLogout}>
+    <AdminLayout onLogout={handleLogout}>
       <div className="space-y-6 lg:space-y-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -195,6 +195,6 @@ export default function OwnerDashboard() {
           </Card>
         </div>
       </div>
-    </OwnerLayout>
+    </AdminLayout>
   );
 }

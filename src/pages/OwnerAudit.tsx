@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { OwnerLayout } from "@/components/layout/OwnerLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -140,16 +140,16 @@ export default function OwnerAudit() {
 
   if (isLoading) {
     return (
-      <OwnerLayout onLogout={handleLogout}>
+      <AdminLayout onLogout={handleLogout}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </OwnerLayout>
+      </AdminLayout>
     );
   }
 
   return (
-    <OwnerLayout onLogout={handleLogout}>
+    <AdminLayout onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -283,6 +283,6 @@ export default function OwnerAudit() {
           </Card>
         )}
       </div>
-    </OwnerLayout>
+    </AdminLayout>
   );
 }
