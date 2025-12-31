@@ -39,7 +39,11 @@ interface Residence {
   users_count?: number;
 }
 
-export function ResidencesManagement() {
+interface ResidencesManagementProps {
+  onDeleteResidence?: (residenceId: string) => void;
+}
+
+export function ResidencesManagement({ onDeleteResidence }: ResidencesManagementProps) {
   const { residences, setSelectedResidence } = useResidence();
   const [loading, setLoading] = useState(false);
   const [residencesList, setResidencesList] = useState<Residence[]>([]);
@@ -319,6 +323,15 @@ export function ResidencesManagement() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
+                        {onDeleteResidence && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDeleteResidence(residence.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
