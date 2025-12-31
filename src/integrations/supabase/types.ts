@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_entries: {
+        Row: {
+          catalog_amount: number
+          contact_id: string | null
+          created_at: string | null
+          description: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          final_amount: number
+          id: string
+          invoice_number: string | null
+          paid_at: string | null
+          payment_method: string | null
+          quote_id: string | null
+          stripe_payment_id: string | null
+          subscription_id: string | null
+          total_ttc: number | null
+          type: string
+          vat_amount: number | null
+          vat_rate: number | null
+        }
+        Insert: {
+          catalog_amount: number
+          contact_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          final_amount: number
+          id?: string
+          invoice_number?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          quote_id?: string | null
+          stripe_payment_id?: string | null
+          subscription_id?: string | null
+          total_ttc?: number | null
+          type: string
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Update: {
+          catalog_amount?: number
+          contact_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          final_amount?: number
+          id?: string
+          invoice_number?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          quote_id?: string | null
+          stripe_payment_id?: string | null
+          subscription_id?: string | null
+          total_ttc?: number | null
+          type?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_entries_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_entries_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_entries_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "agency_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ag_votes: {
         Row: {
           assembly_id: string
@@ -51,6 +136,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agency_subscriptions: {
+        Row: {
+          activation_price_paid: number
+          apartments_count: number
+          catalog_activation_price: number
+          catalog_monthly_price: number
+          created_at: string | null
+          id: string
+          monthly_price: number
+          paid_at: string | null
+          residences_count: number
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activation_price_paid: number
+          apartments_count?: number
+          catalog_activation_price: number
+          catalog_monthly_price: number
+          created_at?: string | null
+          id?: string
+          monthly_price: number
+          paid_at?: string | null
+          residences_count?: number
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activation_price_paid?: number
+          apartments_count?: number
+          catalog_activation_price?: number
+          catalog_monthly_price?: number
+          created_at?: string | null
+          id?: string
+          monthly_price?: number
+          paid_at?: string | null
+          residences_count?: number
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       ai_conversations: {
         Row: {
@@ -603,6 +739,110 @@ export type Database = {
             columns: ["residence_id"]
             isOneToOne: false
             referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_activities: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          type: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          type: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contacts: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string
+          id: string
+          last_contact_at: string | null
+          name: string | null
+          notes: string | null
+          phone: string | null
+          quote_id: string | null
+          source: string | null
+          status: string | null
+          subscription_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          last_contact_at?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          quote_id?: string | null
+          source?: string | null
+          status?: string | null
+          subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          last_contact_at?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          quote_id?: string | null
+          source?: string | null
+          status?: string | null
+          subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "agency_subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -1301,6 +1541,36 @@ export type Database = {
           },
         ]
       }
+      pricing_config: {
+        Row: {
+          activation_price_per_residence: number
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          monthly_price_per_apartment: number
+          updated_at: string | null
+        }
+        Insert: {
+          activation_price_per_residence?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_price_per_apartment?: number
+          updated_at?: string | null
+        }
+        Update: {
+          activation_price_per_residence?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_price_per_apartment?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1371,6 +1641,8 @@ export type Database = {
         Row: {
           activation_price: number
           apartments_count: number
+          catalog_activation_price: number | null
+          catalog_monthly_price: number | null
           client_address: string | null
           client_company: string | null
           client_email: string | null
@@ -1378,6 +1650,10 @@ export type Database = {
           client_phone: string | null
           created_at: string
           created_by: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          final_activation_price: number | null
+          final_monthly_price: number | null
           id: string
           monthly_price_per_apartment: number
           notes: string | null
@@ -1399,6 +1675,8 @@ export type Database = {
         Insert: {
           activation_price?: number
           apartments_count?: number
+          catalog_activation_price?: number | null
+          catalog_monthly_price?: number | null
           client_address?: string | null
           client_company?: string | null
           client_email?: string | null
@@ -1406,6 +1684,10 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           created_by?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          final_activation_price?: number | null
+          final_monthly_price?: number | null
           id?: string
           monthly_price_per_apartment?: number
           notes?: string | null
@@ -1427,6 +1709,8 @@ export type Database = {
         Update: {
           activation_price?: number
           apartments_count?: number
+          catalog_activation_price?: number | null
+          catalog_monthly_price?: number | null
           client_address?: string | null
           client_company?: string | null
           client_email?: string | null
@@ -1434,6 +1718,10 @@ export type Database = {
           client_phone?: string | null
           created_at?: string
           created_by?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          final_activation_price?: number | null
+          final_monthly_price?: number | null
           id?: string
           monthly_price_per_apartment?: number
           notes?: string | null
@@ -1721,7 +2009,7 @@ export type Database = {
           enabled: boolean | null
           id: string
           permission_key: string
-          residence_id: string
+          residence_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string | null
         }
@@ -1730,7 +2018,7 @@ export type Database = {
           enabled?: boolean | null
           id?: string
           permission_key: string
-          residence_id: string
+          residence_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
         }
@@ -1739,7 +2027,7 @@ export type Database = {
           enabled?: boolean | null
           id?: string
           permission_key?: string
-          residence_id?: string
+          residence_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string | null
         }
@@ -2330,6 +2618,10 @@ export type Database = {
     Functions: {
       can_manage_rental: {
         Args: { _residence_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_cs_permission: {
+        Args: { _permission_key: string; _user_id: string }
         Returns: boolean
       }
       has_residence_access: {
