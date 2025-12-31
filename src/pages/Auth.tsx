@@ -39,7 +39,7 @@ export default function Auth() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user && profile) {
-      navigate(profile.role === 'owner' ? "/owner" : "/dashboard");
+      navigate(profile.role === 'admin' ? "/admin" : "/dashboard");
     }
   }, [user, profile, authLoading, navigate]);
 

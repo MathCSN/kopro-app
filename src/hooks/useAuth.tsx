@@ -23,8 +23,10 @@ interface AuthContextType {
   logout: () => Promise<void>;
   hasRole: (requiredRole: AppRole) => boolean;
   canAccessRental: () => boolean;
-  isOwner: () => boolean;
+  isAdmin: () => boolean;
   isManager: () => boolean;
+  // Backward compatibility alias
+  isOwner: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -199,9 +201,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return ROLE_HIERARCHY[profile.role] >= ROLE_HIERARCHY[requiredRole];
   };
 
-  const isOwner = () => profile?.role === 'owner';
-  const isManager = () => profile?.role === 'manager' || profile?.role === 'admin' || profile?.role === 'owner';
-  const canAccessRental = () => isOwner() || profile?.role === 'admin' || profile?.role === 'manager';
+  const isAdmin = () => profile?.role === 'admin';
+  // Backward compatibility alias
+  const isOwner = () => isAdmin();
+  const isManager = () => profile?.role === 'manager' || profile?.role === 'admin';
+  const canAccessRental = () => isAdmin() || profile?.role === 'manager';
 
   return (
     <AuthContext.Provider value={{ 
@@ -216,6 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout, 
       hasRole,
       canAccessRental,
+      isAdmin,
       isOwner,
       isManager
     }}>

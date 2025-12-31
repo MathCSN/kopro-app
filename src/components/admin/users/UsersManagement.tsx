@@ -20,7 +20,7 @@ import { InvitationsHistory } from "./InvitationsHistory";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-type AppRole = "owner" | "admin" | "manager" | "cs" | "resident";
+type AppRole = "admin" | "manager" | "cs" | "resident";
 
 interface UserWithRole {
   id: string;
@@ -37,16 +37,14 @@ interface UserWithRole {
 }
 
 const ROLE_LABELS: Record<AppRole, string> = {
-  owner: "Propriétaire",
-  admin: "Administrateur",
-  manager: "Gestionnaire",
-  cs: "Conseil Syndical",
+  admin: "Admin",
+  manager: "Responsable",
+  cs: "Collaborateur",
   resident: "Résident",
 };
 
 const ROLE_COLORS: Record<AppRole, string> = {
-  owner: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  admin: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  admin: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   manager: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   cs: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   resident: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -71,7 +69,7 @@ export function UsersManagement() {
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("id, user_id, role, residence_id")
-        .or(`residence_id.eq.${selectedResidence.id},role.eq.owner`);
+        .or(`residence_id.eq.${selectedResidence.id},role.eq.admin`);
 
       if (rolesError) throw rolesError;
       if (!roles || roles.length === 0) return [];
@@ -92,7 +90,7 @@ export function UsersManagement() {
         ...profile,
         roles: roles
           .filter((r) => r.user_id === profile.id)
-          .filter((r) => r.role === "owner" || r.residence_id === selectedResidence.id)
+          .filter((r) => r.role === "admin" || r.residence_id === selectedResidence.id)
           .map((r) => ({
             id: r.id,
             role: r.role as AppRole,
@@ -113,7 +111,7 @@ export function UsersManagement() {
       const { error } = await supabase.from("user_roles").insert({
         user_id: userId,
         role: role,
-        residence_id: role === "owner" ? null : selectedResidence.id,
+        residence_id: role === "admin" ? null : selectedResidence.id,
       });
 
       if (error) throw error;
@@ -269,13 +267,13 @@ export function UsersManagement() {
                                   variant="secondary"
                                   className={`${ROLE_COLORS[role.role]} cursor-pointer hover:opacity-80`}
                                   onClick={() => {
-                                    if (role.role !== "owner" && confirm(`Supprimer le rôle ${ROLE_LABELS[role.role]} ?`)) {
+                                    if (role.role !== "admin" && confirm(`Supprimer le rôle ${ROLE_LABELS[role.role]} ?`)) {
                                       removeRoleMutation.mutate(role.id);
                                     }
                                   }}
                                 >
                                   {ROLE_LABELS[role.role]}
-                                  {role.role !== "owner" && (
+                                  {role.role !== "admin" && (
                                     <Trash2 className="h-3 w-3 ml-1" />
                                   )}
                                 </Badge>
@@ -347,9 +345,8 @@ export function UsersManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="resident">Résident</SelectItem>
-                  <SelectItem value="cs">Conseil Syndical</SelectItem>
-                  <SelectItem value="manager">Gestionnaire</SelectItem>
-                  <SelectItem value="admin">Administrateur</SelectItem>
+                  <SelectItem value="cs">Collaborateur</SelectItem>
+                  <SelectItem value="manager">Responsable</SelectItem>
                 </SelectContent>
               </Select>
             </div>

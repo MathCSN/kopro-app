@@ -1,4 +1,4 @@
-export type AppRole = 'owner' | 'admin' | 'manager' | 'cs' | 'resident';
+export type AppRole = 'admin' | 'manager' | 'cs' | 'resident';
 
 export interface UserProfile {
   id: string;
@@ -25,17 +25,23 @@ export interface DemoUser {
 }
 
 export const ROLE_LABELS: Record<AppRole, string> = {
-  owner: 'Propriétaire',
-  admin: 'Administrateur',
-  manager: 'Gestionnaire',
-  cs: 'Conseil Syndical',
+  admin: 'Admin',
+  manager: 'Responsable',
+  cs: 'Collaborateur',
   resident: 'Résident',
 };
 
 export const ROLE_HIERARCHY: Record<AppRole, number> = {
-  owner: 100,
-  admin: 80,
+  admin: 100,
   manager: 60,
   cs: 40,
   resident: 20,
+};
+
+// Roles that each role can assign
+export const ASSIGNABLE_ROLES: Record<AppRole, AppRole[]> = {
+  admin: ['manager', 'cs', 'resident'],
+  manager: ['cs', 'resident'],
+  cs: [],
+  resident: [],
 };

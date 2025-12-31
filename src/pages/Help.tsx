@@ -7,10 +7,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 
 const demoCredentials = [
   { email: "resident@kopro.fr", password: "demo123", role: "Résident", description: "Accès résident standard" },
-  { email: "cs@kopro.fr", password: "demo123", role: "Conseil Syndical", description: "Accès CS avec lecture étendue" },
-  { email: "gestionnaire@kopro.fr", password: "demo123", role: "Gestionnaire", description: "Gestion complète résidence" },
-  { email: "admin@kopro.fr", password: "demo123", role: "Superadmin", description: "Admin résidence" },
-  { email: "owner@kopro.fr", password: "demo123", role: "Fondateur", description: "Owner plateforme (nouveau!)" },
+  { email: "collab@kopro.fr", password: "demo123", role: "Collaborateur", description: "Équipe agence, droits configurables" },
+  { email: "manager@kopro.fr", password: "demo123", role: "Responsable", description: "Responsable d'agence" },
+  { email: "admin@kopro.fr", password: "demo123", role: "Admin", description: "Administrateur plateforme" },
 ];
 
 export default function Help() {
@@ -53,11 +52,10 @@ export default function Help() {
             <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Rôles & Permissions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div><strong>Fondateur/Owner:</strong> Crée résidences, gère tous les comptes, paramètres globaux, audit log complet</div>
-            <div><strong>Superadmin:</strong> Admin complet d'une résidence</div>
-            <div><strong>Gestionnaire:</strong> Gestion opérationnelle, tickets, paiements, module location</div>
-            <div><strong>Conseil Syndical:</strong> Lecture étendue, participation aux décisions</div>
-            <div><strong>Résident:</strong> Accès personnel, signalements, votes, réservations</div>
+            <div><strong>Admin:</strong> Administrateur de la plateforme, accès complet</div>
+            <div><strong>Responsable:</strong> Responsable d'agence, gestion opérationnelle</div>
+            <div><strong>Collaborateur:</strong> Équipe de l'agence, droits configurables</div>
+            <div><strong>Résident:</strong> Accès personnel, signalements, votes</div>
           </CardContent>
         </Card>
       </div>

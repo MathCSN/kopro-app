@@ -52,9 +52,9 @@ const STATUS_CONFIG: Record<InvitationStatus, { label: string; color: string; ic
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "Administrateur",
-  manager: "Gestionnaire",
-  cs: "Conseil Syndical",
+  admin: "Admin",
+  manager: "Responsable",
+  cs: "Collaborateur",
   resident: "Résident",
 };
 

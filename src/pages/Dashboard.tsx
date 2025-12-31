@@ -65,10 +65,9 @@ const statusColors: Record<string, string> = {
 // Role badge mapping
 const roleBadges: Record<string, string> = {
   resident: "Résident",
-  cs: "Conseil Syndical",
-  manager: "Gestionnaire",
+  cs: "Collaborateur",
+  manager: "Responsable",
   admin: "Admin",
-  owner: "Fondateur / Owner",
 };
 
 export default function Dashboard() {

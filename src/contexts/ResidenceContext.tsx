@@ -49,10 +49,10 @@ export function ResidenceProvider({ children }: { children: ReactNode }) {
         if (rolesError) throw rolesError;
 
         // Check if user is owner (can see all residences)
-        const isOwner = userRoles?.some((r) => r.role === "owner");
+        const isAdmin = userRoles?.some((r) => r.role === "admin");
 
         let residenceQuery;
-        if (isOwner) {
+        if (isAdmin) {
           // Owners can see all residences
           residenceQuery = supabase.from("residences").select("id, name, address, city");
         } else {
