@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
-import { OwnerLayout } from "@/components/layout/OwnerLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,7 +160,7 @@ export default function OwnerSettings() {
   if (!user) return null;
 
   return (
-    <OwnerLayout onLogout={handleLogout}>
+    <AdminLayout onLogout={handleLogout}>
       <div className="space-y-6 animate-fade-in max-w-4xl">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Paramètres globaux</h1>
@@ -496,6 +496,6 @@ export default function OwnerSettings() {
           </TabsContent>
         </Tabs>
       </div>
-    </OwnerLayout>
+    </AdminLayout>
   );
 }
