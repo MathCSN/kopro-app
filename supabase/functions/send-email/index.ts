@@ -6,16 +6,102 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface SendEmailRequest {
+// Input validation
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 255;
+};
+
+const validateRequest = (data: unknown): {
   to: string;
   subject: string;
   body: string;
-  fromName?: string;
+  fromName: string;
   fromEmail?: string;
   replyTo?: string;
   templateId?: string;
-  variables?: Record<string, string>;
-}
+  variables: Record<string, string>;
+} => {
+  if (typeof data !== 'object' || data === null) {
+    throw new Error("Invalid request body");
+  }
+  
+  const { to, subject, body, fromName, fromEmail, replyTo, templateId, variables } = data as Record<string, unknown>;
+  
+  // Validate 'to' email
+  if (typeof to !== 'string' || !validateEmail(to)) {
+    throw new Error("Invalid 'to' email address");
+  }
+  
+  // Validate subject
+  if (typeof subject !== 'string' || subject.trim().length === 0) {
+    throw new Error("Subject is required");
+  }
+  if (subject.length > 500) {
+    throw new Error("Subject exceeds maximum length of 500 characters");
+  }
+  
+  // Validate body
+  if (typeof body !== 'string' || body.trim().length === 0) {
+    throw new Error("Body is required");
+  }
+  if (body.length > 50000) {
+    throw new Error("Body exceeds maximum length of 50000 characters");
+  }
+  
+  // Validate fromEmail if provided
+  if (fromEmail !== undefined && fromEmail !== null) {
+    if (typeof fromEmail !== 'string' || !validateEmail(fromEmail)) {
+      throw new Error("Invalid 'fromEmail' address");
+    }
+  }
+  
+  // Validate replyTo if provided
+  if (replyTo !== undefined && replyTo !== null) {
+    if (typeof replyTo !== 'string' || !validateEmail(replyTo)) {
+      throw new Error("Invalid 'replyTo' address");
+    }
+  }
+  
+  // Validate variables
+  const sanitizedVariables: Record<string, string> = {};
+  if (variables !== undefined && variables !== null) {
+    if (typeof variables !== 'object') {
+      throw new Error("Variables must be an object");
+    }
+    for (const [key, value] of Object.entries(variables as Record<string, unknown>)) {
+      if (typeof value !== 'string') {
+        continue;
+      }
+      // Limit variable key and value length
+      if (key.length > 100 || value.length > 1000) {
+        throw new Error(`Variable '${key}' exceeds maximum length`);
+      }
+      sanitizedVariables[key] = value;
+    }
+  }
+  
+  return {
+    to: to.trim(),
+    subject: subject.trim(),
+    body: body.trim(),
+    fromName: typeof fromName === 'string' ? fromName.trim().substring(0, 100) : "KOPRO",
+    fromEmail: fromEmail as string | undefined,
+    replyTo: replyTo as string | undefined,
+    templateId: typeof templateId === 'string' ? templateId : undefined,
+    variables: sanitizedVariables,
+  };
+};
+
+// Escape HTML to prevent XSS
+const escapeHtml = (text: string): string => {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
 
 serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -37,42 +123,28 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Parse and validate input
+    const rawBody = await req.json();
     const { 
       to, 
       subject, 
       body, 
-      fromName = "KOPRO", 
+      fromName,
       fromEmail,
       replyTo,
       templateId,
-      variables = {}
-    }: SendEmailRequest = await req.json();
+      variables
+    } = validateRequest(rawBody);
 
-    // Validate required fields
-    if (!to || !subject || !body) {
-      return new Response(
-        JSON.stringify({ error: "Champs requis manquants: to, subject, body" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      return new Response(
-        JSON.stringify({ error: "Format d'email invalide" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Replace variables in subject and body
+    // Replace variables in subject and body with escaped values
     let processedSubject = subject;
     let processedBody = body;
 
     for (const [key, value] of Object.entries(variables)) {
+      const escapedValue = escapeHtml(value);
       const regex = new RegExp(`\\{\\{${key}\\}\\}|\\{${key}\\}`, "g");
-      processedSubject = processedSubject.replace(regex, value);
-      processedBody = processedBody.replace(regex, value);
+      processedSubject = processedSubject.replace(regex, escapedValue);
+      processedBody = processedBody.replace(regex, escapedValue);
     }
 
     // Build HTML email with professional template
@@ -130,7 +202,7 @@ serve(async (req: Request): Promise<Response> => {
 <body>
   <div class="container">
     <div class="header">
-      <h1>${fromName}</h1>
+      <h1>${escapeHtml(fromName)}</h1>
     </div>
     <div class="content">
       ${processedBody.replace(/\n/g, "<br>")}
@@ -143,7 +215,7 @@ serve(async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    console.log(`Sending email to ${to} with subject: ${processedSubject}`);
+    console.log(`Sending email to ${to} with subject: ${processedSubject.substring(0, 50)}...`);
 
     // Use onboarding@resend.dev for testing, or custom verified domain
     const from = fromEmail 
@@ -178,13 +250,13 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log("Email sent successfully:", emailData);
 
-    // Log the email in audit
+    // Log the email in audit (without sensitive content)
     await supabase.from("audit_logs").insert({
       action: "email_sent",
       entity_type: "email",
       metadata: {
         to,
-        subject: processedSubject,
+        subject: processedSubject.substring(0, 100),
         template_id: templateId,
       },
     });

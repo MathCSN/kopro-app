@@ -6,6 +6,52 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Input validation schema
+const validateRequest = (data: unknown): { question: string; residenceId: string; conversationId?: string } => {
+  if (typeof data !== 'object' || data === null) {
+    throw new Error("Invalid request body");
+  }
+  
+  const { question, residenceId, conversationId } = data as Record<string, unknown>;
+  
+  // Validate question
+  if (typeof question !== 'string' || question.trim().length === 0) {
+    throw new Error("Question is required and must be a non-empty string");
+  }
+  if (question.length > 5000) {
+    throw new Error("Question exceeds maximum length of 5000 characters");
+  }
+  
+  // Validate residenceId as UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeof residenceId !== 'string' || !uuidRegex.test(residenceId)) {
+    throw new Error("residenceId must be a valid UUID");
+  }
+  
+  // Validate conversationId if provided
+  if (conversationId !== undefined && conversationId !== null) {
+    if (typeof conversationId !== 'string' || !uuidRegex.test(conversationId)) {
+      throw new Error("conversationId must be a valid UUID");
+    }
+  }
+  
+  return {
+    question: question.trim(),
+    residenceId,
+    conversationId: conversationId as string | undefined,
+  };
+};
+
+// Escape HTML to prevent injection in responses
+const escapeHtml = (text: string): string => {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,13 +79,44 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { question, residenceId, conversationId } = await req.json();
+    // Parse and validate input
+    const rawBody = await req.json();
+    const { question, residenceId, conversationId } = validateRequest(rawBody);
 
-    if (!question || !residenceId) {
-      throw new Error("Missing required fields: question and residenceId");
+    console.log(`Processing question for residence ${residenceId} by user ${user.id}`);
+
+    // Check if user has access to this residence
+    const { data: userRoles, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("role, residence_id")
+      .eq("user_id", user.id);
+
+    if (rolesError) {
+      console.error("Error checking user roles:", rolesError);
+      throw new Error("Failed to verify access");
     }
 
-    console.log(`Processing question for residence ${residenceId}: ${question}`);
+    const hasAccess = userRoles?.some(r => 
+      r.role === 'admin' || r.residence_id === residenceId
+    );
+
+    if (!hasAccess) {
+      // Log unauthorized attempt
+      await supabase.from("audit_logs").insert({
+        action: "unauthorized_ai_access_attempt",
+        entity_type: "ai_assistant",
+        user_id: user.id,
+        residence_id: residenceId,
+        metadata: { question: question.substring(0, 100) }
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: "Vous n'avez pas accès à cette résidence." 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Get AI settings for this residence
     const { data: aiSettings, error: settingsError } = await supabase
@@ -77,12 +154,18 @@ serve(async (req) => {
     const relevantDocs: string[] = [];
 
     if (documents && documents.length > 0) {
+      // Sanitize question for search
+      const searchTerms = question.toLowerCase().split(/\s+/).slice(0, 5).filter(t => t.length > 2);
+      
       documentContext = documents.map(doc => {
         const content = doc.content_text || "";
-        if (content.toLowerCase().includes(question.toLowerCase().split(" ").slice(0, 3).join(" "))) {
+        const contentLower = content.toLowerCase();
+        
+        // Check if any search terms appear in the document
+        if (searchTerms.some(term => contentLower.includes(term))) {
           relevantDocs.push(doc.name);
         }
-        return `=== Document: ${doc.name} ===\n${doc.description || ""}\n${content}\n`;
+        return `=== Document: ${escapeHtml(doc.name)} ===\n${escapeHtml(doc.description || "")}\n${content}\n`;
       }).join("\n\n");
     }
 
@@ -90,9 +173,9 @@ serve(async (req) => {
     let fallbackInfo = "";
     if (aiSettings.fallback_contact_name || aiSettings.fallback_contact_email || aiSettings.fallback_contact_phone) {
       fallbackInfo = `\n\nSi vous ne trouvez pas la réponse dans les documents, indiquez au résident de contacter:
-- Nom: ${aiSettings.fallback_contact_name || "Non renseigné"}
-- Email: ${aiSettings.fallback_contact_email || "Non renseigné"}
-- Téléphone: ${aiSettings.fallback_contact_phone || "Non renseigné"}`;
+- Nom: ${escapeHtml(aiSettings.fallback_contact_name || "Non renseigné")}
+- Email: ${escapeHtml(aiSettings.fallback_contact_email || "Non renseigné")}
+- Téléphone: ${escapeHtml(aiSettings.fallback_contact_phone || "Non renseigné")}`;
     }
 
     // Create system prompt
