@@ -36,10 +36,15 @@ export default function Auth() {
   const { toast } = useToast();
   const { user, profile, isLoading: authLoading, login, loginWithGoogle, signUp, resetPassword } = useAuth();
 
-  // Redirect if already logged in
+  // Redirect if already logged in based on role
   useEffect(() => {
     if (!authLoading && user && profile) {
-      navigate(profile.role === 'admin' ? "/admin" : "/dashboard");
+      // Super Admin goes to admin platform
+      if (profile.role === 'admin') {
+        navigate("/admin/platform");
+      } else {
+        navigate("/dashboard");
+      }
     }
   }, [user, profile, authLoading, navigate]);
 

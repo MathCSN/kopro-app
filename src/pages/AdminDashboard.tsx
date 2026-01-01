@@ -103,7 +103,7 @@ export default function OwnerDashboard() {
 
         {/* Global Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/residences")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/residences")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Building2 className="h-5 w-5 text-primary" />
@@ -112,7 +112,7 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Résidences</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/residences")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/residences")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <FileText className="h-5 w-5 text-kopro-teal" />
@@ -121,7 +121,7 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Lots</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/users")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/users")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Users className="h-5 w-5 text-kopro-purple" />
@@ -139,7 +139,7 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Tickets actifs</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/quotes")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/quotes")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="h-5 w-5 text-success" />
@@ -148,7 +148,7 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Revenus / mois</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/owner/quotes")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/quotes")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <CreditCard className="h-5 w-5 text-warning" />
@@ -167,27 +167,27 @@ export default function OwnerDashboard() {
               <CardDescription>Accédez rapidement aux fonctionnalités principales</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/residences")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/residences")}>
                 <Building2 className="h-5 w-5" />
                 <span className="text-sm">Résidences</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/managers")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/managers")}>
                 <Users className="h-5 w-5" />
                 <span className="text-sm">Gestionnaires</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/quotes")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/quotes")}>
                 <CreditCard className="h-5 w-5" />
                 <span className="text-sm">Facturation</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/users")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/users")}>
                 <Shield className="h-5 w-5" />
                 <span className="text-sm">Utilisateurs</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/settings")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/settings")}>
                 <Settings className="h-5 w-5" />
                 <span className="text-sm">Paramètres</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/owner/audit")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/audit")}>
                 <Activity className="h-5 w-5" />
                 <span className="text-sm">Journal d'audit</span>
               </Button>
