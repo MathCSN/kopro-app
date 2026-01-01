@@ -144,8 +144,8 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
         )}
       </div>
 
-      {/* Residence Selector */}
-      {userRole !== "owner" && (
+      {/* Residence Selector - Hidden for admin/owner roles */}
+      {userRole !== "owner" && userRole !== "admin" && (
         <div className="px-3 py-3 border-b border-sidebar-border">
           <ResidenceSelector collapsed={collapsed} />
         </div>
