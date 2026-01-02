@@ -137,6 +137,62 @@ export type Database = {
           },
         ]
       }
+      agencies: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string | null
+          phone: string | null
+          postal_code: string | null
+          siret: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          siret?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          siret?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agencies_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_subscriptions: {
         Row: {
           activation_price_paid: number
@@ -1970,6 +2026,7 @@ export type Database = {
       residences: {
         Row: {
           address: string | null
+          agency_id: string | null
           city: string | null
           country: string | null
           created_at: string | null
@@ -1981,6 +2038,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          agency_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
@@ -1992,6 +2050,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          agency_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
@@ -2001,7 +2060,15 @@ export type Database = {
           settings?: Json | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "residences_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -2407,6 +2474,7 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          agency_id: string | null
           created_at: string | null
           id: string
           residence_id: string | null
@@ -2414,6 +2482,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agency_id?: string | null
           created_at?: string | null
           id?: string
           residence_id?: string | null
@@ -2421,6 +2490,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agency_id?: string | null
           created_at?: string | null
           id?: string
           residence_id?: string | null
@@ -2428,6 +2498,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_roles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_roles_residence_id_fkey"
             columns: ["residence_id"]
