@@ -34,7 +34,7 @@ export default function Auth() {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, profile, isLoading: authLoading, login, loginWithGoogle, signUp, resetPassword } = useAuth();
+  const { user, profile, isLoading: authLoading, hasResidence, login, loginWithGoogle, signUp, resetPassword } = useAuth();
 
   // Redirect if already logged in based on role
   useEffect(() => {
@@ -42,11 +42,21 @@ export default function Auth() {
       // Super Admin goes to admin platform
       if (profile.role === 'admin') {
         navigate("/admin/platform");
+      } else if (profile.role === 'manager' || profile.role === 'cs') {
+        // Gestionnaire/Collaborateur goes to dashboard
+        navigate("/dashboard");
+      } else if (profile.role === 'resident') {
+        // Résident : vérifier s'il a une résidence
+        if (hasResidence) {
+          navigate("/dashboard");
+        } else {
+          navigate("/pending");
+        }
       } else {
         navigate("/dashboard");
       }
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, hasResidence, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

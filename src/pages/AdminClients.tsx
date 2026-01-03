@@ -152,10 +152,16 @@ export default function AdminClients() {
               Gérez les agences, gestionnaires et leurs résidences
             </p>
           </div>
-          <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nouvelle agence
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/admin/global-users")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un membre
+            </Button>
+            <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nouvelle agence
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}

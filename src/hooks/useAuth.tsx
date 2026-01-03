@@ -16,6 +16,7 @@ interface AuthContextType {
   session: Session | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  hasResidence: boolean;
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
   loginWithGoogle: () => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: Error | null }>;
@@ -25,6 +26,8 @@ interface AuthContextType {
   canAccessRental: () => boolean;
   isAdmin: () => boolean;
   isManager: () => boolean;
+  isResident: () => boolean;
+  isCollaborator: () => boolean;
   // Backward compatibility alias
   isOwner: () => boolean;
 }
@@ -36,6 +39,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasResidence, setHasResidence] = useState(false);
+
+  // Check if user has an active residence (for residents)
+  const checkUserHasResidence = async (userId: string): Promise<boolean> => {
+    const { data: occupancies } = await supabase
+      .from('occupancies')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .limit(1);
+    return (occupancies?.length || 0) > 0;
+  };
 
   // Fetch user profile and role from database
   const fetchUserProfile = async (userId: string) => {
@@ -95,25 +110,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Defer profile fetch to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            fetchUserProfile(session.user.id).then(setProfile);
+          setTimeout(async () => {
+            const profileData = await fetchUserProfile(session.user.id);
+            setProfile(profileData);
+            // Check residence for residents
+            if (profileData?.role === 'resident') {
+              const hasRes = await checkUserHasResidence(session.user.id);
+              setHasResidence(hasRes);
+            } else {
+              setHasResidence(true); // Managers/admins don't need residence check
+            }
           }, 0);
         } else {
           setProfile(null);
+          setHasResidence(false);
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserProfile(session.user.id).then((profile) => {
-          setProfile(profile);
-          setIsLoading(false);
-        });
+        const profileData = await fetchUserProfile(session.user.id);
+        setProfile(profileData);
+        // Check residence for residents
+        if (profileData?.role === 'resident') {
+          const hasRes = await checkUserHasResidence(session.user.id);
+          setHasResidence(hasRes);
+        } else {
+          setHasResidence(true);
+        }
+        setIsLoading(false);
       } else {
         setIsLoading(false);
       }
@@ -205,6 +235,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Backward compatibility alias
   const isOwner = () => isAdmin();
   const isManager = () => profile?.role === 'manager' || profile?.role === 'admin';
+  const isResident = () => profile?.role === 'resident';
+  const isCollaborator = () => profile?.role === 'cs';
   const canAccessRental = () => isAdmin() || profile?.role === 'manager';
 
   return (
@@ -212,7 +244,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, 
       session,
       profile,
-      isLoading, 
+      isLoading,
+      hasResidence,
       login,
       loginWithGoogle,
       signUp,
@@ -222,7 +255,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       canAccessRental,
       isAdmin,
       isOwner,
-      isManager
+      isManager,
+      isResident,
+      isCollaborator
     }}>
       {children}
     </AuthContext.Provider>

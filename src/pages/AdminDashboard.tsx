@@ -25,11 +25,12 @@ export default function OwnerDashboard() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [platformStats, setPlatformStats] = useState({
+    totalAgencies: 0,
     totalResidences: 0,
     totalLots: 0,
     totalUsers: 0,
     activeTickets: 0,
-    monthlyRevenue: 0,
+    activeSubscriptions: 0,
     pendingPayments: 0,
   });
 
@@ -41,6 +42,11 @@ export default function OwnerDashboard() {
     try {
       setIsLoading(true);
       
+      // Fetch agencies count
+      const { count: agenciesCount } = await supabase
+        .from('agencies')
+        .select('*', { count: 'exact', head: true });
+
       // Fetch residences count
       const { count: residencesCount } = await supabase
         .from('residences')
@@ -56,12 +62,25 @@ export default function OwnerDashboard() {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
+      // Fetch active tickets
+      const { count: ticketsCount } = await supabase
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['open', 'in_progress']);
+
+      // Fetch active subscriptions
+      const { count: subscriptionsCount } = await supabase
+        .from('agency_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
       setPlatformStats({
+        totalAgencies: agenciesCount || 0,
         totalResidences: residencesCount || 0,
         totalLots: lotsCount || 0,
         totalUsers: usersCount || 0,
-        activeTickets: 0,
-        monthlyRevenue: 0,
+        activeTickets: ticketsCount || 0,
+        activeSubscriptions: subscriptionsCount || 0,
         pendingPayments: 0,
       });
     } catch (error) {
@@ -103,28 +122,37 @@ export default function OwnerDashboard() {
 
         {/* Global Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/residences")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/clients")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <p className="text-2xl font-bold text-foreground">{platformStats.totalAgencies}</p>
+              <p className="text-xs text-muted-foreground">Agences</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/clients")}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Building2 className="h-5 w-5 text-kopro-teal" />
               </div>
               <p className="text-2xl font-bold text-foreground">{platformStats.totalResidences}</p>
               <p className="text-xs text-muted-foreground">Résidences</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/residences")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/clients")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <FileText className="h-5 w-5 text-kopro-teal" />
+                <FileText className="h-5 w-5 text-kopro-purple" />
               </div>
               <p className="text-2xl font-bold text-foreground">{platformStats.totalLots}</p>
               <p className="text-xs text-muted-foreground">Lots</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/users")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/global-users")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <Users className="h-5 w-5 text-kopro-purple" />
+                <Users className="h-5 w-5 text-kopro-amber" />
               </div>
               <p className="text-2xl font-bold text-foreground">{platformStats.totalUsers}</p>
               <p className="text-xs text-muted-foreground">Utilisateurs</p>
@@ -139,22 +167,13 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Tickets actifs</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/quotes")}>
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/accounting")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="h-5 w-5 text-success" />
               </div>
-              <p className="text-2xl font-bold text-foreground">{(platformStats.monthlyRevenue / 1000).toFixed(1)}k€</p>
-              <p className="text-xs text-muted-foreground">Revenus / mois</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/quotes")}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <CreditCard className="h-5 w-5 text-warning" />
-              </div>
-              <p className="text-2xl font-bold text-foreground">{(platformStats.pendingPayments / 1000).toFixed(1)}k€</p>
-              <p className="text-xs text-muted-foreground">Impayés</p>
+              <p className="text-2xl font-bold text-foreground">{platformStats.activeSubscriptions}</p>
+              <p className="text-xs text-muted-foreground">Abonnements actifs</p>
             </CardContent>
           </Card>
         </div>

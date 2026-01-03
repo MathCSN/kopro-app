@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole, requireRental }: ProtectedRouteProps) {
-  const { user, profile, isLoading, hasRole, canAccessRental } = useAuth();
+  const { user, profile, isLoading, hasResidence, hasRole, canAccessRental, isResident } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
 
@@ -53,6 +53,11 @@ export function ProtectedRoute({ children, requiredRole, requireRental }: Protec
         <div className="animate-pulse text-muted-foreground">Chargement...</div>
       </div>
     );
+  }
+
+  // Redirect residents without a residence to pending page
+  if (isResident() && !hasResidence && location.pathname !== '/pending' && location.pathname !== '/join') {
+    return <Navigate to="/pending" replace />;
   }
 
   if (requiredRole && !hasRole(requiredRole)) {
