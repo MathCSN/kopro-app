@@ -100,7 +100,9 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
         ? await supabase.from("profiles").select("id, first_name, last_name").in("id", residentIds)
         : { data: [] };
       
-      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const profilesMap = new Map<string, { id: string; first_name: string | null; last_name: string | null }>(
+        (profiles || []).map(p => [p.id, p])
+      );
 
       // Build hierarchy
       return residences.map(residence => {
