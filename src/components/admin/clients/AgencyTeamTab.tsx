@@ -32,7 +32,18 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
         ? await supabase.from("profiles").select("*").in("id", userIds)
         : { data: [] };
 
-      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      type ProfileType = {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+        phone: string | null;
+        avatar_url: string | null;
+      };
+      
+      const profilesMap = new Map<string, ProfileType>(
+        (profiles || []).map(p => [p.id, p as ProfileType])
+      );
 
       const members = (roles || []).map(r => ({
         id: r.id,
