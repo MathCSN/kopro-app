@@ -73,16 +73,16 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
           </Sheet>
         </div>
         
-        {/* Residence selector below header */}
-        {userRole !== "owner" && (
+        {/* Residence selector below header - hidden for residents and admins */}
+        {userRole !== "owner" && userRole !== "admin" && userRole !== "resident" && (
           <div className="px-4 pb-3 border-b border-border bg-background">
             <ResidenceSelector />
           </div>
         )}
       </header>
 
-      {/* Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border bg-background">
+      {/* Bottom Navigation Bar - with safe area for iOS */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16 px-2">
           {getMobileNavItems(userRole).map((item) => (
             <NavLink

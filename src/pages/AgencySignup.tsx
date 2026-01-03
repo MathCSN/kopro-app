@@ -113,9 +113,31 @@ export default function AgencySignup() {
         throw new Error("Erreur lors de la création du compte");
       }
 
-      // Create subscription record
-      const { error: subError } = await supabase.from("agency_subscriptions").insert([{
-        user_id: authData.user.id,
+      const userId = authData.user.id;
+
+      // Create agency for the manager
+      const { data: agencyData, error: agencyError } = await supabase.from("agencies").insert([{
+        name: accountForm.company || `Agence de ${accountForm.firstName} ${accountForm.lastName}`,
+        email: accountForm.email,
+        phone: accountForm.phone || null,
+        owner_id: userId,
+        status: "trial", // Trial until payment
+      }]).select().single();
+
+      if (agencyError) throw agencyError;
+
+      // Create manager role for the user
+      const { error: roleError } = await supabase.from("user_roles").insert([{
+        user_id: userId,
+        role: "manager",
+        agency_id: agencyData.id,
+      }]);
+
+      if (roleError) throw roleError;
+
+      // Create subscription record linked to user
+      const { data: subData, error: subError } = await supabase.from("agency_subscriptions").insert([{
+        user_id: userId,
         residences_count: config.residences_count,
         apartments_count: config.apartments_count,
         catalog_activation_price: activationPrice,
@@ -123,7 +145,7 @@ export default function AgencySignup() {
         activation_price_paid: totalActivation,
         monthly_price: totalMonthly,
         status: "pending",
-      }]);
+      }]).select().single();
 
       if (subError) throw subError;
 
@@ -135,7 +157,8 @@ export default function AgencySignup() {
         phone: accountForm.phone || null,
         status: "pending_payment",
         source: "self_signup",
-        user_id: authData.user.id,
+        user_id: userId,
+        subscription_id: subData.id,
       }]);
 
       toast.success("Compte créé ! Passez au paiement.");

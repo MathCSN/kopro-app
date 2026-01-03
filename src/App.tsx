@@ -57,6 +57,7 @@ import QuotePublic from "./pages/QuotePublic";
 import AgencySignup from "./pages/AgencySignup";
 import AdminClients from "./pages/AdminClients";
 import AdminClientDetail from "./pages/AdminClientDetail";
+import AccountChoice from "./pages/AccountChoice";
 
 const queryClient = new QueryClient();
 
@@ -68,7 +69,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/auth" replace />} />
+            <Route path="/" element={<AccountChoice />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending" element={<Pending />} />
