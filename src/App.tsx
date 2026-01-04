@@ -8,7 +8,6 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 
 // Pages
-import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Pending from "./pages/Pending";
 import JoinResidence from "./pages/JoinResidence";
@@ -38,6 +37,13 @@ import Household from "./pages/Household";
 import ServiceProviders from "./pages/ServiceProviders";
 import AIAssistant from "./pages/AIAssistant";
 
+// Auth Pages
+import AccountChoice from "./pages/AccountChoice";
+import Login from "./pages/auth/Login";
+import RegisterResident from "./pages/auth/RegisterResident";
+import RegisterManager from "./pages/auth/RegisterManager";
+import ResidenceLanding from "./pages/ResidenceLanding";
+
 // Admin Pages (global platform admin)
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminResidences from "./pages/AdminResidences";
@@ -57,7 +63,6 @@ import QuotePublic from "./pages/QuotePublic";
 import AgencySignup from "./pages/AgencySignup";
 import AdminClients from "./pages/AdminClients";
 import AdminClientDetail from "./pages/AdminClientDetail";
-import AccountChoice from "./pages/AccountChoice";
 
 const queryClient = new QueryClient();
 
@@ -69,15 +74,30 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<AccountChoice />} />
-            <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register-resident" element={<RegisterResident />} />
+            <Route path="/auth/register-manager" element={<RegisterManager />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Legacy auth route - redirect to login */}
+            <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
+            
+            {/* QR Code landing page */}
+            <Route path="/r/:residenceCode" element={<ResidenceLanding />} />
+            
+            {/* Onboarding routes */}
             <Route path="/pending" element={<Pending />} />
             <Route path="/join" element={<JoinResidence />} />
-            <Route path="/quote/:quoteNumber" element={<QuotePublic />} />
-            <Route path="/agency-signup" element={<AgencySignup />} />
             
-            {/* Admin routes - Global platform admin (formerly /owner) */}
+            {/* Public quote page */}
+            <Route path="/quote/:quoteNumber" element={<QuotePublic />} />
+            
+            {/* Legacy agency signup - redirect to new manager registration */}
+            <Route path="/agency-signup" element={<Navigate to="/auth/register-manager" replace />} />
+            
+            {/* Admin routes - Global platform admin */}
             <Route path="/admin/platform" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/clients" element={<AdminRoute><AdminClients /></AdminRoute>} />
             <Route path="/admin/clients/:agencyId" element={<AdminRoute><AdminClientDetail /></AdminRoute>} />
@@ -101,7 +121,7 @@ const App = () => (
             <Route path="/owner" element={<Navigate to="/admin/platform" replace />} />
             <Route path="/owner/*" element={<Navigate to="/admin/platform" replace />} />
             
-            {/* Protected routes */}
+            {/* Protected routes - Dashboard */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/newsfeed" element={<ProtectedRoute><Newsfeed /></ProtectedRoute>} />
             <Route path="/feed" element={<Navigate to="/newsfeed" replace />} />

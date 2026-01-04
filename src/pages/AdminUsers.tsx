@@ -161,9 +161,9 @@ export default function OwnerUsers() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/auth");
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   const addRole = async (userId: string, role: AppRole, residenceId: string | null) => {

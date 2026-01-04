@@ -83,9 +83,9 @@ export default function AdminPricing() {
     updateMutation.mutate(formData);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/auth");
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   if (!user) return null;

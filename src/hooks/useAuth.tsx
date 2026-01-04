@@ -224,6 +224,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setHasResidence(false);
+    // Redirect will be handled by the component calling logout
   };
 
   const hasRole = (requiredRole: AppRole): boolean => {
