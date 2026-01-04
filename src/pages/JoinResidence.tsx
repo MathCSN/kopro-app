@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NoApartmentAvailable } from "@/components/residence/NoApartmentAvailable";
+import { AUTH_MESSAGES } from "@/lib/messages";
 
 type Lot = {
   id: string;
@@ -47,7 +48,7 @@ export default function JoinResidence() {
   useEffect(() => {
     if (!residenceId) {
       setStatus("error");
-      setErrorMessage("Aucune résidence spécifiée.");
+      setErrorMessage(AUTH_MESSAGES.NO_RESIDENCE_SPECIFIED);
       return;
     }
 
@@ -90,7 +91,7 @@ export default function JoinResidence() {
 
       if (resError || !residenceData) {
         setStatus("error");
-        setErrorMessage("Résidence introuvable.");
+        setErrorMessage(AUTH_MESSAGES.RESIDENCE_NOT_FOUND);
         return;
       }
 
@@ -226,7 +227,11 @@ export default function JoinResidence() {
   };
 
   const handleGoToAuth = () => {
-    navigate("/auth");
+    navigate("/auth/login");
+  };
+
+  const handleGoBack = () => {
+    navigate("/");
   };
 
   const getLotLabel = (lot: Lot) => {
@@ -282,9 +287,12 @@ export default function JoinResidence() {
             <CardTitle className="text-2xl">Erreur</CardTitle>
             <CardDescription>{errorMessage}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
+          <CardContent className="space-y-3">
+            <Button variant="outline" className="w-full" onClick={handleGoBack}>
               Retour à l'accueil
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={handleGoToAuth}>
+              Se connecter
             </Button>
           </CardContent>
         </Card>

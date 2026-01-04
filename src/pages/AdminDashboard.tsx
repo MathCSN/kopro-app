@@ -90,9 +90,9 @@ export default function OwnerDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/auth");
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   if (!user) {
