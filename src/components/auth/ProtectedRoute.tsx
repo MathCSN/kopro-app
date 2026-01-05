@@ -43,7 +43,7 @@ export function ProtectedRoute({ children, requiredRole, requireRental }: Protec
   }
 
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   // Wait for profile to load before checking roles

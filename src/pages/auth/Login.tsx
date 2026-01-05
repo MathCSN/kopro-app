@@ -37,18 +37,22 @@ export default function Login() {
   }, [user, profile, authLoading, hasResidence]);
 
   const redirectBasedOnRole = () => {
-    if (profile?.role === 'admin') {
+    // If no role assigned, user needs to complete registration flow
+    if (!profile?.role) {
+      // No role = incomplete registration, stay on login or go home
+      return;
+    }
+    
+    if (profile.role === 'admin') {
       navigate("/admin/platform");
-    } else if (profile?.role === 'manager' || profile?.role === 'cs') {
+    } else if (profile.role === 'manager' || profile.role === 'cs') {
       navigate("/dashboard");
-    } else if (profile?.role === 'resident') {
+    } else if (profile.role === 'resident') {
       if (hasResidence) {
         navigate("/dashboard");
       } else {
         navigate("/pending");
       }
-    } else {
-      navigate("/dashboard");
     }
   };
 

@@ -234,28 +234,26 @@ export default function OwnerUsers() {
     
     setIsDeleting(true);
     try {
-      // Delete all user roles first
-      const { error: rolesError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userToDelete.id);
+      // Call edge function for complete deletion (including auth)
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: userToDelete.id }
+      });
       
-      if (rolesError) throw rolesError;
-
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userToDelete.id);
+      if (error) {
+        throw new Error(error.message || 'Erreur lors de la suppression');
+      }
       
-      if (profileError) throw profileError;
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Utilisateur supprimé",
-        description: `${userToDelete.email} a été supprimé.`,
+        description: `${userToDelete.email} a été supprimé définitivement.`,
       });
       
-      await fetchData();
+      // Remove user from local state immediately
+      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
     } catch (error: any) {
       toast({
         title: "Erreur",

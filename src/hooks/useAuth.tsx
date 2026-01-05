@@ -8,7 +8,7 @@ interface UserProfile {
   email: string | null;
   first_name: string | null;
   last_name: string | null;
-  role: AppRole;
+  role: AppRole | null;
 }
 
 interface AuthContextType {
@@ -77,12 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Error fetching roles:', rolesError);
       }
 
-      // Determine highest role based on hierarchy
-      let highestRole: AppRole = 'resident';
+      // Determine highest role based on hierarchy - null if no roles assigned
+      let highestRole: AppRole | null = null;
       if (rolesData && rolesData.length > 0) {
         for (const roleRecord of rolesData) {
           const role = roleRecord.role as AppRole;
-          if (ROLE_HIERARCHY[role] > ROLE_HIERARCHY[highestRole]) {
+          if (!highestRole || ROLE_HIERARCHY[role] > ROLE_HIERARCHY[highestRole]) {
             highestRole = role;
           }
         }
