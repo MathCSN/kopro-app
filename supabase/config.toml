@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.residence-assistant]
 verify_jwt = true
+
+[functions.delete-user]
+verify_jwt = true
+
+[functions.send-push-notification]
+verify_jwt = true
