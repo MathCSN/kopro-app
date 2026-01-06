@@ -434,7 +434,7 @@ export default function Dashboard() {
                 <h3 className="font-semibold text-foreground">Paiements en attente</h3>
                 <p className="text-sm text-muted-foreground">Montant: {stats.pendingPayments} €</p>
               </div>
-              <Button variant="accent" size="sm" onClick={() => navigate("/payments")}>
+              <Button size="sm" onClick={() => navigate("/payments")}>
                 Payer maintenant
               </Button>
             </CardContent>

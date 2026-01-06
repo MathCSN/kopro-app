@@ -293,7 +293,7 @@ function PaymentsContent() {
                 <h3 className="font-semibold text-foreground">Montant en attente</h3>
                 <p className="text-sm text-muted-foreground">{pendingTotal} € à régler</p>
               </div>
-              <Button variant="accent">Payer maintenant</Button>
+              <Button>Payer maintenant</Button>
             </CardContent>
           </Card>
         )}

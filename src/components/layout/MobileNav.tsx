@@ -7,13 +7,13 @@ import {
   Users,
   MessageCircle,
   Menu,
-  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { AppSidebar } from "./AppSidebar";
 import { ResidenceSelector } from "./ResidenceSelector";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 const getMobileNavItems = (userRole?: string) => {
   const baseItems = [
@@ -46,25 +46,23 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
   return (
     <>
       {/* Top Header Bar */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-40 border-b border-border bg-card">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-accent-foreground" />
-            </div>
-            <span className="font-display font-semibold text-foreground">Kopro</span>
+            <img src={koproLogo} alt="Kopro" className="w-8 h-8" />
+            <span className="font-semibold text-foreground">Kopro</span>
           </div>
 
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="icon" 
-                className="h-10 w-10 border-border hover:bg-accent touch-manipulation"
+                className="h-10 w-10 touch-target"
                 aria-label="Ouvrir le menu"
                 onClick={() => setSheetOpen(true)}
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-72 [&>button]:hidden">
@@ -75,38 +73,30 @@ export function MobileNav({ userRole, onLogout }: MobileNavProps) {
         
         {/* Residence selector below header - hidden for residents and admins */}
         {userRole !== "owner" && userRole !== "admin" && userRole !== "resident" && (
-          <div className="px-4 pb-3 border-b border-border bg-background">
+          <div className="px-4 pb-3 border-b border-border bg-card">
             <ResidenceSelector />
           </div>
         )}
       </header>
 
-      {/* Bottom Navigation Bar - with safe area for iOS */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+      {/* Bottom Navigation Bar - fond blanc, icônes simples */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-safe">
         <div className="flex items-center justify-around h-16 px-2">
           {getMobileNavItems(userRole).map((item) => (
             <NavLink
               key={item.href}
               to={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-lg transition-all duration-200 relative min-w-[52px]",
+                "flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-lg transition-colors duration-200 touch-target",
                 isActive(item.href)
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground"
               )}
             >
-              <div className="relative">
-                <item.icon className={cn("h-5 w-5", isActive(item.href) && "text-primary")} />
-              </div>
-              <span className={cn(
-                "text-[10px] font-medium",
-                isActive(item.href) ? "text-primary" : "text-muted-foreground"
-              )}>
+              <item.icon className="h-5 w-5" />
+              <span className="text-[10px] font-medium">
                 {item.title}
               </span>
-              {isActive(item.href) && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
-              )}
             </NavLink>
           ))}
         </div>

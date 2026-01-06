@@ -12,7 +12,6 @@ import {
   MessageCircle,
   BarChart3,
   Settings,
-  Building2,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -29,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { ResidenceSelector } from "./ResidenceSelector";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { NavSettingsDialog } from "@/components/admin/NavSettingsDialog";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 // Icon mapping for dynamic rendering
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -121,26 +121,20 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen gradient-sidebar border-r border-sidebar-border transition-all duration-300 sticky top-0",
+        "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 sticky top-0",
         collapsed ? "w-[72px]" : "w-64"
       )}
     >
-      {/* Header */}
+      {/* Header avec logo Kopro */}
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl gradient-accent flex items-center justify-center shadow-soft">
-              <Building2 className="h-5 w-5 text-accent-foreground" />
-            </div>
-            <div>
-              <h1 className="font-display font-bold text-lg text-sidebar-foreground">Kopro</h1>
-            </div>
+          <div className="flex items-center gap-3">
+            <img src={koproLogo} alt="Kopro" className="w-10 h-10" />
+            <h1 className="font-semibold text-lg text-sidebar-foreground">Kopro</h1>
           </div>
         )}
         {collapsed && (
-          <div className="w-9 h-9 rounded-xl gradient-accent flex items-center justify-center shadow-soft mx-auto">
-            <Building2 className="h-5 w-5 text-accent-foreground" />
-          </div>
+          <img src={koproLogo} alt="Kopro" className="w-9 h-9 mx-auto" />
         )}
       </div>
 

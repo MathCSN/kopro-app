@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { AUTH_MESSAGES, parseAuthError } from "@/lib/messages";
 import { z } from "zod";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 const loginSchema = z.object({
   email: z.string().email(AUTH_MESSAGES.INVALID_EMAIL).max(255),
@@ -138,21 +139,19 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left side - Hero (desktop only) */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-primary relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-accent blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-accent/50 blur-3xl" />
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-secondary blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-secondary/50 blur-3xl" />
         </div>
         
         <div className="relative z-10 flex flex-col justify-center p-12 lg:p-16">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl gradient-accent flex items-center justify-center shadow-glow">
-              <Building2 className="h-7 w-7 text-accent-foreground" />
-            </div>
-            <h1 className="font-display text-3xl font-bold text-primary-foreground">Kopro</h1>
+            <img src={koproLogo} alt="Kopro" className="w-14 h-14" />
+            <h1 className="text-3xl font-bold text-primary-foreground">Kopro</h1>
           </div>
           
-          <h2 className="font-display text-4xl lg:text-5xl font-bold text-primary-foreground mb-6 leading-tight">
+          <h2 className="text-4xl lg:text-5xl font-bold text-primary-foreground mb-6 leading-tight">
             Gérez votre copropriété en toute simplicité
           </h2>
           
@@ -165,7 +164,7 @@ export default function Login() {
       {/* Right side - Form */}
       <div className="flex-1 flex flex-col bg-background">
         {/* Mobile header */}
-        <header className="lg:hidden border-b bg-card p-4">
+        <header className="lg:hidden border-b border-border bg-card p-4">
           <div className="flex items-center justify-between max-w-md mx-auto">
             <button 
               onClick={() => navigate("/")}
@@ -175,10 +174,8 @@ export default function Login() {
               <span className="text-sm">Retour</span>
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <span className="font-display font-bold text-lg">KOPRO</span>
+              <img src={koproLogo} alt="Kopro" className="w-8 h-8" />
+              <span className="font-semibold text-lg">Kopro</span>
             </div>
             <div className="w-16" />
           </div>
@@ -191,7 +188,7 @@ export default function Login() {
               // Forgot password form
               <div className="space-y-6">
                 <div className="space-y-2 text-center">
-                  <h2 className="font-display text-2xl font-semibold text-foreground">Mot de passe oublié</h2>
+                  <h2 className="text-2xl font-semibold text-foreground">Mot de passe oublié</h2>
                   <p className="text-muted-foreground">
                     {resetEmailSent 
                       ? "Un email de réinitialisation a été envoyé."
@@ -250,7 +247,7 @@ export default function Login() {
               // Login form
               <>
                 <div className="space-y-2 text-center">
-                  <h2 className="font-display text-2xl font-semibold text-foreground">Bon retour !</h2>
+                  <h2 className="text-2xl font-semibold text-foreground">Bon retour !</h2>
                   <p className="text-muted-foreground">Connectez-vous à votre espace Kopro</p>
                 </div>
 
