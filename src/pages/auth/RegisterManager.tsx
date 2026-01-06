@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft, Briefcase, Phone, Hash } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft, Briefcase, Phone, Hash, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_MESSAGES, parseAuthError, validateSirenSiret } from "@/lib/messages";
 import { z } from "zod";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 const signUpSchema = z.object({
   firstName: z.string().min(1, AUTH_MESSAGES.FIRST_NAME_REQUIRED).max(100),
@@ -192,7 +193,7 @@ export default function RegisterManager() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b bg-card p-4 sticky top-0 z-10">
+      <header className="border-b border-border bg-card p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <button 
             onClick={() => navigate("/")}
@@ -202,10 +203,8 @@ export default function RegisterManager() {
             <span className="text-sm">Retour</span>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-accent-foreground" />
-            </div>
-            <span className="font-display font-bold text-lg">KOPRO</span>
+            <img src={koproLogo} alt="Kopro" className="w-8 h-8" />
+            <span className="font-semibold text-lg">Kopro</span>
           </div>
           <div className="w-16" />
         </div>
@@ -218,7 +217,7 @@ export default function RegisterManager() {
             <div className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
               <Briefcase className="h-7 w-7 text-primary" />
             </div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
+            <h1 className="text-2xl font-semibold text-foreground">
               Créer un compte gestionnaire
             </h1>
             <p className="text-muted-foreground mt-1">

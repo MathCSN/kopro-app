@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { AUTH_MESSAGES, parseAuthError } from "@/lib/messages";
 import { z } from "zod";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 const signUpSchema = z.object({
   firstName: z.string().min(1, AUTH_MESSAGES.FIRST_NAME_REQUIRED).max(100),
@@ -134,12 +135,10 @@ export default function RegisterResident() {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         {/* Header */}
-        <header className="border-b bg-card p-4">
+        <header className="border-b border-border bg-card p-4">
           <div className="flex items-center gap-2 max-w-md mx-auto">
-            <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-accent-foreground" />
-            </div>
-            <span className="font-display font-bold text-lg">KOPRO</span>
+            <img src={koproLogo} alt="Kopro" className="w-8 h-8" />
+            <span className="font-semibold text-lg">Kopro</span>
           </div>
         </header>
 
@@ -190,7 +189,7 @@ export default function RegisterResident() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="border-b bg-card p-4">
+      <header className="border-b border-border bg-card p-4">
         <div className="flex items-center justify-between max-w-md mx-auto">
           <button 
             onClick={() => navigate("/")}
@@ -200,10 +199,8 @@ export default function RegisterResident() {
             <span className="text-sm">Retour</span>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-accent-foreground" />
-            </div>
-            <span className="font-display font-bold text-lg">KOPRO</span>
+            <img src={koproLogo} alt="Kopro" className="w-8 h-8" />
+            <span className="font-semibold text-lg">Kopro</span>
           </div>
           <div className="w-16" /> {/* Spacer for centering */}
         </div>
@@ -222,7 +219,7 @@ export default function RegisterResident() {
       <main className="flex-1 flex flex-col p-6 pb-safe">
         <div className="w-full max-w-md mx-auto space-y-6">
           <div className="text-center">
-            <h1 className="font-display text-2xl font-bold text-foreground">
+            <h1 className="text-2xl font-semibold text-foreground">
               Créer un compte résident
             </h1>
             <p className="text-muted-foreground mt-1">

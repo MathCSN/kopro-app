@@ -1,148 +1,139 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Kopro Design System - Professional French Property Management
-   Colors: Deep slate blue (trust), warm amber (action), soft grays
-   Typography: Outfit for headings, system for body
-*/
+/* ============================================
+   KOPRO DESIGN SYSTEM
+   Direction artistique: moderne, claire, rassurante
+   Mobile-first, institutionnel doux, professionnel accessible
+   ============================================ */
 
 @layer base {
   :root {
-    /* Core backgrounds */
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* === FOND PRINCIPAL === */
+    /* #F7F4EF - Fond chaleureux, site-like */
+    --background: 36 33% 95%;
+    --foreground: 220 20% 20%;
 
-    /* Cards with subtle warmth */
+    /* === CARTES & MODULES === */
+    /* #FFFFFF - Fond blanc pur pour cartes */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 220 20% 20%;
 
-    /* Popovers */
+    /* === POPOVERS === */
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 220 20% 20%;
 
-    /* Primary: Deep slate blue - trust & professionalism */
-    --primary: 212 45% 24%;
+    /* === COULEUR PRINCIPALE KOPRO === */
+    /* #2F2E8B - Bleu/violet identitaire */
+    --primary: 241 50% 36%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Light slate */
-    --secondary: 210 25% 93%;
-    --secondary-foreground: 212 45% 24%;
+    /* === COULEUR SECONDAIRE === */
+    /* #6C74C9 - Bleu clair accent */
+    --secondary: 234 44% 60%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Muted: Soft gray tones */
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    /* === TONS NEUTRES === */
+    --muted: 36 20% 92%;
+    --muted-foreground: 220 9% 46%;
 
-    /* Accent: Warm amber for CTAs */
-    --accent: 38 92% 50%;
+    /* === ACCENT (même que secondary pour cohérence) === */
+    --accent: 234 44% 60%;
     --accent-foreground: 0 0% 100%;
 
-    /* Success green */
-    --success: 152 60% 40%;
+    /* === ÉTATS === */
+    /* Succès: #22C55E */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning orange */
-    --warning: 32 95% 55%;
+    /* Alerte: #F59E0B */
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* Destructive */
-    --destructive: 0 72% 51%;
+    /* Erreur: #EF4444 */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders & inputs */
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 212 45% 24%;
+    /* === BORDURES & INPUTS === */
+    /* #E5E7EB */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 241 50% 36%;
 
+    /* === RAYONS === */
     --radius: 0.75rem;
 
-    /* Sidebar: Deep slate for contrast */
-    --sidebar-background: 212 45% 18%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 212 40% 32%;
+    /* === SIDEBAR === */
+    --sidebar-background: 241 50% 36%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 234 44% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 212 40% 25%;
+    --sidebar-accent: 241 45% 42%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 212 35% 25%;
-    --sidebar-ring: 212 45% 40%;
+    --sidebar-border: 241 40% 45%;
+    --sidebar-ring: 234 44% 60%;
 
-    /* Custom tokens */
-    --kopro-slate: 212 45% 24%;
-    --kopro-amber: 38 92% 50%;
-    --kopro-teal: 180 45% 45%;
-    --kopro-purple: 260 50% 55%;
-    --kopro-rose: 350 65% 55%;
+    /* === TOKENS KOPRO === */
+    --kopro-primary: 241 50% 36%;
+    --kopro-secondary: 234 44% 60%;
+    --kopro-beige: 36 33% 95%;
+    --kopro-warm: 28 70% 85%;
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(212 45% 24%), hsl(212 55% 35%));
-    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%), hsl(32 95% 55%));
-    --gradient-sidebar: linear-gradient(180deg, hsl(212 45% 18%), hsl(212 50% 14%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 20% 98%));
-    
-    /* Shadows */
-    --shadow-soft: 0 2px 8px -2px hsl(212 45% 24% / 0.08);
-    --shadow-medium: 0 4px 16px -4px hsl(212 45% 24% / 0.12);
-    --shadow-strong: 0 8px 32px -8px hsl(212 45% 24% / 0.18);
-    --shadow-glow: 0 0 24px hsl(38 92% 50% / 0.25);
+    /* === OMBRES DOUCES === */
+    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+    --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+    --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.07);
   }
 
   .dark {
-    --background: 215 25% 9%;
-    --foreground: 210 20% 95%;
+    /* Mode sombre - même philosophie, inversé */
+    --background: 220 20% 10%;
+    --foreground: 36 20% 95%;
 
-    --card: 215 25% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 220 20% 13%;
+    --card-foreground: 36 20% 95%;
 
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 220 20% 13%;
+    --popover-foreground: 36 20% 95%;
 
-    --primary: 38 92% 50%;
-    --primary-foreground: 215 25% 9%;
+    --primary: 234 44% 65%;
+    --primary-foreground: 220 20% 10%;
 
-    --secondary: 215 20% 18%;
-    --secondary-foreground: 210 20% 90%;
+    --secondary: 241 40% 50%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 20% 18%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 60%;
 
-    --accent: 38 92% 50%;
-    --accent-foreground: 215 25% 9%;
+    --accent: 234 44% 65%;
+    --accent-foreground: 220 20% 10%;
 
-    --success: 152 60% 45%;
+    --success: 142 71% 50%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 32 95% 55%;
+    --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 45%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 22%;
-    --input: 215 20% 22%;
-    --ring: 38 92% 50%;
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 234 44% 65%;
 
-    --sidebar-background: 215 30% 8%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 215 35% 25%;
-    --sidebar-primary-foreground: 210 20% 95%;
-    --sidebar-accent: 215 25% 15%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 215 25% 15%;
-    --sidebar-ring: 215 35% 35%;
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 36 20% 90%;
+    --sidebar-primary: 234 44% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 36 20% 95%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 234 44% 60%;
 
-    --kopro-slate: 212 45% 50%;
-    --kopro-amber: 38 92% 55%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(38 92% 50%), hsl(32 95% 55%));
-    --gradient-sidebar: linear-gradient(180deg, hsl(215 30% 8%), hsl(215 35% 5%));
-    --gradient-card: linear-gradient(145deg, hsl(215 25% 12%), hsl(215 25% 10%));
-
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
-    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
-    --shadow-strong: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 24px hsl(38 92% 50% / 0.3);
+    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.2);
+    --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+    --shadow-medium: 0 4px 6px -1px rgb(0 0 0 / 0.25);
   }
 }
 
@@ -153,61 +144,98 @@
 
   html {
     @apply scroll-smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Typographie - Hiérarchie claire */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-semibold tracking-tight;
+    @apply font-semibold tracking-tight text-foreground;
+  }
+
+  h1 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h2 {
+    @apply text-xl md:text-2xl;
+  }
+
+  h3 {
+    @apply text-lg md:text-xl;
+  }
+
+  /* Textes */
+  .text-primary-kopro {
+    color: hsl(var(--primary));
+  }
+
+  .text-secondary-kopro {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .text-disabled {
+    color: hsl(220 10% 60%);
+  }
+}
+
+@layer components {
+  /* === CARTES KOPRO === */
+  .card-kopro {
+    @apply bg-card rounded-xl border border-border p-4 md:p-6;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* === BOUTONS === */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground rounded-lg px-6 py-3 font-medium;
+    @apply w-full md:w-auto;
+    @apply transition-colors duration-200;
+    @apply hover:opacity-90 active:opacity-80;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-primary text-primary bg-transparent rounded-lg px-6 py-3 font-medium;
+    @apply w-full md:w-auto;
+    @apply transition-colors duration-200;
+    @apply hover:bg-primary/5 active:bg-primary/10;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* === NAVIGATION BOTTOM BAR === */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-card border-t border-border;
+    @apply flex items-center justify-around;
+    @apply pb-safe;
+    box-shadow: 0 -1px 3px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .bottom-nav-item {
+    @apply flex flex-col items-center justify-center py-2 px-3;
+    @apply text-muted-foreground text-xs font-medium;
+    @apply transition-colors duration-200;
+    min-height: 56px;
+  }
+
+  .bottom-nav-item.active {
+    @apply text-primary;
+  }
+
+  .bottom-nav-item svg {
+    @apply h-5 w-5 mb-1;
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50;
-  }
-
-  .glass-strong {
-    @apply bg-card/95 backdrop-blur-2xl border border-border/60;
-  }
-
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-
-  .gradient-accent {
-    background: var(--gradient-accent);
-  }
-
-  .gradient-sidebar {
-    background: var(--gradient-sidebar);
-  }
-
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
-  }
-
-  .shadow-medium {
-    box-shadow: var(--shadow-medium);
-  }
-
-  .shadow-strong {
-    box-shadow: var(--shadow-strong);
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  .text-gradient {
-    @apply bg-clip-text text-transparent;
-    background: var(--gradient-primary);
-  }
-
-  /* Safe area padding for iOS devices */
+  /* === SAFE AREAS iOS === */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -221,33 +249,74 @@
     padding-right: env(safe-area-inset-right, 0px);
   }
 
-  /* Minimum touch target size */
+  /* === TOUCH TARGETS === */
   .touch-target {
     min-height: 44px;
     min-width: 44px;
   }
 
+  /* === OMBRES === */
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* === GLASS EFFECT (subtil) === */
+  .glass {
+    @apply bg-card/90 backdrop-blur-sm border border-border/50;
+  }
+
+  /* === ANIMATIONS AUTORISÉES === */
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.3s ease-out forwards;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.5s ease-out forwards;
+    animation: slideUp 0.3s ease-out forwards;
   }
 
-  .animate-slide-in-left {
-    animation: slideInLeft 0.3s ease-out forwards;
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out forwards;
   }
 
-  .animate-scale-in {
-    animation: scaleIn 0.3s ease-out forwards;
+  /* === SCROLLBAR === */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
-  .animate-pulse-soft {
-    animation: pulseSoft 2s ease-in-out infinite;
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Scrollbar stylée cohérente */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 }
 
+/* === KEYFRAMES ANIMATIONS === */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -256,7 +325,7 @@
 @keyframes slideUp {
   from { 
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(8px);
   }
   to { 
     opacity: 1;
@@ -264,10 +333,10 @@
   }
 }
 
-@keyframes slideInLeft {
+@keyframes slideIn {
   from { 
     opacity: 0;
-    transform: translateX(-16px);
+    transform: translateX(-8px);
   }
   to { 
     opacity: 1;
@@ -275,18 +344,7 @@
   }
 }
 
-@keyframes scaleIn {
-  from { 
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to { 
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes pulseSoft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+/* === FOCUS VISIBLE GLOBAL === */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
 }
