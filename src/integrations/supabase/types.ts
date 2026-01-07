@@ -151,6 +151,7 @@ export type Database = {
           postal_code: string | null
           siret: string | null
           status: string | null
+          trial_account_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -166,6 +167,7 @@ export type Database = {
           postal_code?: string | null
           siret?: string | null
           status?: string | null
+          trial_account_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -181,6 +183,7 @@ export type Database = {
           postal_code?: string | null
           siret?: string | null
           status?: string | null
+          trial_account_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -189,6 +192,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agencies_trial_account_id_fkey"
+            columns: ["trial_account_id"]
+            isOneToOne: false
+            referencedRelation: "trial_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -2396,6 +2406,65 @@ export type Database = {
             columns: ["residence_id"]
             isOneToOne: false
             referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trial_accounts: {
+        Row: {
+          agency_id: string | null
+          agency_name: string | null
+          converted_at: string | null
+          created_at: string
+          created_by: string | null
+          duration_days: number
+          email: string
+          expires_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          token: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          agency_name?: string | null
+          converted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_days?: number
+          email: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          agency_name?: string | null
+          converted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_days?: number
+          email?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_accounts_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]

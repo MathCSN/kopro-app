@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft, Briefcase, Phone, Hash, Building2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft, Briefcase, Phone, Hash, Building2, Clock, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_MESSAGES, parseAuthError, validateSirenSiret } from "@/lib/messages";
 import { z } from "zod";
 import koproLogo from "@/assets/kopro-logo.svg";
+import { addDays } from "date-fns";
 
 const signUpSchema = z.object({
   firstName: z.string().min(1, AUTH_MESSAGES.FIRST_NAME_REQUIRED).max(100),
@@ -25,7 +27,17 @@ const signUpSchema = z.object({
   path: ["confirmPassword"],
 });
 
+interface TrialInfo {
+  id: string;
+  email: string;
+  agency_name: string | null;
+  duration_days: number;
+}
+
 export default function RegisterManager() {
+  const [searchParams] = useSearchParams();
+  const trialToken = searchParams.get("trial");
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
@@ -39,10 +51,43 @@ export default function RegisterManager() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [trialInfo, setTrialInfo] = useState<TrialInfo | null>(null);
+  const [trialError, setTrialError] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
+
+  // Check trial token and prefill
+  useEffect(() => {
+    if (trialToken) {
+      const fetchTrial = async () => {
+        const { data, error } = await supabase
+          .from("trial_accounts")
+          .select("id, email, agency_name, duration_days, status")
+          .eq("token", trialToken)
+          .maybeSingle();
+
+        if (error || !data) {
+          setTrialError("Lien d'essai invalide ou expiré.");
+          return;
+        }
+
+        if (data.status !== "pending") {
+          setTrialError("Ce lien d'essai a déjà été utilisé.");
+          return;
+        }
+
+        setTrialInfo(data);
+        setFormData((prev) => ({
+          ...prev,
+          email: data.email || "",
+          company: data.agency_name || "",
+        }));
+      };
+      fetchTrial();
+    }
+  }, [trialToken]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -54,7 +99,6 @@ export default function RegisterManager() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear validation error for this field
     if (validationErrors[name]) {
       setValidationErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -64,7 +108,6 @@ export default function RegisterManager() {
     e.preventDefault();
     setValidationErrors({});
 
-    // Validate form
     const result = signUpSchema.safeParse(formData);
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -77,7 +120,6 @@ export default function RegisterManager() {
       return;
     }
 
-    // Validate SIREN/SIRET
     const sirenValidation = validateSirenSiret(formData.sirenSiret);
     if (!sirenValidation.valid) {
       setValidationErrors({ sirenSiret: sirenValidation.error! });
@@ -100,26 +142,27 @@ export default function RegisterManager() {
       });
 
       if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error("Erreur lors de la création du compte");
-      }
+      if (!authData.user) throw new Error("Erreur lors de la création du compte");
 
       const userId = authData.user.id;
 
-      // Create agency for the manager
+      // Determine agency status (trial or active)
+      const agencyStatus = trialInfo ? "trial" : "active";
+
+      // Create agency
       const { data: agencyData, error: agencyError } = await supabase.from("agencies").insert([{
         name: formData.company,
         email: formData.email,
         phone: formData.phone || null,
-        siret: formData.sirenSiret.replace(/\s/g, ''),
+        siret: formData.sirenSiret.replace(/\s/g, ""),
         owner_id: userId,
-        status: "active",
+        status: agencyStatus,
+        trial_account_id: trialInfo?.id || null,
       }]).select().single();
 
       if (agencyError) throw agencyError;
 
-      // Create manager role for the user
+      // Create manager role
       const { error: roleError } = await supabase.from("user_roles").insert([{
         user_id: userId,
         role: "manager",
@@ -128,20 +171,34 @@ export default function RegisterManager() {
 
       if (roleError) throw roleError;
 
+      // If trial, update trial_accounts
+      if (trialInfo) {
+        const now = new Date();
+        await supabase.from("trial_accounts").update({
+          status: "active",
+          user_id: userId,
+          agency_id: agencyData.id,
+          started_at: now.toISOString(),
+          expires_at: addDays(now, trialInfo.duration_days).toISOString(),
+        }).eq("id", trialInfo.id);
+      }
+
       // Create CRM contact
       await supabase.from("crm_contacts").insert([{
         email: formData.email,
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         company: formData.company,
         phone: formData.phone || null,
-        status: "client",
-        source: "manager_signup",
+        status: trialInfo ? "trial" : "client",
+        source: trialInfo ? "trial_signup" : "manager_signup",
         user_id: userId,
       }]);
 
       toast({
         title: "Compte créé avec succès",
-        description: "Bienvenue sur Kopro ! Vous pouvez maintenant créer vos résidences.",
+        description: trialInfo
+          ? `Bienvenue ! Votre période d'essai de ${trialInfo.duration_days} jours est activée.`
+          : "Bienvenue sur Kopro ! Vous pouvez maintenant créer vos résidences.",
       });
 
       navigate("/dashboard");
@@ -190,6 +247,21 @@ export default function RegisterManager() {
     );
   }
 
+  if (trialError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="mx-auto w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Clock className="h-8 w-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-semibold">Lien expiré</h1>
+          <p className="text-muted-foreground">{trialError}</p>
+          <Button onClick={() => navigate("/auth/login")}>Se connecter</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -210,6 +282,21 @@ export default function RegisterManager() {
         </div>
       </header>
 
+      {/* Trial banner */}
+      {trialInfo && (
+        <div className="bg-green-50 dark:bg-green-900/20 border-b border-green-200 dark:border-green-800 px-4 py-3">
+          <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200">
+            <Gift className="h-5 w-5" />
+            <span className="font-medium">
+              Période d'essai gratuite de {trialInfo.duration_days} jours
+            </span>
+            <Badge className="bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30">
+              Sans paiement
+            </Badge>
+          </div>
+        </div>
+      )}
+
       {/* Form */}
       <main className="flex-1 flex flex-col p-6 pb-safe">
         <div className="w-full max-w-lg mx-auto space-y-6">
@@ -218,10 +305,10 @@ export default function RegisterManager() {
               <Briefcase className="h-7 w-7 text-primary" />
             </div>
             <h1 className="text-2xl font-semibold text-foreground">
-              Créer un compte gestionnaire
+              {trialInfo ? "Créer votre compte d'essai" : "Créer un compte gestionnaire"}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Gérez vos résidences et locataires avec Kopro
+              {trialInfo ? "Accédez à toutes les fonctionnalités pendant votre essai" : "Gérez vos résidences et locataires avec Kopro"}
             </p>
           </div>
 
@@ -323,6 +410,7 @@ export default function RegisterManager() {
                   onChange={handleChange}
                   autoComplete="email"
                   inputMode="email"
+                  disabled={!!trialInfo}
                 />
               </div>
               {validationErrors.email && (
@@ -403,7 +491,7 @@ export default function RegisterManager() {
                 className="w-full h-14 text-lg" 
                 disabled={isLoading || !isFormValid}
               >
-                {isLoading ? "Création..." : "Créer mon compte gestionnaire"}
+                {isLoading ? "Création..." : trialInfo ? "Démarrer mon essai gratuit" : "Créer mon compte gestionnaire"}
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </div>

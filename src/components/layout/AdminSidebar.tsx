@@ -32,6 +32,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { title: "Vue d'ensemble", href: "/admin/platform", icon: LayoutDashboard },
   { title: "Clients", href: "/admin/clients", icon: Building2 },
+  { title: "Comptes d'essai", href: "/admin/trials", icon: Users },
 ];
 
 const financeNavItems: NavItem[] = [

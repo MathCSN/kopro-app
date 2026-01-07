@@ -63,6 +63,7 @@ import QuotePublic from "./pages/QuotePublic";
 import AgencySignup from "./pages/AgencySignup";
 import AdminClients from "./pages/AdminClients";
 import AdminClientDetail from "./pages/AdminClientDetail";
+import AdminTrials from "./pages/AdminTrials";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="/admin/platform" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/clients" element={<AdminRoute><AdminClients /></AdminRoute>} />
             <Route path="/admin/clients/:agencyId" element={<AdminRoute><AdminClientDetail /></AdminRoute>} />
+            <Route path="/admin/trials" element={<AdminRoute><AdminTrials /></AdminRoute>} />
             <Route path="/admin/residences" element={<AdminRoute><AdminResidences /></AdminRoute>} />
             <Route path="/admin/residences/:id" element={<AdminRoute><AdminResidences /></AdminRoute>} />
             <Route path="/admin/managers" element={<AdminRoute><AdminManagers /></AdminRoute>} />
