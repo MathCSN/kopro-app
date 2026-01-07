@@ -198,11 +198,11 @@ export default function OwnerDashboard() {
                 <CreditCard className="h-5 w-5" />
                 <span className="text-sm">Facturation</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/users")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/global-users")}>
                 <Shield className="h-5 w-5" />
                 <span className="text-sm">Utilisateurs</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/settings")}>
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate("/admin/global-settings")}>
                 <Settings className="h-5 w-5" />
                 <span className="text-sm">Paramètres</span>
               </Button>
