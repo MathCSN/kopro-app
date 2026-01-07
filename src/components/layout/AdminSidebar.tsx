@@ -30,7 +30,7 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { title: "Vue d'ensemble", href: "/admin", icon: LayoutDashboard },
+  { title: "Vue d'ensemble", href: "/admin/platform", icon: LayoutDashboard },
   { title: "Clients", href: "/admin/clients", icon: Building2 },
 ];
 
@@ -43,7 +43,7 @@ const financeNavItems: NavItem[] = [
 ];
 
 const settingsNavItems: NavItem[] = [
-  { title: "Paramètres globaux", href: "/admin/settings", icon: Settings },
+  { title: "Paramètres globaux", href: "/admin/global-settings", icon: Settings },
   { title: "Intégrations", href: "/admin/integrations", icon: Plug },
   { title: "Emails & Templates", href: "/admin/emails", icon: Mail },
   { title: "Stockage", href: "/admin/storage", icon: Database },
@@ -65,8 +65,8 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
   const location = useLocation();
 
   const isActive = (href: string) => {
-    if (href === "/admin") {
-      return location.pathname === "/admin";
+    if (href === "/admin/platform") {
+      return location.pathname === "/admin/platform";
     }
     return location.pathname.startsWith(href);
   };

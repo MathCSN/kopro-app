@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_MESSAGES } from "@/lib/messages";
+import { QrScannerDialog } from "@/components/residence/QrScannerDialog";
 
 export default function Pending() {
   const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ export default function Pending() {
   const [isCheckingRoles, setIsCheckingRoles] = useState(true);
   const [manualCode, setManualCode] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -67,8 +69,39 @@ export default function Pending() {
   };
 
   const handleScanQRCode = () => {
-    // For now, show manual input as camera API requires HTTPS
-    setShowManualInput(true);
+    setScannerOpen(true);
+  };
+
+  const handleScanResult = (rawText: string) => {
+    const text = rawText.trim();
+    if (!text) return;
+
+    setScannerOpen(false);
+
+    // Accept full URLs (e.g. https://.../r/XXXX or https://.../join?residence=UUID)
+    try {
+      const url = new URL(text);
+      if (url.pathname.startsWith("/r/")) {
+        navigate(url.pathname + url.search);
+        return;
+      }
+      const residence = url.searchParams.get("residence");
+      if (url.pathname === "/join" && residence) {
+        navigate(`/join?residence=${residence}`);
+        return;
+      }
+    } catch {
+      // Not a URL, continue
+    }
+
+    // If it looks like a UUID, use it directly
+    if (text.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      navigate(`/join?residence=${text}`);
+      return;
+    }
+
+    // Otherwise treat it as a residence code/path
+    navigate(`/r/${text}`);
   };
 
   const handleManualCode = () => {
@@ -96,6 +129,22 @@ export default function Pending() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <QrScannerDialog
+        open={scannerOpen}
+        onOpenChange={(open) => {
+          setScannerOpen(open);
+          if (!open) {
+            // If scanner closes (permission denied, etc.), fall back to manual input
+            // without changing the rest of the flow.
+          }
+        }}
+        onResult={handleScanResult}
+        onError={() => {
+          setScannerOpen(false);
+          setShowManualInput(true);
+        }}
+      />
+
       {/* Header */}
       <header className="border-b bg-card p-4">
         <div className="flex items-center justify-center gap-2">

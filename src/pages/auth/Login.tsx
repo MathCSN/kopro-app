@@ -40,10 +40,10 @@ export default function Login() {
   const redirectBasedOnRole = () => {
     // If no role assigned, user needs to complete registration flow
     if (!profile?.role) {
-      // No role = incomplete registration, stay on login or go home
+      navigate("/pending");
       return;
     }
-    
+
     if (profile.role === 'admin') {
       navigate("/admin/platform");
     } else if (profile.role === 'manager' || profile.role === 'cs') {
