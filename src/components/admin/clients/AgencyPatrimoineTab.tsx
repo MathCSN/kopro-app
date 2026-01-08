@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,34 @@ import {
   ChevronRight,
   User,
   Plus,
-  Edit
+  Edit,
+  QrCode,
+  Trash2,
+  Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BuildingFormDialog } from "@/components/admin/buildings/BuildingFormDialog";
+import { LotFormDialog } from "@/components/admin/lots/LotFormDialog";
+import { BulkCreateDialog } from "@/components/admin/lots/BulkCreateDialog";
+import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface AgencyPatrimoineTabProps {
   agencyId: string;
@@ -27,6 +52,9 @@ interface Lot {
   surface: number | null;
   rooms: number | null;
   building_id: string | null;
+  door: string | null;
+  tantiemes: number | null;
+  notes: string | null;
   primary_resident?: {
     first_name: string | null;
     last_name: string | null;
@@ -50,8 +78,25 @@ interface Residence {
 }
 
 export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [expandedResidences, setExpandedResidences] = useState<Set<string>>(new Set());
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set());
+
+  // Dialog states
+  const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
+  const [selectedResidenceId, setSelectedResidenceId] = useState<string | null>(null);
+  const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
+
+  const [lotDialogOpen, setLotDialogOpen] = useState(false);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [editingLot, setEditingLot] = useState<Lot | null>(null);
+
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedResidence, setSelectedResidence] = useState<{ id: string; name: string } | null>(null);
+
+  const [deletingBuilding, setDeletingBuilding] = useState<Building | null>(null);
+  const [deletingLot, setDeletingLot] = useState<Lot | null>(null);
 
   const { data: patrimoine = [], isLoading } = useQuery({
     queryKey: ["agency-patrimoine", agencyId],
@@ -86,7 +131,10 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
           rooms,
           building_id,
           residence_id,
-          primary_resident_id
+          primary_resident_id,
+          door,
+          tantiemes,
+          notes
         `)
         .in("residence_id", residenceIds)
         .order("lot_number");
@@ -157,16 +205,106 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
   const getLotTypeBadge = (type: string | null) => {
     switch (type) {
       case "apartment":
+      case "appartement":
         return <Badge variant="secondary">Appartement</Badge>;
       case "parking":
         return <Badge variant="outline">Parking</Badge>;
       case "storage":
+      case "cave":
         return <Badge variant="outline">Cave</Badge>;
       case "commercial":
+      case "commerce":
         return <Badge variant="secondary">Commercial</Badge>;
+      case "studio":
+        return <Badge variant="secondary">Studio</Badge>;
+      case "duplex":
+        return <Badge variant="secondary">Duplex</Badge>;
+      case "bureau":
+        return <Badge variant="secondary">Bureau</Badge>;
       default:
         return <Badge variant="outline">Lot</Badge>;
     }
+  };
+
+  const openBuildingDialog = (residenceId: string, building?: Building) => {
+    setSelectedResidenceId(residenceId);
+    setEditingBuilding(building || null);
+    setBuildingDialogOpen(true);
+  };
+
+  const openLotDialog = (residenceId: string, lot?: Lot) => {
+    setSelectedResidenceId(residenceId);
+    setEditingLot(lot || null);
+    setLotDialogOpen(true);
+  };
+
+  const openBulkDialog = (residenceId: string) => {
+    setSelectedResidenceId(residenceId);
+    setBulkDialogOpen(true);
+  };
+
+  const openQRDialog = (residence: { id: string; name: string }) => {
+    setSelectedResidence(residence);
+    setQrDialogOpen(true);
+  };
+
+  const handleDeleteBuilding = async () => {
+    if (!deletingBuilding) return;
+
+    try {
+      const { error } = await supabase
+        .from("buildings")
+        .delete()
+        .eq("id", deletingBuilding.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Bâtiment supprimé",
+        description: "Le bâtiment a été supprimé avec succès.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["agency-patrimoine", agencyId] });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingBuilding(null);
+    }
+  };
+
+  const handleDeleteLot = async () => {
+    if (!deletingLot) return;
+
+    try {
+      const { error } = await supabase
+        .from("lots")
+        .delete()
+        .eq("id", deletingLot.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Lot supprimé",
+        description: "Le lot a été supprimé avec succès.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["agency-patrimoine", agencyId] });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingLot(null);
+    }
+  };
+
+  const getBuildingsForResidence = (residenceId: string): { id: string; name: string }[] => {
+    const residence = patrimoine.find(r => r.id === residenceId);
+    return residence?.buildings.map(b => ({ id: b.id, name: b.name })) || [];
   };
 
   if (isLoading) {
@@ -223,6 +361,38 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
                     {residence.buildings.length} bât. • 
                     {residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} lots
                   </Badge>
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openQRDialog(residence)}
+                      title="QR Code d'invitation"
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openBuildingDialog(residence.id)}>
+                          <Building2 className="h-4 w-4 mr-2" />
+                          Ajouter un bâtiment
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openLotDialog(residence.id)}>
+                          <Home className="h-4 w-4 mr-2" />
+                          Ajouter un lot
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => openBulkDialog(residence.id)}>
+                          <Layers className="h-4 w-4 mr-2" />
+                          Création en masse
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </CardHeader>
 
@@ -244,6 +414,24 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
                           <Home className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium flex-1">{building.name}</span>
                           <Badge variant="outline">{building.lots.length} lots</Badge>
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openBuildingDialog(residence.id, building)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => setDeletingBuilding(building)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
 
                         {expandedBuildings.has(building.id) && building.lots.length > 0 && (
@@ -277,6 +465,24 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
                                 ) : (
                                   <Badge variant="outline" className="text-amber-600">Vacant</Badge>
                                 )}
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => openLotDialog(residence.id, lot)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    onClick={() => setDeletingLot(lot)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -312,6 +518,24 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
                               ) : (
                                 <Badge variant="outline" className="text-amber-600">Vacant</Badge>
                               )}
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openLotDialog(residence.id, lot)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => setDeletingLot(lot)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -319,9 +543,29 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
                     )}
 
                     {residence.buildings.length === 0 && residence.unassignedLots.length === 0 && (
-                      <p className="text-sm text-muted-foreground py-4 text-center">
-                        Aucun bâtiment ni lot dans cette résidence
-                      </p>
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Aucun bâtiment ni lot dans cette résidence
+                        </p>
+                        <div className="flex justify-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openBuildingDialog(residence.id)}
+                          >
+                            <Building2 className="h-4 w-4 mr-2" />
+                            Ajouter un bâtiment
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openLotDialog(residence.id)}
+                          >
+                            <Home className="h-4 w-4 mr-2" />
+                            Ajouter un lot
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </CardContent>
@@ -330,6 +574,105 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
           ))}
         </div>
       )}
+
+      {/* Building Form Dialog */}
+      {selectedResidenceId && (
+        <BuildingFormDialog
+          open={buildingDialogOpen}
+          onOpenChange={(open) => {
+            setBuildingDialogOpen(open);
+            if (!open) {
+              setEditingBuilding(null);
+              queryClient.invalidateQueries({ queryKey: ["agency-patrimoine", agencyId] });
+            }
+          }}
+          residenceId={selectedResidenceId}
+          building={editingBuilding ? { 
+            id: editingBuilding.id, 
+            name: editingBuilding.name, 
+            address: editingBuilding.address, 
+            residence_id: selectedResidenceId 
+          } : undefined}
+        />
+      )}
+
+      {/* Lot Form Dialog */}
+      {selectedResidenceId && (
+        <LotFormDialog
+          open={lotDialogOpen}
+          onOpenChange={(open) => {
+            setLotDialogOpen(open);
+            if (!open) {
+              setEditingLot(null);
+              queryClient.invalidateQueries({ queryKey: ["agency-patrimoine", agencyId] });
+            }
+          }}
+          residenceId={selectedResidenceId}
+          lot={editingLot}
+          buildings={getBuildingsForResidence(selectedResidenceId)}
+        />
+      )}
+
+      {/* Bulk Create Dialog */}
+      {selectedResidenceId && (
+        <BulkCreateDialog
+          open={bulkDialogOpen}
+          onOpenChange={(open) => {
+            setBulkDialogOpen(open);
+            if (!open) {
+              queryClient.invalidateQueries({ queryKey: ["agency-patrimoine", agencyId] });
+            }
+          }}
+          residenceId={selectedResidenceId}
+          buildings={getBuildingsForResidence(selectedResidenceId)}
+        />
+      )}
+
+      {/* QR Dialog */}
+      {selectedResidence && (
+        <ResidenceQRDialog
+          residenceId={selectedResidence.id}
+          residenceName={selectedResidence.name}
+          open={qrDialogOpen}
+          onOpenChange={setQrDialogOpen}
+        />
+      )}
+
+      {/* Delete Building Confirmation */}
+      <AlertDialog open={!!deletingBuilding} onOpenChange={() => setDeletingBuilding(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le bâtiment ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Les lots associés seront également supprimés ou désassociés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBuilding} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Lot Confirmation */}
+      <AlertDialog open={!!deletingLot} onOpenChange={() => setDeletingLot(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le lot ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Toutes les données associées à ce lot seront supprimées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLot} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
