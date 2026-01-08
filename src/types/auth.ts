@@ -25,7 +25,7 @@ export interface DemoUser {
 }
 
 export const ROLE_LABELS: Record<AppRole, string> = {
-  admin: 'Admin',
+  admin: 'Kopro',
   manager: 'Responsable',
   cs: 'Collaborateur',
   resident: 'Résident',
