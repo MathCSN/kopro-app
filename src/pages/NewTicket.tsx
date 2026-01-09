@@ -13,8 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
 
-export default function NewTicket() {
-  const { user, profile, logout } = useAuth();
+function NewTicketContent() {
+  const { user, profile } = useAuth();
   const { selectedResidence, residences } = useResidence();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
@@ -26,11 +26,6 @@ export default function NewTicket() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveResidence = selectedResidence || (residences.length === 1 ? residences[0] : null);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
 
   if (!user || !profile) {
     return null;
@@ -115,97 +110,115 @@ export default function NewTicket() {
   };
 
   return (
+    <div className="space-y-6 animate-fade-in max-w-2xl">
+      <Button variant="ghost" onClick={() => navigate('/tickets')}>
+        <ArrowLeft className="h-4 w-4 mr-2" />Retour
+      </Button>
+
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle>Nouveau signalement</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre</Label>
+              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Fuite robinet cuisine" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Catégorie</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="plomberie">Plomberie</SelectItem>
+                  <SelectItem value="electricite">Électricité</SelectItem>
+                  <SelectItem value="parties_communes">Parties communes</SelectItem>
+                  <SelectItem value="structure">Structure</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Décrivez le problème..." rows={4} required />
+            </div>
+
+            {/* Hidden file input - opens native iOS/Android picker */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                if (e.target.files) {
+                  handleImageUpload(e.target.files);
+                  e.target.value = '';
+                }
+              }}
+            />
+
+            {/* Uploaded images preview */}
+            {images.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {images.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={url} 
+                      alt={`Photo ${index + 1}`} 
+                      className="h-20 w-20 object-cover rounded-lg border border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || images.length >= 4}
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              {uploading ? 'Upload...' : 'Ajouter des photos'}
+            </Button>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              <Send className="h-4 w-4 mr-2" />
+              {submitting ? 'Envoi...' : 'Envoyer le signalement'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function NewTicket() {
+  const { profile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
+
+  if (!profile) {
+    return null;
+  }
+
+  return (
     <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in max-w-2xl">
-        <Button variant="ghost" onClick={() => navigate('/tickets')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />Retour
-        </Button>
-
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle>Nouveau signalement</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Titre</Label>
-                <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Fuite robinet cuisine" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Catégorie</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="plomberie">Plomberie</SelectItem>
-                    <SelectItem value="electricite">Électricité</SelectItem>
-                    <SelectItem value="parties_communes">Parties communes</SelectItem>
-                    <SelectItem value="structure">Structure</SelectItem>
-                    <SelectItem value="autre">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Décrivez le problème..." rows={4} required />
-              </div>
-
-              {/* Hidden file input - opens native iOS/Android picker */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  if (e.target.files) {
-                    handleImageUpload(e.target.files);
-                    e.target.value = '';
-                  }
-                }}
-              />
-
-              {/* Uploaded images preview */}
-              {images.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {images.map((url, index) => (
-                    <div key={index} className="relative group">
-                      <img 
-                        src={url} 
-                        alt={`Photo ${index + 1}`} 
-                        className="h-20 w-20 object-cover rounded-lg border border-border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || images.length >= 4}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                {uploading ? 'Upload...' : 'Ajouter des photos'}
-              </Button>
-              <Button type="submit" className="w-full" disabled={submitting}>
-                <Send className="h-4 w-4 mr-2" />
-                {submitting ? 'Envoi...' : 'Envoyer le signalement'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      <NewTicketContent />
     </AppLayout>
   );
 }
