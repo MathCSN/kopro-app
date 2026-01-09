@@ -46,7 +46,7 @@ const messageTypes = [
 ];
 
 export function NewConversationDialog({ onCreated }: NewConversationDialogProps) {
-  const { user, isManager } = useAuth();
+  const { user, isManager, isCollaborator } = useAuth();
   const { selectedResidence, residences, isAllResidences } = useResidence();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -384,8 +384,8 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
             )}
           </div>
 
-          {/* Message Type - Only for managers */}
-          {isManager() && (
+          {/* Message Type - Only for managers and collaborators */}
+          {(isManager() || isCollaborator()) && (
             <div className="space-y-2">
               <Label>Type de message</Label>
               <Select value={messageType} onValueChange={setMessageType}>
