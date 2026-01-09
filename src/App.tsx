@@ -37,6 +37,7 @@ import Profile from "./pages/Profile";
 import Household from "./pages/Household";
 import ServiceProviders from "./pages/ServiceProviders";
 import AIAssistant from "./pages/AIAssistant";
+import Marketplace from "./pages/Marketplace";
 
 // Auth Pages
 import AccountChoice from "./pages/AccountChoice";
@@ -143,7 +144,10 @@ const App = () => (
             <Route path="/reservations" element={<Navigate to="/dashboard" replace />} />
             <Route path="/packages" element={<Navigate to="/dashboard" replace />} />
             <Route path="/visitors" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/marketplace" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* Marketplace */}
+            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+            <Route path="/marketplace/:id" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
             
             {/* AG / Votes */}
             <Route path="/ag" element={<ProtectedRoute><AG /></ProtectedRoute>} />
