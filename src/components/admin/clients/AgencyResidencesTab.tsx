@@ -15,7 +15,8 @@ import {
   ChevronDown,
   ChevronRight,
   User,
-  Layers
+  Layers,
+  Users
 } from "lucide-react";
 import {
   AlertDialog,
@@ -40,6 +41,7 @@ import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
 import { BuildingFormDialog } from "@/components/admin/buildings/BuildingFormDialog";
 import { LotFormDialog } from "@/components/admin/lots/LotFormDialog";
 import { BulkCreateDialog } from "@/components/admin/lots/BulkCreateDialog";
+import { TenantManagementDialog } from "@/components/admin/lots/TenantManagementDialog";
 
 interface AgencyResidencesTabProps {
   agencyId: string;
@@ -103,6 +105,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
   const [editingLot, setEditingLot] = useState<Lot | null>(null);
   const [deletingBuilding, setDeletingBuilding] = useState<Building | null>(null);
   const [deletingLot, setDeletingLot] = useState<Lot | null>(null);
+  const [tenantManagementLot, setTenantManagementLot] = useState<{ lot: Lot; residenceId: string; residenceName: string } | null>(null);
 
   const { data: residences = [], isLoading, refetch } = useQuery({
     queryKey: ["agency-residences-full", agencyId],
@@ -531,6 +534,15 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
+                                    onClick={() => setTenantManagementLot({ lot, residenceId: residence.id, residenceName: residence.name })}
+                                    title="Gérer les locataires"
+                                  >
+                                    <Users className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
                                     onClick={() => openLotDialog(residence.id, lot)}
                                   >
                                     <Edit className="h-3 w-3" />
@@ -580,6 +592,15 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                                 <Badge variant="outline" className="text-amber-600">Vacant</Badge>
                               )}
                               <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setTenantManagementLot({ lot, residenceId: residence.id, residenceName: residence.name })}
+                                  title="Gérer les locataires"
+                                >
+                                  <Users className="h-3 w-3" />
+                                </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -770,6 +791,21 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Tenant Management Dialog */}
+      {tenantManagementLot && (
+        <TenantManagementDialog
+          open={!!tenantManagementLot}
+          onOpenChange={(open) => {
+            if (!open) setTenantManagementLot(null);
+          }}
+          lotId={tenantManagementLot.lot.id}
+          lotNumber={tenantManagementLot.lot.lot_number}
+          residenceId={tenantManagementLot.residenceId}
+          residenceName={tenantManagementLot.residenceName}
+          onSuccess={() => refetch()}
+        />
+      )}
     </div>
   );
 }
