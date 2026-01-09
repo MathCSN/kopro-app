@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, Trash2, Edit, Upload, Home, X, Download, UserPlus } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Plus, Search, Building2, Trash2, Edit, Upload, Home, X, Download, Users } from "lucide-react";
 import { toast } from "sonner";
 import { exportToCsv } from "@/lib/exportCsv";
 import { LotFormDialog } from "./LotFormDialog";
 import { BulkCreateDialog } from "./BulkCreateDialog";
-import { AssignLotDialog } from "./AssignLotDialog";
+import { TenantManagementDialog } from "./TenantManagementDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -32,6 +33,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface Occupant {
+  id: string;
+  type: string;
+  profile: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+  } | null;
+}
+
 interface Lot {
   id: string;
   lot_number: string;
@@ -46,6 +57,7 @@ interface Lot {
   residence_id: string;
   join_code: string | null;
   buildings?: { name: string } | null;
+  occupants?: Occupant[];
 }
 
 export function LotsManagement() {
@@ -55,8 +67,7 @@ export function LotsManagement() {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkOpen, setIsBulkOpen] = useState(false);
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [assignLotId, setAssignLotId] = useState<string | null>(null);
+  const [managingTenantLot, setManagingTenantLot] = useState<Lot | null>(null);
   const [editingLot, setEditingLot] = useState<Lot | null>(null);
   const [deletingLotId, setDeletingLotId] = useState<string | null>(null);
 
@@ -224,9 +235,9 @@ export function LotsManagement() {
               <Upload className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Création en masse</span>
             </Button>
-            <Button variant="outline" onClick={() => setIsAssignOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Attribuer</span>
+            <Button onClick={() => setIsFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Ajouter</span>
             </Button>
             <Button onClick={() => setIsFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -319,13 +330,10 @@ export function LotsManagement() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => {
-                              setAssignLotId(lot.id);
-                              setIsAssignOpen(true);
-                            }}
-                            title="Attribuer un résident"
+                            onClick={() => setManagingTenantLot(lot)}
+                            title="Gérer les locataires"
                           >
-                            <UserPlus className="h-4 w-4" />
+                            <Users className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -372,15 +380,19 @@ export function LotsManagement() {
         buildings={buildings || []}
       />
 
-      <AssignLotDialog
-        open={isAssignOpen}
-        onOpenChange={(open) => {
-          setIsAssignOpen(open);
-          if (!open) setAssignLotId(null);
-        }}
-        preselectedLotId={assignLotId}
-        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lots"] })}
-      />
+      {managingTenantLot && selectedResidence && (
+        <TenantManagementDialog
+          open={!!managingTenantLot}
+          onOpenChange={(open) => {
+            if (!open) setManagingTenantLot(null);
+          }}
+          lotId={managingTenantLot.id}
+          lotNumber={managingTenantLot.lot_number}
+          residenceId={selectedResidence.id}
+          residenceName={selectedResidence.name}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["lots"] })}
+        />
+      )}
 
       <AlertDialog open={!!deletingLotId} onOpenChange={() => setDeletingLotId(null)}>
         <AlertDialogContent>
