@@ -102,7 +102,7 @@ export function LotFormDialog({
       tantiemes: undefined,
       type: "appartement",
       notes: "",
-      building_id: "",
+      building_id: "none",
     },
   });
 
@@ -117,7 +117,7 @@ export function LotFormDialog({
         tantiemes: lot.tantiemes ?? undefined,
         type: lot.type ?? "appartement",
         notes: lot.notes ?? "",
-        building_id: lot.building_id ?? "",
+        building_id: lot.building_id ?? "none",
       });
     } else {
       form.reset({
@@ -129,7 +129,7 @@ export function LotFormDialog({
         tantiemes: undefined,
         type: "appartement",
         notes: "",
-        building_id: "",
+        building_id: "none",
       });
     }
   }, [lot, form]);
@@ -146,7 +146,7 @@ export function LotFormDialog({
         type: data.type || null,
         notes: data.notes || null,
         residence_id: residenceId,
-        building_id: data.building_id || null,
+        building_id: data.building_id === "none" ? null : data.building_id || null,
       };
 
       if (isEditing) {
@@ -312,7 +312,7 @@ export function LotFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Aucun</SelectItem>
+                        <SelectItem value="none">Aucun</SelectItem>
                         {buildings.map((building) => (
                           <SelectItem key={building.id} value={building.id}>
                             {building.name}

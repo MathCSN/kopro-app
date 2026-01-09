@@ -97,7 +97,7 @@ export function BulkCreateDialog({
       surface: undefined,
       rooms: undefined,
       tantiemesPerUnit: undefined,
-      building_id: "",
+      building_id: "none",
       doorNaming: "letters",
       includeGroundFloor: false,
     },
@@ -165,7 +165,7 @@ export function BulkCreateDialog({
             surface: surface || null,
             rooms: rooms || null,
             tantiemes: tantiemesPerUnit || null,
-            building_id: building_id || null,
+            building_id: building_id === "none" ? null : building_id || null,
             residence_id: residenceId,
           });
         }
@@ -240,7 +240,7 @@ export function BulkCreateDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Aucun</SelectItem>
+                          <SelectItem value="none">Aucun</SelectItem>
                           {buildings.map((building) => (
                             <SelectItem key={building.id} value={building.id}>
                               {building.name}
