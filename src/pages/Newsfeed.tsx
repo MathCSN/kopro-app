@@ -774,7 +774,8 @@ function NewsfeedContent() {
               <div className="space-y-2">
                 <Label>Type de publication</Label>
                 <div className="flex gap-2 flex-wrap">
-                  {['info', 'announcement', 'event', 'request'].map(type => {
+                  {/* Residents can only post info, event, request - NOT announcements */}
+                  {(isManager ? ['info', 'announcement', 'event', 'request'] : ['info', 'event', 'request']).map(type => {
                     const Icon = categoryIcons[type];
                     return (
                       <Button
