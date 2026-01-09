@@ -42,11 +42,19 @@ export function useNotifications() {
     }
     return null;
   });
+  const [dismissedIds, setDismissedIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('notifications_dismissed');
+      return stored ? JSON.parse(stored) : [];
+    }
+    return [];
+  });
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
+      const currentDismissedIds = JSON.parse(localStorage.getItem('notifications_dismissed') || '[]');
       const allNotifications: Notification[] = [];
 
       // Fetch pending packages
@@ -57,17 +65,19 @@ export function useNotifications() {
         .order("created_at", { ascending: false })
         .limit(5);
 
-      const packageCount = packages?.length || 0;
       packages?.forEach((pkg) => {
-        allNotifications.push({
-          id: `package-${pkg.id}`,
-          type: "package",
-          title: "Colis en attente",
-          description: `${pkg.carrier || "Colis"} pour ${pkg.recipient_name}`,
-          href: "/packages",
-          created_at: pkg.created_at,
-          read: false,
-        });
+        const notifId = `package-${pkg.id}`;
+        if (!currentDismissedIds.includes(notifId)) {
+          allNotifications.push({
+            id: notifId,
+            type: "package",
+            title: "Colis en attente",
+            description: `${pkg.carrier || "Colis"} pour ${pkg.recipient_name}`,
+            href: "/packages",
+            created_at: pkg.created_at,
+            read: false,
+          });
+        }
       });
 
       // Fetch open tickets (user's tickets with updates or all if manager)
@@ -78,17 +88,19 @@ export function useNotifications() {
         .order("created_at", { ascending: false })
         .limit(5);
 
-      const ticketCount = tickets?.length || 0;
       tickets?.forEach((ticket) => {
-        allNotifications.push({
-          id: `ticket-${ticket.id}`,
-          type: "ticket",
-          title: ticket.status === "open" ? "Nouveau ticket" : "Ticket en cours",
-          description: ticket.title,
-          href: "/tickets",
-          created_at: ticket.created_at,
-          read: false,
-        });
+        const notifId = `ticket-${ticket.id}`;
+        if (!currentDismissedIds.includes(notifId)) {
+          allNotifications.push({
+            id: notifId,
+            type: "ticket",
+            title: ticket.status === "open" ? "Nouveau ticket" : "Ticket en cours",
+            description: ticket.title,
+            href: "/tickets",
+            created_at: ticket.created_at,
+            read: false,
+          });
+        }
       });
 
       // Fetch recent posts (last 24h)
@@ -102,17 +114,19 @@ export function useNotifications() {
         .order("created_at", { ascending: false })
         .limit(5);
 
-      const postCount = posts?.length || 0;
       posts?.forEach((post) => {
-        allNotifications.push({
-          id: `post-${post.id}`,
-          type: "post",
-          title: post.type === "announcement" ? "Nouvelle annonce" : "Nouvelle publication",
-          description: post.title || post.content?.slice(0, 50) || "Publication",
-          href: "/newsfeed",
-          created_at: post.created_at,
-          read: false,
-        });
+        const notifId = `post-${post.id}`;
+        if (!currentDismissedIds.includes(notifId)) {
+          allNotifications.push({
+            id: notifId,
+            type: "post",
+            title: post.type === "announcement" ? "Nouvelle annonce" : "Nouvelle publication",
+            description: post.title || post.content?.slice(0, 50) || "Publication",
+            href: "/newsfeed",
+            created_at: post.created_at,
+            read: false,
+          });
+        }
       });
 
       // Fetch pending payments
@@ -124,17 +138,19 @@ export function useNotifications() {
         .order("due_date", { ascending: true })
         .limit(3);
 
-      const paymentCount = payments?.length || 0;
       payments?.forEach((payment) => {
-        allNotifications.push({
-          id: `payment-${payment.id}`,
-          type: "payment",
-          title: "Paiement en attente",
-          description: `${payment.description || "Charges"} - ${payment.amount}€`,
-          href: "/payments",
-          created_at: payment.created_at,
-          read: false,
-        });
+        const notifId = `payment-${payment.id}`;
+        if (!currentDismissedIds.includes(notifId)) {
+          allNotifications.push({
+            id: notifId,
+            type: "payment",
+            title: "Paiement en attente",
+            description: `${payment.description || "Charges"} - ${payment.amount}€`,
+            href: "/payments",
+            created_at: payment.created_at,
+            read: false,
+          });
+        }
       });
 
       // Fetch unread messages (conversations with recent messages)
@@ -151,20 +167,21 @@ export function useNotifications() {
         `)
         .eq("user_id", user.id);
 
-      let messageCount = 0;
       conversations?.forEach((conv) => {
         const conversation = conv.conversations as any;
         if (conversation && (!conv.last_read_at || new Date(conversation.updated_at) > new Date(conv.last_read_at))) {
-          messageCount++;
-          allNotifications.push({
-            id: `message-${conversation.id}`,
-            type: "message",
-            title: "Nouveau message",
-            description: conversation.name || "Conversation",
-            href: "/chat",
-            created_at: conversation.updated_at,
-            read: false,
-          });
+          const notifId = `message-${conversation.id}`;
+          if (!currentDismissedIds.includes(notifId)) {
+            allNotifications.push({
+              id: notifId,
+              type: "message",
+              title: "Nouveau message",
+              description: conversation.name || "Conversation",
+              href: "/chat",
+              created_at: conversation.updated_at,
+              read: false,
+            });
+          }
         }
       });
 
@@ -173,7 +190,16 @@ export function useNotifications() {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      setNotifications(allNotifications.slice(0, 10));
+      const filteredNotifications = allNotifications.slice(0, 10);
+      setNotifications(filteredNotifications);
+      
+      // Count by type from filtered notifications
+      const packageCount = filteredNotifications.filter(n => n.type === 'package').length;
+      const ticketCount = filteredNotifications.filter(n => n.type === 'ticket').length;
+      const postCount = filteredNotifications.filter(n => n.type === 'post').length;
+      const messageCount = filteredNotifications.filter(n => n.type === 'message').length;
+      const paymentCount = filteredNotifications.filter(n => n.type === 'payment').length;
+      
       setCounts({
         packages: packageCount,
         tickets: ticketCount,
@@ -181,7 +207,7 @@ export function useNotifications() {
         messages: messageCount,
         payments: paymentCount,
         apartmentRequests: 0,
-        total: packageCount + ticketCount + postCount + messageCount + paymentCount,
+        total: filteredNotifications.length,
       });
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -293,10 +319,35 @@ export function useNotifications() {
     fetchNotifications();
   };
 
-  const markAllAsRead = useCallback(() => {
-    const now = new Date().toISOString();
-    localStorage.setItem('notifications_last_seen', now);
-    setLastSeenAt(now);
+  const dismissNotification = useCallback((notificationId: string) => {
+    const stored = localStorage.getItem('notifications_dismissed');
+    const dismissed: string[] = stored ? JSON.parse(stored) : [];
+    if (!dismissed.includes(notificationId)) {
+      dismissed.push(notificationId);
+      localStorage.setItem('notifications_dismissed', JSON.stringify(dismissed));
+      setDismissedIds(dismissed);
+    }
+    // Update local state immediately
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setCounts(prev => {
+      const notification = notifications.find(n => n.id === notificationId);
+      if (!notification) return prev;
+      return {
+        ...prev,
+        [notification.type === 'apartment_request' ? 'apartmentRequests' : `${notification.type}s`]: 
+          Math.max(0, prev[notification.type === 'apartment_request' ? 'apartmentRequests' : `${notification.type}s` as keyof NotificationCounts] as number - 1),
+        total: Math.max(0, prev.total - 1),
+      };
+    });
+  }, [notifications]);
+
+  const dismissAllNotifications = useCallback(() => {
+    const allIds = notifications.map(n => n.id);
+    const stored = localStorage.getItem('notifications_dismissed');
+    const dismissed: string[] = stored ? JSON.parse(stored) : [];
+    const newDismissed = [...new Set([...dismissed, ...allIds])];
+    localStorage.setItem('notifications_dismissed', JSON.stringify(newDismissed));
+    setDismissedIds(newDismissed);
     setNotifications([]);
     setCounts({
       packages: 0,
@@ -307,7 +358,14 @@ export function useNotifications() {
       apartmentRequests: 0,
       total: 0,
     });
-  }, []);
+  }, [notifications]);
+
+  const markAllAsRead = useCallback(() => {
+    const now = new Date().toISOString();
+    localStorage.setItem('notifications_last_seen', now);
+    setLastSeenAt(now);
+    dismissAllNotifications();
+  }, [dismissAllNotifications]);
 
   return {
     notifications,
@@ -315,5 +373,7 @@ export function useNotifications() {
     loading,
     refresh,
     markAllAsRead,
+    dismissNotification,
+    dismissAllNotifications,
   };
 }

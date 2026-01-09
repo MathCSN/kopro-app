@@ -1,4 +1,4 @@
-import { Bell, Package, Ticket, Newspaper, MessageCircle, CreditCard } from "lucide-react";
+import { Bell, Package, Ticket, Newspaper, MessageCircle, CreditCard, X, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,34 +46,56 @@ function formatTimeAgo(dateStr: string) {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-function NotificationItem({ notification, onClick }: { notification: Notification; onClick: () => void }) {
+function NotificationItem({ 
+  notification, 
+  onClick, 
+  onDismiss 
+}: { 
+  notification: Notification; 
+  onClick: () => void;
+  onDismiss: (e: React.MouseEvent) => void;
+}) {
   const Icon = typeIcons[notification.type];
 
   return (
-    <DropdownMenuItem
-      className="flex items-start gap-3 p-3 cursor-pointer"
-      onClick={onClick}
-    >
-      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", typeColors[notification.type])}>
-        <Icon className="h-4 w-4" />
+    <div className="flex items-start gap-3 p-3 hover:bg-accent cursor-pointer group relative">
+      <div 
+        className="flex items-start gap-3 flex-1 min-w-0"
+        onClick={onClick}
+      >
+        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", typeColors[notification.type])}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{notification.title}</p>
+          <p className="text-xs text-muted-foreground truncate">{notification.description}</p>
+        </div>
+        <span className="text-[10px] text-muted-foreground shrink-0">
+          {formatTimeAgo(notification.created_at)}
+        </span>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{notification.title}</p>
-        <p className="text-xs text-muted-foreground truncate">{notification.description}</p>
-      </div>
-      <span className="text-[10px] text-muted-foreground shrink-0">
-        {formatTimeAgo(notification.created_at)}
-      </span>
-    </DropdownMenuItem>
+      <button
+        onClick={onDismiss}
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded-full shrink-0"
+        title="Supprimer"
+      >
+        <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+      </button>
+    </div>
   );
 }
 
 export function NotificationBell() {
   const navigate = useNavigate();
-  const { notifications, counts, loading, markAllAsRead } = useNotifications();
+  const { notifications, counts, loading, markAllAsRead, dismissNotification, dismissAllNotifications } = useNotifications();
 
   const handleNotificationClick = (notification: Notification) => {
     navigate(notification.href);
+  };
+
+  const handleDismiss = (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation();
+    dismissNotification(notificationId);
   };
 
   const handleViewAll = () => {
@@ -96,11 +118,22 @@ export function NotificationBell() {
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notifications</span>
-          {counts.total > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {counts.total} nouvelle{counts.total > 1 ? "s" : ""}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {counts.total > 0 && (
+              <>
+                <Badge variant="secondary" className="text-xs">
+                  {counts.total} nouvelle{counts.total > 1 ? "s" : ""}
+                </Badge>
+                <button
+                  onClick={dismissAllNotifications}
+                  className="p-1 hover:bg-destructive/10 rounded transition-colors"
+                  title="Tout supprimer"
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                </button>
+              </>
+            )}
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
@@ -121,6 +154,7 @@ export function NotificationBell() {
                   key={notification.id}
                   notification={notification}
                   onClick={() => handleNotificationClick(notification)}
+                  onDismiss={(e) => handleDismiss(e, notification.id)}
                 />
               ))}
             </div>
