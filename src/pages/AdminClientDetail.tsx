@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { AgencyFormDialog } from "@/components/admin/clients/AgencyFormDialog";
 import { AgencyResidencesTab } from "@/components/admin/clients/AgencyResidencesTab";
-import { AgencyPatrimoineTab } from "@/components/admin/clients/AgencyPatrimoineTab";
 import { AgencyTeamTab } from "@/components/admin/clients/AgencyTeamTab";
 import { AgencySubscriptionTab } from "@/components/admin/clients/AgencySubscriptionTab";
 
@@ -250,14 +249,10 @@ export default function AdminClientDetail() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="residences" className="gap-2">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">Résidences</span>
-            </TabsTrigger>
-            <TabsTrigger value="patrimoine" className="gap-2">
-              <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Bâtiments</span>
             </TabsTrigger>
             <TabsTrigger value="team" className="gap-2">
               <Users className="h-4 w-4" />
@@ -271,10 +266,6 @@ export default function AdminClientDetail() {
 
           <TabsContent value="residences" className="mt-6">
             <AgencyResidencesTab agencyId={agencyId!} />
-          </TabsContent>
-
-          <TabsContent value="patrimoine" className="mt-6">
-            <AgencyPatrimoineTab agencyId={agencyId!} />
           </TabsContent>
 
           <TabsContent value="team" className="mt-6">
