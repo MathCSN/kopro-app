@@ -257,7 +257,7 @@ export default function AdminClientDetail() {
             </TabsTrigger>
             <TabsTrigger value="patrimoine" className="gap-2">
               <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Patrimoine</span>
+              <span className="hidden sm:inline">Bâtiments</span>
             </TabsTrigger>
             <TabsTrigger value="team" className="gap-2">
               <Users className="h-4 w-4" />
