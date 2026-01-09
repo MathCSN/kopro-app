@@ -8,6 +8,8 @@ import {
   FolderOpen,
   File,
   Clock,
+  Trash2,
+  User,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,9 +17,22 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ImportDocumentDialog } from "@/components/documents/ImportDocumentDialog";
+import { UserDocumentUploadDialog } from "@/components/documents/UserDocumentUploadDialog";
+import { DocumentRequestsSection } from "@/components/documents/DocumentRequestsSection";
 import { useAuth } from "@/hooks/useAuth";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Document {
   id: string;
@@ -28,6 +43,7 @@ interface Document {
   file_name: string | null;
   file_size: number | null;
   created_at: string;
+  uploaded_by: string | null;
 }
 
 const categories = [
@@ -36,6 +52,7 @@ const categories = [
   { id: "contrats", name: "Contrats & Assurances", icon: File },
   { id: "travaux", name: "Travaux & Devis", icon: File },
   { id: "comptes", name: "Comptes & Budgets", icon: File },
+  { id: "resident", name: "Mes documents", icon: User },
   { id: "general", name: "Documents divers", icon: FolderOpen },
 ];
 
@@ -46,6 +63,8 @@ function DocumentsContent() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -73,6 +92,36 @@ function DocumentsContent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteDocId) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', deleteDocId);
+
+      if (error) throw error;
+
+      toast.success("Document supprimé");
+      setDocuments(docs => docs.filter(d => d.id !== deleteDocId));
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setDeleting(false);
+      setDeleteDocId(null);
+    }
+  };
+
+  const canDeleteDocument = (doc: Document) => {
+    // Users can only delete documents they uploaded
+    // Managers can delete any document
+    if (isManager()) return true;
+    return doc.uploaded_by === user?.id;
   };
 
   const filteredDocuments = documents.filter(doc => {
@@ -112,10 +161,16 @@ function DocumentsContent() {
           <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Documents</h1>
           <p className="text-muted-foreground mt-1">Bibliothèque documentaire de la copropriété</p>
         </div>
-        {isManager() && (
-          <ImportDocumentDialog onImported={fetchDocuments} />
-        )}
+        <div className="flex gap-2">
+          <UserDocumentUploadDialog onUploaded={fetchDocuments} />
+          {isManager() && (
+            <ImportDocumentDialog onImported={fetchDocuments} />
+          )}
+        </div>
       </div>
+
+      {/* Document Requests Section */}
+      {!isManager() && <DocumentRequestsSection />}
 
       {/* Search */}
       <div className="relative">
@@ -218,9 +273,14 @@ function DocumentsContent() {
                         <FileText className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                          {doc.title}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                            {doc.title}
+                          </h4>
+                          {doc.uploaded_by === user?.id && (
+                            <Badge variant="outline" className="text-xs shrink-0">Mon document</Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {doc.file_name?.split('.').pop()?.toUpperCase() || 'PDF'} · {formatFileSize(doc.file_size)} · Ajouté le {formatDate(doc.created_at)}
                         </p>
@@ -232,6 +292,19 @@ function DocumentsContent() {
                         <Button variant="ghost" size="icon-sm">
                           <Download className="h-4 w-4" />
                         </Button>
+                        {canDeleteDocument(doc) && (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteDocId(doc.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -248,6 +321,28 @@ function DocumentsContent() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteDocId} onOpenChange={() => setDeleteDocId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce document ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le document sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
