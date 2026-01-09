@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Building2, Loader2, Smartphone, ArrowRight, Apple, Download, AlertCircle } from "lucide-react";
+import { Building2, Loader2, ArrowRight, Apple, Download, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/useAuth";
 import { AUTH_MESSAGES } from "@/lib/messages";
+import { Capacitor } from "@capacitor/core";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 type Residence = {
   id: string;
@@ -215,10 +217,7 @@ export default function ResidenceLanding() {
       {/* Header */}
       <header className="p-4">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center">
-            <Building2 className="h-6 w-6 text-accent-foreground" />
-          </div>
-          <span className="font-display font-bold text-2xl">KOPRO</span>
+          <img src={koproLogo} alt="Kopro" className="h-10 w-auto" />
         </div>
       </header>
 
@@ -278,38 +277,40 @@ export default function ResidenceLanding() {
             )}
           </div>
 
-          {/* App store buttons (placeholders) */}
-          <div className="pt-6 space-y-3">
-            <p className="text-sm text-muted-foreground">Téléchargez l'application mobile</p>
-            <div className="flex gap-3 justify-center">
-              <button 
-                className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity"
-                onClick={() => {
-                  // Placeholder - would link to App Store
-                  alert("Lien App Store à venir");
-                }}
-              >
-                <Apple className="h-5 w-5" />
-                <div className="text-left">
-                  <div className="text-[10px] opacity-80">Télécharger sur</div>
-                  <div className="text-sm font-semibold">App Store</div>
-                </div>
-              </button>
-              <button 
-                className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity"
-                onClick={() => {
-                  // Placeholder - would link to Play Store
-                  alert("Lien Google Play à venir");
-                }}
-              >
-                <Download className="h-5 w-5" />
-                <div className="text-left">
-                  <div className="text-[10px] opacity-80">Télécharger sur</div>
-                  <div className="text-sm font-semibold">Google Play</div>
-                </div>
-              </button>
+          {/* App store buttons - hidden on native app */}
+          {!Capacitor.isNativePlatform() && (
+            <div className="pt-6 space-y-3">
+              <p className="text-sm text-muted-foreground">Téléchargez l'application mobile</p>
+              <div className="flex gap-3 justify-center">
+                <button 
+                  className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity"
+                  onClick={() => {
+                    // Placeholder - would link to App Store
+                    alert("Lien App Store à venir");
+                  }}
+                >
+                  <Apple className="h-5 w-5" />
+                  <div className="text-left">
+                    <div className="text-[10px] opacity-80">Télécharger sur</div>
+                    <div className="text-sm font-semibold">App Store</div>
+                  </div>
+                </button>
+                <button 
+                  className="flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity"
+                  onClick={() => {
+                    // Placeholder - would link to Play Store
+                    alert("Lien Google Play à venir");
+                  }}
+                >
+                  <Download className="h-5 w-5" />
+                  <div className="text-left">
+                    <div className="text-[10px] opacity-80">Télécharger sur</div>
+                    <div className="text-sm font-semibold">Google Play</div>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
 
