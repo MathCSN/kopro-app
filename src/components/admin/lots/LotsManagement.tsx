@@ -240,7 +240,7 @@ export function LotsManagement() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{lots?.length || 0}</div>
-            <p className="text-sm text-muted-foreground">Total appts</p>
+            <p className="text-sm text-muted-foreground">Total Apts.</p>
           </CardContent>
         </Card>
         <Card>

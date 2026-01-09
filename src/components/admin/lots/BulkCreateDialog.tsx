@@ -415,7 +415,7 @@ export function BulkCreateDialog({
 
             <div className="flex justify-center">
               <Button type="button" variant="outline" onClick={generatePreview}>
-                Prévisualiser ({totalLots > 0 ? `${totalLots} appts` : "..."})
+                Prévisualiser ({totalLots > 0 ? `${totalLots} Apts.` : "..."})
               </Button>
             </div>
 
@@ -425,7 +425,7 @@ export function BulkCreateDialog({
                   <div className="flex items-center gap-2 mb-3">
                     <Home className="h-4 w-4 text-primary" />
                     <span className="font-medium">
-                      Aperçu : {totalLots} appts sur {totalFloors} étage(s)
+                      Aperçu : {totalLots} Apts. sur {totalFloors} étage(s)
                     </span>
                   </div>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto">
@@ -461,7 +461,7 @@ export function BulkCreateDialog({
                     Création...
                   </>
                 ) : (
-                  `Créer ${preview.length} appts`
+                  `Créer ${preview.length} Apts.`
                 )}
               </Button>
             </div>

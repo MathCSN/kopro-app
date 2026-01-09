@@ -402,7 +402,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                     )}
                   </div>
                   <Badge variant="secondary" className="hidden sm:flex">
-                    {residence.buildings.length} bât. •{residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} appts
+                    {residence.buildings.length} bât. •{residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} Apts.
                   </Badge>
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <Button
@@ -474,7 +474,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                           )}
                           <Home className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium flex-1">{building.name}</span>
-                          <Badge variant="outline">{building.lots.length} appts</Badge>
+                          <Badge variant="outline">{building.lots.length} Apts.</Badge>
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
                               variant="ghost"
@@ -556,7 +556,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                       <div className="border rounded-lg">
                         <div className="p-3 bg-muted/50">
                           <span className="font-medium text-muted-foreground">
-                            Appts sans bâtiment ({residence.unassignedLots.length})
+                            Apts. sans bâtiment ({residence.unassignedLots.length})
                           </span>
                         </div>
                         <div className="border-t">
