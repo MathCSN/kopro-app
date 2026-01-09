@@ -1152,36 +1152,18 @@ function NewsfeedContent() {
                 </div>
               )}
 
-              {/* Action buttons for residents */}
-              {!isManager && !newPost.replyToId && (
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingImages || newPost.images.length >= 4}
-                  >
-                    <Image className="h-4 w-4 mr-1" />
-                    {uploadingImages ? 'Upload...' : 'Photo'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (fileInputRef.current) {
-                        fileInputRef.current.setAttribute('capture', 'environment');
-                        fileInputRef.current.click();
-                        fileInputRef.current.removeAttribute('capture');
-                      }
-                    }}
-                    disabled={uploadingImages || newPost.images.length >= 4}
-                  >
-                    <Camera className="h-4 w-4 mr-1" />
-                    Appareil
-                  </Button>
-                </div>
+              {/* Action button for photo upload - single button that opens native picker */}
+              {!newPost.replyToId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImages || newPost.images.length >= 4}
+                >
+                  <Camera className="h-4 w-4 mr-1" />
+                  {uploadingImages ? 'Upload...' : 'Ajouter des photos'}
+                </Button>
               )}
 
               {/* Send to all residences - Manager only */}
