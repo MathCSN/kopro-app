@@ -131,10 +131,11 @@ export default function Dashboard() {
         pendingApplications = (applications || []).length;
       }
 
-      // Fetch announcements
+      // Fetch announcements (only official announcements, not all posts)
       const { data: posts } = await supabase
         .from('posts')
         .select('*')
+        .eq('type', 'announcement')
         .order('created_at', { ascending: false })
         .limit(3);
 
