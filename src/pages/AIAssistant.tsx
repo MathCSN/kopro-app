@@ -56,7 +56,7 @@ function AIAssistantContent() {
     }
 
     setAiEnabled(data?.enabled || false);
-    setWelcomeMessage(data?.welcome_message || "Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?");
+    setWelcomeMessage(data?.welcome_message || "Salut ! Je suis Kapi, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?");
   };
 
   const handleSend = async () => {
@@ -142,14 +142,14 @@ function AIAssistantContent() {
         .upsert({
           residence_id: activeResidence.id,
           enabled: true,
-          welcome_message: "Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?",
+          welcome_message: "Salut ! Je suis Kapi, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?",
         }, { onConflict: "residence_id" });
 
       if (error) throw error;
 
       setAiEnabled(true);
-      setWelcomeMessage("Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?");
-      toast.success("Kopy activé avec succès !");
+      setWelcomeMessage("Salut ! Je suis Kapi, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?");
+      toast.success("Kapi activé avec succès !");
     } catch (error) {
       console.error("Error activating AI:", error);
       toast.error("Erreur lors de l'activation de l'assistant");
@@ -162,9 +162,9 @@ function AIAssistantContent() {
       return (
         <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
           <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Kopy non disponible</h2>
+          <h2 className="text-xl font-semibold mb-2">Kapi non disponible</h2>
           <p className="text-muted-foreground mb-6">
-            Votre gestionnaire n'a pas activé Kopy pour cette résidence.<br />
+            Votre gestionnaire n'a pas activé Kapi pour cette résidence.<br />
             Envoyez-lui un message pour lui demander de l'activer.
           </p>
           <Button onClick={() => navigate("/chat")} variant="outline" className="gap-2">
@@ -179,11 +179,11 @@ function AIAssistantContent() {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Kopy non disponible</h2>
-        <p className="text-muted-foreground mb-6">Kopy n'est pas activé pour cette résidence.</p>
+        <h2 className="text-xl font-semibold mb-2">Kapi non disponible</h2>
+        <p className="text-muted-foreground mb-6">Kapi n'est pas activé pour cette résidence.</p>
         <Button onClick={handleActivateAI} className="gap-2">
           <Sparkles className="h-4 w-4" />
-          Activer Kopy
+          Activer Kapi
         </Button>
       </div>
     );
@@ -197,7 +197,7 @@ function AIAssistantContent() {
           <Bot className="h-6 w-6 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="font-display text-xl font-bold">Kopy 🤖</h1>
+          <h1 className="font-display text-xl font-bold">Kapi 🤖</h1>
           <p className="text-sm text-muted-foreground">L'assistant intelligent de {activeResidence.name}</p>
         </div>
         <Sparkles className="h-5 w-5 text-primary ml-auto" />
