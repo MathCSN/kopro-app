@@ -484,7 +484,7 @@ export default function AgencySignup() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Mensuel ({config.apartments_count} Apts.)
+                      Mensuel ({config.apartments_count} appts)
                     </span>
                     <span>{totalMonthly.toLocaleString()}€/mois</span>
                   </div>
