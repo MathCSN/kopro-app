@@ -274,8 +274,10 @@ function DirectoryContent() {
   );
 
   const filteredResidents = residents.filter(r =>
-    getDisplayName(r).toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.lot_number?.toLowerCase().includes(searchQuery.toLowerCase())
+    r.id !== user?.id && (
+      getDisplayName(r).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.lot_number?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   );
 
   return (
