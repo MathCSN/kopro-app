@@ -37,7 +37,7 @@ const defaultItems: NavItem[] = [
   { id: "documents", title: "Documents", href: "/documents", visible: true, order: 3, categoryId: "main" },
   { id: "directory", title: "Annuaire", href: "/directory", visible: true, order: 5, categoryId: "main" },
   { id: "chat", title: "Messages", href: "/chat", visible: true, order: 6, categoryId: "main" },
-  { id: "assistant", title: "Assistant IA", href: "/assistant", visible: true, order: 7, categoryId: "main" },
+  { id: "assistant", title: "Kopy 🤖", href: "/assistant", visible: true, order: 7, categoryId: "main" },
   { id: "marketplace", title: "Marché", href: "/marketplace", visible: true, order: 8, categoryId: "main" },
   { id: "household", title: "Mon foyer", href: "/household", visible: true, order: 9, categoryId: "main" },
   { id: "tenants", title: "Locataires", href: "/tenants", visible: true, order: 0, categoryId: "management" },

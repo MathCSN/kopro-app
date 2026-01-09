@@ -149,7 +149,7 @@ function AIAssistantContent() {
 
       setAiEnabled(true);
       setWelcomeMessage("Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?");
-      toast.success("Assistant IA activé avec succès !");
+      toast.success("Kopy activé avec succès !");
     } catch (error) {
       console.error("Error activating AI:", error);
       toast.error("Erreur lors de l'activation de l'assistant");
@@ -162,9 +162,9 @@ function AIAssistantContent() {
       return (
         <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
           <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Assistant non disponible</h2>
+          <h2 className="text-xl font-semibold mb-2">Kopy non disponible</h2>
           <p className="text-muted-foreground mb-6">
-            Votre gestionnaire n'a pas activé l'assistant IA pour cette résidence.<br />
+            Votre gestionnaire n'a pas activé Kopy pour cette résidence.<br />
             Envoyez-lui un message pour lui demander de l'activer.
           </p>
           <Button onClick={() => navigate("/chat")} variant="outline" className="gap-2">
@@ -179,11 +179,11 @@ function AIAssistantContent() {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Assistant non disponible</h2>
-        <p className="text-muted-foreground mb-6">L'assistant IA n'est pas activé pour cette résidence.</p>
+        <h2 className="text-xl font-semibold mb-2">Kopy non disponible</h2>
+        <p className="text-muted-foreground mb-6">Kopy n'est pas activé pour cette résidence.</p>
         <Button onClick={handleActivateAI} className="gap-2">
           <Sparkles className="h-4 w-4" />
-          Activer l'assistant IA
+          Activer Kopy
         </Button>
       </div>
     );

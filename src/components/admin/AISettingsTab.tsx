@@ -302,7 +302,7 @@ export function AISettingsTab() {
                 <Bot className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle>Assistant IA</CardTitle>
+                <CardTitle>Kopy 🤖</CardTitle>
                 <CardDescription>
                   Activez l'assistant pour permettre aux résidents de poser des questions
                 </CardDescription>
