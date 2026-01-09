@@ -1,9 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Crown, Mail, Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Crown, Mail, Phone, Plus } from "lucide-react";
+import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 
 interface AgencyTeamTabProps {
   agencyId: string;
@@ -11,6 +14,8 @@ interface AgencyTeamTabProps {
 }
 
 export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const queryClient = useQueryClient();
   const { data: teamMembers = [], isLoading } = useQuery({
     queryKey: ["agency-team", agencyId],
     queryFn: async () => {
@@ -98,7 +103,18 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Équipe ({teamMembers.length})</h3>
+        <Button onClick={() => setShowAddDialog(true)} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Ajouter
+        </Button>
       </div>
+
+      <AddTeamMemberDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        agencyId={agencyId}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["agency-team", agencyId] })}
+      />
 
       {teamMembers.length === 0 ? (
         <Card>
