@@ -42,6 +42,7 @@ import AccountChoice from "./pages/AccountChoice";
 import Login from "./pages/auth/Login";
 import RegisterResident from "./pages/auth/RegisterResident";
 import RegisterManager from "./pages/auth/RegisterManager";
+import RegisterTrial from "./pages/auth/RegisterTrial";
 import ResidenceLanding from "./pages/ResidenceLanding";
 
 // Admin Pages (global platform admin)
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register-resident" element={<RegisterResident />} />
             <Route path="/auth/register-manager" element={<RegisterManager />} />
+            <Route path="/auth/register-trial" element={<RegisterTrial />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Legacy auth route - redirect to login */}

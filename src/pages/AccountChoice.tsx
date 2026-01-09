@@ -123,7 +123,7 @@ export default function AccountChoice() {
                 <div className="flex flex-col gap-2">
                   <Button 
                     className="w-full gap-2 bg-green-600 hover:bg-green-700"
-                    onClick={() => navigate("/auth/register-manager")}
+                    onClick={() => navigate("/auth/register-trial")}
                   >
                     <Gift className="h-4 w-4" />
                     Essai gratuit 30 jours
