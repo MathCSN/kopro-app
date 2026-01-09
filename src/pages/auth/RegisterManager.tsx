@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -300,15 +301,45 @@ export default function RegisterManager() {
       {/* Form */}
       <main className="flex-1 flex flex-col p-6 pb-safe">
         <div className="w-full max-w-lg mx-auto space-y-6">
+          {/* Existing account CTA - Primary element */}
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Déjà un compte ?</p>
+                  <p className="text-sm text-muted-foreground">Connectez-vous à votre espace</p>
+                </div>
+              </div>
+              <Button onClick={() => navigate("/auth/login")} className="gap-2">
+                Se connecter
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Ou créez un compte</span>
+            </div>
+          </div>
+
           <div className="text-center">
             <div className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-              <Briefcase className="h-7 w-7 text-primary" />
+              <Gift className="h-7 w-7 text-primary" />
             </div>
             <h1 className="text-2xl font-semibold text-foreground">
-              {trialInfo ? "Créer votre compte d'essai" : "Créer un compte gestionnaire"}
+              Essayez gratuitement pendant 30 jours
             </h1>
             <p className="text-muted-foreground mt-1">
-              {trialInfo ? "Accédez à toutes les fonctionnalités pendant votre essai" : "Gérez vos résidences et locataires avec Kopro"}
+              {trialInfo 
+                ? `Votre essai de ${trialInfo.duration_days} jours est prêt à être activé` 
+                : "Sans engagement, sans carte bancaire"}
             </p>
           </div>
 
@@ -497,17 +528,6 @@ export default function RegisterManager() {
             </div>
           </form>
 
-          <div className="text-center">
-            <p className="text-muted-foreground">
-              Déjà un compte ?{" "}
-              <button
-                onClick={() => navigate("/auth/login")}
-                className="text-primary hover:underline font-medium"
-              >
-                Se connecter
-              </button>
-            </p>
-          </div>
         </div>
       </main>
     </div>

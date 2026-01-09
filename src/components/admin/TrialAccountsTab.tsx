@@ -191,65 +191,75 @@ export function TrialAccountsTab() {
             Créez et gérez les comptes d'essai pour les gestionnaires
           </p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Créer un compte essai
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nouveau compte essai</DialogTitle>
-              <DialogDescription>
-                Créez un lien d'inscription pour un gestionnaire en période d'essai.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email du gestionnaire *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="gestionnaire@agence.fr"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="agency_name">Nom de l'agence (optionnel)</Label>
-                <Input
-                  id="agency_name"
-                  placeholder="Agence Immobilière XYZ"
-                  value={formData.agency_name}
-                  onChange={(e) => setFormData({ ...formData, agency_name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="duration_days">Durée de l'essai (jours)</Label>
-                <Input
-                  id="duration_days"
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={formData.duration_days}
-                  onChange={(e) => setFormData({ ...formData, duration_days: parseInt(e.target.value) || 30 })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Annuler
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => window.open("/auth/register-manager", "_blank")}
+          >
+            <ExternalLink className="h-4 w-4" />
+            Page d'inscription
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Créer un compte essai
               </Button>
-              <Button
-                onClick={() => createMutation.mutate(formData)}
-                disabled={!formData.email || createMutation.isPending}
-              >
-                {createMutation.isPending ? "Création..." : "Créer"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nouveau compte essai</DialogTitle>
+                <DialogDescription>
+                  Créez un lien d'inscription pour un gestionnaire en période d'essai.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email du gestionnaire *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="gestionnaire@agence.fr"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agency_name">Nom de l'agence (optionnel)</Label>
+                  <Input
+                    id="agency_name"
+                    placeholder="Agence Immobilière XYZ"
+                    value={formData.agency_name}
+                    onChange={(e) => setFormData({ ...formData, agency_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration_days">Durée de l'essai (jours)</Label>
+                  <Input
+                    id="duration_days"
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={formData.duration_days}
+                    onChange={(e) => setFormData({ ...formData, duration_days: parseInt(e.target.value) || 30 })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() => createMutation.mutate(formData)}
+                  disabled={!formData.email || createMutation.isPending}
+                >
+                  {createMutation.isPending ? "Création..." : "Créer"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats */}
