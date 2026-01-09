@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Newspaper,
@@ -19,6 +19,10 @@ import {
   Info,
   Megaphone,
   PartyPopper,
+  Image,
+  Camera,
+  Reply,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,7 +63,9 @@ interface Post {
   attachments: any;
   residence_id: string;
   event_date: string | null;
+  event_end_date: string | null;
   event_location: string | null;
+  reply_to_id: string | null;
 }
 
 interface PostWithDetails extends Post {
@@ -73,6 +79,14 @@ interface PostWithDetails extends Post {
   user_liked: boolean;
   user_rsvp?: string;
   rsvp_going_count: number;
+  reply_to?: {
+    id: string;
+    content: string;
+    author?: {
+      first_name: string | null;
+      last_name: string | null;
+    };
+  };
 }
 
 interface Comment {
@@ -118,13 +132,20 @@ function NewsfeedContent() {
   const [newPost, setNewPost] = useState({
     title: "",
     content: "",
-    type: "info",
+    type: "" as string, // empty = message simple
     event_date: "",
+    event_end_date: "",
     event_location: "",
     sendToAllResidences: false,
+    images: [] as string[],
+    replyToId: null as string | null,
   });
   const [posting, setPosting] = useState(false);
   const [allResidences, setAllResidences] = useState<{id: string; name: string}[]>([]);
+  const [swipingPostId, setSwipingPostId] = useState<string | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const touchStartX = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if user is manager or owner
   const isManager = profile?.role === 'manager' || profile?.role === 'admin';
@@ -251,6 +272,8 @@ function NewsfeedContent() {
 
       const postsWithDetails: PostWithDetails[] = postsData.map(post => ({
         ...post,
+        event_end_date: (post as any).event_end_date || null,
+        reply_to_id: (post as any).reply_to_id || null,
         author: profileMap.get(post.author_id),
         likes_count: likesCount[post.id] || 0,
         comments_count: commentsCount[post.id] || 0,
@@ -457,7 +480,7 @@ function NewsfeedContent() {
       }
 
       setShowNewPost(false);
-      setNewPost({ title: "", content: "", type: "info", event_date: "", event_location: "", sendToAllResidences: false });
+      setNewPost({ title: "", content: "", type: "", event_date: "", event_end_date: "", event_location: "", sendToAllResidences: false, images: [], replyToId: null });
       fetchPosts();
     } catch (error: any) {
       toast.error('Erreur lors de la création');
