@@ -40,18 +40,38 @@ export default function Login() {
   const redirectBasedOnRole = () => {
     // If no role assigned, user needs to complete registration flow
     if (!profile?.role) {
+      toast({
+        title: "Compte en cours de création",
+        description: "Veuillez finaliser la création de votre compte.",
+      });
       navigate("/pending");
       return;
     }
 
     if (profile.role === 'admin') {
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur Kopro !",
+      });
       navigate("/admin/platform");
     } else if (profile.role === 'manager' || profile.role === 'cs') {
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur Kopro !",
+      });
       navigate("/dashboard");
     } else if (profile.role === 'resident') {
       if (hasResidence) {
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue sur Kopro !",
+        });
         navigate("/dashboard");
       } else {
+        toast({
+          title: "Compte en cours de création",
+          description: "Veuillez finaliser la création de votre compte.",
+        });
         navigate("/pending");
       }
     }
@@ -85,15 +105,10 @@ export default function Login() {
         description: errorMessage,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur Kopro !",
-      });
-      // Redirection will be handled by useEffect
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
+    // Toast will be shown by useEffect after profile is loaded
+    // to determine if account is finalized or not
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
