@@ -98,7 +98,7 @@ export function LotsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
-      toast.success("Lot supprimé avec succès");
+      toast.success("Appartement supprimé avec succès");
       setDeletingLotId(null);
     },
     onError: (error) => {
@@ -131,7 +131,7 @@ export function LotsManagement() {
       <Card>
         <CardContent className="py-12 text-center">
           <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">Sélectionnez une résidence pour gérer les lots</p>
+          <p className="text-muted-foreground">Sélectionnez une résidence pour gérer les appartements</p>
         </CardContent>
       </Card>
     );
@@ -143,9 +143,9 @@ export function LotsManagement() {
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div className="flex flex-1 gap-2 flex-wrap">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un lot..."
+                placeholder="Rechercher un appt..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -186,7 +186,7 @@ export function LotsManagement() {
               variant="outline"
               onClick={() => {
                 if (!filteredLots || filteredLots.length === 0) {
-                  toast.error("Aucun lot à exporter");
+                  toast.error("Aucun appartement à exporter");
                   return;
                 }
                 exportToCsv(
@@ -230,7 +230,7 @@ export function LotsManagement() {
             </Button>
             <Button onClick={() => setIsFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Ajouter un lot</span>
+              <span className="hidden sm:inline">Ajouter</span>
             </Button>
           </div>
         </div>
@@ -240,7 +240,7 @@ export function LotsManagement() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{lots?.length || 0}</div>
-            <p className="text-sm text-muted-foreground">Total lots</p>
+            <p className="text-sm text-muted-foreground">Total appts</p>
           </CardContent>
         </Card>
         <Card>
@@ -259,9 +259,9 @@ export function LotsManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Liste des lots</CardTitle>
+          <CardTitle>Liste des appartements</CardTitle>
           <CardDescription>
-            {filteredLots?.length || 0} lot(s) trouvé(s)
+            {filteredLots?.length || 0} appt(s) trouvé(s)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -274,9 +274,9 @@ export function LotsManagement() {
           ) : filteredLots?.length === 0 ? (
             <div className="text-center py-12">
               <Home className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Aucun lot trouvé</p>
+              <p className="text-muted-foreground">Aucun appartement trouvé</p>
               <Button variant="outline" className="mt-4" onClick={() => setIsFormOpen(true)}>
-                Créer le premier lot
+                Créer le premier appt
               </Button>
             </div>
           ) : (
@@ -284,7 +284,7 @@ export function LotsManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>N° Lot</TableHead>
+                    <TableHead>N° Appt</TableHead>
                     <TableHead>Étage</TableHead>
                     <TableHead>Porte</TableHead>
                     <TableHead>Type</TableHead>
@@ -387,7 +387,7 @@ export function LotsManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce lot ? Cette action est irréversible.
+              Êtes-vous sûr de vouloir supprimer cet appartement ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

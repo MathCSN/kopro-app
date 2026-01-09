@@ -162,7 +162,7 @@ export function LotFormDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lots"] });
-      toast.success(isEditing ? "Lot modifié avec succès" : "Lot créé avec succès");
+      toast.success(isEditing ? "Appartement modifié" : "Appartement créé");
       onOpenChange(false);
     },
     onError: (error) => {
@@ -178,7 +178,7 @@ export function LotFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Modifier le lot" : "Ajouter un lot"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Modifier l'appartement" : "Ajouter un appartement"}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -189,7 +189,7 @@ export function LotFormDialog({
                 name="lot_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>N° de lot *</FormLabel>
+                    <FormLabel>N° appt *</FormLabel>
                     <FormControl>
                       <Input placeholder="A101" {...field} />
                     </FormControl>
