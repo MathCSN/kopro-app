@@ -66,18 +66,81 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
 
   const fetchUsers = async () => {
     try {
-      // Get users from the selected residence
-      let query = supabase
-        .from("profiles")
-        .select("id, first_name, last_name, email")
-        .neq("id", user?.id);
+      if (!selectedResidence) {
+        setUsers([]);
+        return;
+      }
 
-      const { data, error } = await query;
+      // Get residence info to find agency
+      const { data: residenceData } = await supabase
+        .from('residences')
+        .select('agency_id')
+        .eq('id', selectedResidence.id)
+        .maybeSingle();
+
+      const userIds: string[] = [];
+
+      // Get agency members (owner + managers/cs)
+      if (residenceData?.agency_id) {
+        const { data: agencyData } = await supabase
+          .from('agencies')
+          .select('owner_id')
+          .eq('id', residenceData.agency_id)
+          .maybeSingle();
+
+        if (agencyData?.owner_id) {
+          userIds.push(agencyData.owner_id);
+        }
+
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('agency_id', residenceData.agency_id)
+          .in('role', ['manager', 'cs']);
+
+        if (rolesData) {
+          rolesData.forEach((r: any) => {
+            if (!userIds.includes(r.user_id)) {
+              userIds.push(r.user_id);
+            }
+          });
+        }
+      }
+
+      // Get residents of this residence via occupancies
+      const { data: occupanciesData } = await supabase
+        .from('occupancies')
+        .select('user_id, lots!inner(residence_id)')
+        .eq('is_active', true)
+        .eq('lots.residence_id', selectedResidence.id);
+
+      if (occupanciesData) {
+        occupanciesData.forEach((o: any) => {
+          if (!userIds.includes(o.user_id)) {
+            userIds.push(o.user_id);
+          }
+        });
+      }
+
+      // Remove current user from the list
+      const filteredUserIds = userIds.filter(id => id !== user?.id);
+
+      if (filteredUserIds.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // Fetch profiles
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', filteredUserIds);
 
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
       console.error("Error fetching users:", error);
+      setUsers([]);
     }
   };
 
