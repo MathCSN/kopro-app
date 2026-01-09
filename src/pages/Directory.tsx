@@ -62,7 +62,7 @@ const getJobTitleLabel = (value: string | undefined) => {
 
 function DirectoryContent() {
   const { user, isManager } = useAuth();
-  const { selectedResidence } = useResidence();
+  const { selectedResidence, isAllResidences, residences } = useResidence();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [agencyMembers, setAgencyMembers] = useState<DirectoryUser[]>([]);
@@ -72,34 +72,47 @@ function DirectoryContent() {
   const [selectedJobTitle, setSelectedJobTitle] = useState("");
 
   useEffect(() => {
+    console.log("Directory: selectedResidence changed", { selectedResidence, isAllResidences, residences });
     fetchUsers();
-  }, [selectedResidence]);
+  }, [selectedResidence, isAllResidences, residences]);
 
   const fetchUsers = async () => {
     setLoading(true);
+    console.log("Directory: fetchUsers started", { selectedResidence, isAllResidences });
     
     try {
-      if (selectedResidence) {
-        const { data: residenceData } = await supabase
+      // Get the residence to use - either selected or first available
+      const targetResidence = selectedResidence || (residences.length > 0 ? residences[0] : null);
+      
+      console.log("Directory: targetResidence", targetResidence);
+      
+      if (targetResidence) {
+        const { data: residenceData, error: residenceError } = await supabase
           .from('residences')
           .select('agency_id')
-          .eq('id', selectedResidence.id)
+          .eq('id', targetResidence.id)
           .maybeSingle();
+
+        console.log("Directory: residenceData", { residenceData, residenceError });
 
         if (residenceData?.agency_id) {
           // Fetch agency info including owner
-          const { data: agencyData } = await supabase
+          const { data: agencyData, error: agencyError } = await supabase
             .from('agencies')
             .select('owner_id')
             .eq('id', residenceData.agency_id)
             .maybeSingle();
 
+          console.log("Directory: agencyData", { agencyData, agencyError });
+
           // Fetch all agency team members from user_roles
-          const { data: rolesData } = await supabase
+          const { data: rolesData, error: rolesError } = await supabase
             .from('user_roles')
             .select('id, user_id, role, job_title')
             .eq('agency_id', residenceData.agency_id)
             .in('role', ['manager', 'cs']);
+
+          console.log("Directory: rolesData", { rolesData, rolesError });
 
           // Collect all user IDs (owner + team members)
           const userIds: string[] = [];
@@ -114,11 +127,15 @@ function DirectoryContent() {
             });
           }
 
+          console.log("Directory: userIds for agency members", userIds);
+
           if (userIds.length > 0) {
-            const { data: profilesData } = await supabase
+            const { data: profilesData, error: profilesError } = await supabase
               .from('profiles')
               .select('*')
               .in('id', userIds);
+
+            console.log("Directory: profilesData for agency", { profilesData, profilesError });
 
             if (profilesData) {
               const agency: DirectoryUser[] = profilesData.map(profile => {
@@ -136,11 +153,15 @@ function DirectoryContent() {
                   user_role_id: roleInfo?.id,
                 };
               });
+              console.log("Directory: agency members set", agency);
               setAgencyMembers(agency);
             }
           } else {
             setAgencyMembers([]);
           }
+        } else {
+          console.log("Directory: No agency_id found for residence");
+          setAgencyMembers([]);
         }
 
         // Fetch residents via occupancies for this residence
@@ -159,8 +180,9 @@ function DirectoryContent() {
 
         if (occupanciesData) {
           const residenceOccupancies = occupanciesData.filter((occ: any) => 
-            occ.lots?.residence_id === selectedResidence.id
+            occ.lots?.residence_id === targetResidence.id
           );
+          console.log("Directory: residenceOccupancies", residenceOccupancies);
 
           const userIds = [...new Set(residenceOccupancies.map((o: any) => o.user_id))];
           
