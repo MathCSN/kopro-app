@@ -402,9 +402,9 @@ function NewsfeedContent() {
     setPosting(true);
     try {
       const basePostData: any = {
-        title: newPost.title || null,
+        title: isManager ? (newPost.title || null) : null,
         content: newPost.content,
-        type: newPost.type,
+        type: isManager ? newPost.type : null, // Residents post without type (general message)
         author_id: user!.id,
       };
 
@@ -511,8 +511,8 @@ function NewsfeedContent() {
             </p>
           </div>
           <Button onClick={() => setShowNewPost(true)} disabled={!effectiveResidence}>
-            <Plus className="h-4 w-4 mr-2" />
-            Publier
+            {isManager ? <Plus className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+            {isManager ? "Publier" : "Message"}
           </Button>
         </div>
 
@@ -766,49 +766,54 @@ function NewsfeedContent() {
 
         {/* New Post Dialog */}
         <Dialog open={showNewPost} onOpenChange={setShowNewPost}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className={isManager ? "max-w-lg" : "max-w-md"}>
             <DialogHeader>
-              <DialogTitle>Nouvelle publication</DialogTitle>
+              <DialogTitle>{isManager ? "Nouvelle publication" : "Nouveau message"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Type de publication</Label>
-                <div className="flex gap-2 flex-wrap">
-                  {/* Residents can only post info, event, request - NOT announcements */}
-                  {(isManager ? ['info', 'announcement', 'event', 'request'] : ['info', 'event', 'request']).map(type => {
-                    const Icon = categoryIcons[type];
-                    return (
-                      <Button
-                        key={type}
-                        type="button"
-                        variant={newPost.type === type ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setNewPost({ ...newPost, type })}
-                      >
-                        {Icon && <Icon className="h-4 w-4 mr-1" />}
-                        {categoryLabels[type]}
-                      </Button>
-                    );
-                  })}
+              {/* Type selection - Only for managers */}
+              {isManager && (
+                <div className="space-y-2">
+                  <Label>Type de publication</Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {['info', 'announcement', 'event', 'request'].map(type => {
+                      const Icon = categoryIcons[type];
+                      return (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={newPost.type === type ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setNewPost({ ...newPost, type })}
+                        >
+                          {Icon && <Icon className="h-4 w-4 mr-1" />}
+                          {categoryLabels[type]}
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Title - Only for managers */}
+              {isManager && (
+                <div className="space-y-2">
+                  <Label>Titre (optionnel)</Label>
+                  <Input
+                    value={newPost.title}
+                    onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+                    placeholder="Titre de la publication"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
-                <Label>Titre (optionnel)</Label>
-                <Input
-                  value={newPost.title}
-                  onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                  placeholder="Titre de la publication"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Contenu *</Label>
+                <Label>{isManager ? "Contenu *" : "Message"}</Label>
                 <Textarea
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  placeholder="Écrivez votre message..."
-                  className="min-h-[120px]"
+                  placeholder={isManager ? "Écrivez votre message..." : "Partagez quelque chose avec vos voisins..."}
+                  className={isManager ? "min-h-[120px]" : "min-h-[80px]"}
                 />
               </div>
 
@@ -860,7 +865,7 @@ function NewsfeedContent() {
                 onClick={handleCreatePost} 
                 disabled={posting || !newPost.content.trim()}
               >
-                {posting ? 'Publication...' : 'Publier'}
+                {posting ? 'Envoi...' : (isManager ? 'Publier' : 'Envoyer')}
               </Button>
             </DialogFooter>
           </DialogContent>
