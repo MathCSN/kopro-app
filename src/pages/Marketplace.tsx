@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useResidence } from "@/contexts/ResidenceContext";
+import { CreateListingDialog } from "@/components/marketplace/CreateListingDialog";
 
 interface Listing {
   id: string;
@@ -127,9 +129,13 @@ export default function Marketplace() {
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const { selectedResidence, residences } = useResidence();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const activeResidence = selectedResidence || (residences.length > 0 ? residences[0] : null);
 
   useEffect(() => {
     if (user && !id) {
@@ -193,7 +199,7 @@ export default function Marketplace() {
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Marketplace</h1>
             <p className="text-muted-foreground mt-1">Petites annonces entre voisins</p>
           </div>
-          <Button>
+          <Button onClick={() => setShowCreateDialog(true)} disabled={!activeResidence}>
             <Plus className="h-4 w-4 mr-2" />
             Déposer une annonce
           </Button>
@@ -258,6 +264,15 @@ export default function Marketplace() {
               </Card>
             ))}
           </div>
+        )}
+
+        {activeResidence && (
+          <CreateListingDialog
+            open={showCreateDialog}
+            onOpenChange={setShowCreateDialog}
+            residenceId={activeResidence.id}
+            onSuccess={fetchListings}
+          />
         )}
       </div>
     </AppLayout>
