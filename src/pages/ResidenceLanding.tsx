@@ -14,6 +14,12 @@ type Residence = {
   city: string | null;
 };
 
+type Building = {
+  id: string;
+  name: string;
+  residence_id: string;
+};
+
 export default function ResidenceLanding() {
   const { residenceCode } = useParams<{ residenceCode: string }>();
   const navigate = useNavigate();
@@ -21,6 +27,7 @@ export default function ResidenceLanding() {
   
   const [status, setStatus] = useState<"loading" | "found" | "not_found">("loading");
   const [residence, setResidence] = useState<Residence | null>(null);
+  const [building, setBuilding] = useState<Building | null>(null);
 
   useEffect(() => {
     if (!residenceCode) {
@@ -34,12 +41,14 @@ export default function ResidenceLanding() {
     try {
       // The residenceCode could be:
       // 1. A full UUID (residence ID)
-      // 2. A short code (first 8 chars of UUID displayed under QR)
+      // 2. A short code (first 8 chars of UUID) for residence
+      // 3. A short code (first 8 chars of UUID) for building
       
       let residenceData: Residence | null = null;
+      let buildingData: Building | null = null;
       const code = residenceCode?.toLowerCase().trim() || "";
 
-      // First try as full UUID
+      // First try as full UUID for residence
       if (code.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
         const { data: byId } = await supabase
           .from('residences')
@@ -52,7 +61,30 @@ export default function ResidenceLanding() {
         }
       }
       
-      // If not found by full UUID, try matching by short code (first 8 chars)
+      // If not found as residence UUID, try as building UUID
+      if (!residenceData && code.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        const { data: buildingById } = await supabase
+          .from('buildings')
+          .select('id, name, residence_id')
+          .eq('id', code)
+          .maybeSingle();
+
+        if (buildingById) {
+          buildingData = buildingById;
+          // Get residence info for this building
+          const { data: resForBuilding } = await supabase
+            .from('residences')
+            .select('id, name, address, city')
+            .eq('id', buildingById.residence_id)
+            .maybeSingle();
+          
+          if (resForBuilding) {
+            residenceData = resForBuilding;
+          }
+        }
+      }
+      
+      // If not found by full UUID, try matching by short code (first 8 chars) for residence
       if (!residenceData && code.length >= 6) {
         const { data: allResidences } = await supabase
           .from('residences')
@@ -64,12 +96,39 @@ export default function ResidenceLanding() {
         ) || null;
       }
       
+      // If still not found, try short code for building
+      if (!residenceData && code.length >= 6) {
+        const { data: allBuildings } = await supabase
+          .from('buildings')
+          .select('id, name, residence_id');
+        
+        // Find building where ID starts with the entered code
+        const foundBuilding = allBuildings?.find(b => 
+          b.id.toLowerCase().startsWith(code)
+        );
+        
+        if (foundBuilding) {
+          buildingData = foundBuilding;
+          // Get residence info for this building
+          const { data: resForBuilding } = await supabase
+            .from('residences')
+            .select('id, name, address, city')
+            .eq('id', foundBuilding.residence_id)
+            .maybeSingle();
+          
+          if (resForBuilding) {
+            residenceData = resForBuilding;
+          }
+        }
+      }
+      
       if (!residenceData) {
         setStatus("not_found");
         return;
       }
 
       setResidence(residenceData);
+      setBuilding(buildingData);
       setStatus("found");
     } catch (error) {
       console.error("Error fetching residence:", error);
@@ -82,10 +141,17 @@ export default function ResidenceLanding() {
     
     if (user) {
       // User is logged in, go to join flow
-      navigate(`/join?residence=${residence.id}`);
+      const params = new URLSearchParams({ residence: residence.id });
+      if (building) {
+        params.append('building', building.id);
+      }
+      navigate(`/join?${params.toString()}`);
     } else {
       // Store residence ID for after login
       localStorage.setItem("pending_join_residence", residence.id);
+      if (building) {
+        localStorage.setItem("pending_join_building", building.id);
+      }
       navigate("/auth/register-resident");
     }
   };
@@ -93,6 +159,9 @@ export default function ResidenceLanding() {
   const handleLogin = () => {
     if (residence) {
       localStorage.setItem("pending_join_residence", residence.id);
+      if (building) {
+        localStorage.setItem("pending_join_building", building.id);
+      }
     }
     navigate("/auth/login");
   };
@@ -155,6 +224,11 @@ export default function ResidenceLanding() {
               <h1 className="font-display text-2xl font-bold text-foreground">
                 {residence?.name}
               </h1>
+              {building && (
+                <p className="text-lg font-medium text-primary mt-1">
+                  {building.name}
+                </p>
+              )}
               {residence?.address && (
                 <p className="text-muted-foreground mt-1">
                   {residence.address}{residence.city ? `, ${residence.city}` : ""}
