@@ -105,10 +105,10 @@ export default function Login() {
         description: errorMessage,
         variant: "destructive",
       });
-      setIsLoading(false);
     }
-    // Toast will be shown by useEffect after profile is loaded
-    // to determine if account is finalized or not
+
+    // Toast + redirection are handled by useEffect once the profile is loaded
+    setIsLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
