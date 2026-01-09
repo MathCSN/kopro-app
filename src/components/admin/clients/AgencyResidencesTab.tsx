@@ -11,7 +11,8 @@ import {
   Home,
   Users,
   Edit,
-  Trash2
+  Trash2,
+  QrCode
 } from "lucide-react";
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ResidenceFormDialog } from "./ResidenceFormDialog";
+import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
 
 interface AgencyResidencesTabProps {
   agencyId: string;
@@ -35,6 +37,8 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
   const [deletingResidence, setDeletingResidence] = useState<any>(null);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedResidence, setSelectedResidence] = useState<{ id: string; name: string } | null>(null);
 
   const { data: residences = [], isLoading, refetch } = useQuery({
     queryKey: ["agency-residences", agencyId],
@@ -178,6 +182,17 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => {
+                        setSelectedResidence({ id: residence.id, name: residence.name });
+                        setQrDialogOpen(true);
+                      }}
+                      title="QR Code d'invitation"
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setEditingResidence(residence)}
                     >
                       <Edit className="h-4 w-4" />
@@ -231,6 +246,15 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {selectedResidence && (
+        <ResidenceQRDialog
+          residenceId={selectedResidence.id}
+          residenceName={selectedResidence.name}
+          open={qrDialogOpen}
+          onOpenChange={setQrDialogOpen}
+        />
+      )}
     </div>
   );
 }

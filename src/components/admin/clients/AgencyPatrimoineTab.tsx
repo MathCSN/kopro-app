@@ -12,7 +12,6 @@ import {
   User,
   Plus,
   Edit,
-  QrCode,
   Trash2,
   Layers
 } from "lucide-react";
@@ -20,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { BuildingFormDialog } from "@/components/admin/buildings/BuildingFormDialog";
 import { LotFormDialog } from "@/components/admin/lots/LotFormDialog";
 import { BulkCreateDialog } from "@/components/admin/lots/BulkCreateDialog";
-import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,8 +90,6 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [editingLot, setEditingLot] = useState<Lot | null>(null);
 
-  const [qrDialogOpen, setQrDialogOpen] = useState(false);
-  const [selectedResidence, setSelectedResidence] = useState<{ id: string; name: string } | null>(null);
 
   const [deletingBuilding, setDeletingBuilding] = useState<Building | null>(null);
   const [deletingLot, setDeletingLot] = useState<Lot | null>(null);
@@ -243,11 +239,6 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
     setBulkDialogOpen(true);
   };
 
-  const openQRDialog = (residence: { id: string; name: string }) => {
-    setSelectedResidence(residence);
-    setQrDialogOpen(true);
-  };
-
   const handleDeleteBuilding = async () => {
     if (!deletingBuilding) return;
 
@@ -362,14 +353,6 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
                     {residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} lots
                   </Badge>
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openQRDialog(residence)}
-                      title="QR Code d'invitation"
-                    >
-                      <QrCode className="h-4 w-4" />
-                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
@@ -628,15 +611,6 @@ export function AgencyPatrimoineTab({ agencyId }: AgencyPatrimoineTabProps) {
         />
       )}
 
-      {/* QR Dialog */}
-      {selectedResidence && (
-        <ResidenceQRDialog
-          residenceId={selectedResidence.id}
-          residenceName={selectedResidence.name}
-          open={qrDialogOpen}
-          onOpenChange={setQrDialogOpen}
-        />
-      )}
 
       {/* Delete Building Confirmation */}
       <AlertDialog open={!!deletingBuilding} onOpenChange={() => setDeletingBuilding(null)}>
