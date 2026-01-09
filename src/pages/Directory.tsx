@@ -87,6 +87,13 @@ function DirectoryContent() {
           .maybeSingle();
 
         if (residenceData?.agency_id) {
+          // Fetch agency info including owner
+          const { data: agencyData } = await supabase
+            .from('agencies')
+            .select('owner_id')
+            .eq('id', residenceData.agency_id)
+            .maybeSingle();
+
           // Fetch all agency team members from user_roles
           const { data: rolesData } = await supabase
             .from('user_roles')
@@ -94,9 +101,20 @@ function DirectoryContent() {
             .eq('agency_id', residenceData.agency_id)
             .in('role', ['manager', 'cs']);
 
-          if (rolesData && rolesData.length > 0) {
-            const userIds = rolesData.map((r: any) => r.user_id);
-            
+          // Collect all user IDs (owner + team members)
+          const userIds: string[] = [];
+          if (agencyData?.owner_id) {
+            userIds.push(agencyData.owner_id);
+          }
+          if (rolesData) {
+            rolesData.forEach((r: any) => {
+              if (!userIds.includes(r.user_id)) {
+                userIds.push(r.user_id);
+              }
+            });
+          }
+
+          if (userIds.length > 0) {
             const { data: profilesData } = await supabase
               .from('profiles')
               .select('*')
@@ -104,7 +122,8 @@ function DirectoryContent() {
 
             if (profilesData) {
               const agency: DirectoryUser[] = profilesData.map(profile => {
-                const roleInfo = rolesData.find((r: any) => r.user_id === profile.id);
+                const isOwner = profile.id === agencyData?.owner_id;
+                const roleInfo = rolesData?.find((r: any) => r.user_id === profile.id);
                 return {
                   id: profile.id,
                   first_name: profile.first_name,
@@ -112,8 +131,8 @@ function DirectoryContent() {
                   email: profile.email,
                   phone: profile.phone,
                   avatar_url: profile.avatar_url,
-                  role: roleInfo?.role || 'cs',
-                  job_title: roleInfo?.job_title,
+                  role: isOwner ? 'manager' : (roleInfo?.role || 'cs'),
+                  job_title: isOwner ? 'directeur' : roleInfo?.job_title,
                   user_role_id: roleInfo?.id,
                 };
               });
