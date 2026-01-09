@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Newsfeed from "./pages/Newsfeed";
 import Tickets from "./pages/Tickets";
 import NewTicket from "./pages/NewTicket";
+import TicketDetail from "./pages/TicketDetail";
 import Documents from "./pages/Documents";
 import AG from "./pages/AG";
 import Payments from "./pages/Payments";
