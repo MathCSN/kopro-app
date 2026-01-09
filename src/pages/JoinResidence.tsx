@@ -20,6 +20,12 @@ type Lot = {
   type: string | null;
   primary_resident_id: string | null;
   join_code: string | null;
+  building_id: string | null;
+};
+
+type Building = {
+  id: string;
+  name: string;
 };
 
 type Residence = {
@@ -35,6 +41,7 @@ export default function JoinResidence() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const residenceId = searchParams.get("residence");
+  const buildingId = searchParams.get("building");
   
   const [status, setStatus] = useState<"loading" | "select_lot" | "enter_code" | "success" | "error" | "login_required" | "no_apartments">("loading");
   const [residence, setResidence] = useState<Residence | null>(null);
@@ -44,6 +51,7 @@ export default function JoinResidence() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [managerEmail, setManagerEmail] = useState<string | undefined>();
+  const [building, setBuilding] = useState<Building | null>(null);
 
   useEffect(() => {
     if (!residenceId) {
@@ -117,13 +125,33 @@ export default function JoinResidence() {
         }
       }
 
-      // Fetch lots for this residence
-      const { data: lotsData, error: lotsError } = await supabase
+      // If buildingId is specified, fetch building info
+      if (buildingId) {
+        const { data: buildingData } = await supabase
+          .from('buildings')
+          .select('id, name')
+          .eq('id', buildingId)
+          .maybeSingle();
+        
+        if (buildingData) {
+          setBuilding(buildingData);
+        }
+      }
+
+      // Fetch lots for this residence (optionally filtered by building)
+      let lotsQuery = supabase
         .from('lots')
-        .select('id, lot_number, door, floor, type, primary_resident_id, join_code')
+        .select('id, lot_number, door, floor, type, primary_resident_id, join_code, building_id')
         .eq('residence_id', residenceId)
         .order('floor', { ascending: true })
         .order('door', { ascending: true });
+      
+      // Filter by building if specified
+      if (buildingId) {
+        lotsQuery = lotsQuery.eq('building_id', buildingId);
+      }
+
+      const { data: lotsData, error: lotsError } = await lotsQuery;
 
       if (lotsError) throw lotsError;
 
@@ -409,7 +437,10 @@ export default function JoinResidence() {
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Building2 className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Rejoindre {residence?.name}</CardTitle>
+          <CardTitle className="text-2xl">
+            Rejoindre {residence?.name}
+            {building && <span className="block text-lg font-normal text-muted-foreground mt-1">{building.name}</span>}
+          </CardTitle>
           <CardDescription>
             {residence?.address && `${residence.address}, `}{residence?.city}
           </CardDescription>
