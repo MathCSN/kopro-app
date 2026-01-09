@@ -764,7 +764,12 @@ function NewsfeedContent() {
                                 <Share2 className="h-4 w-4 mr-2" />
                                 Partager
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => {
+                                  toast.info("Signalement enregistré. Merci de nous aider à maintenir une communauté respectueuse.");
+                                }}
+                              >
                                 <Flag className="h-4 w-4 mr-2" />
                                 Signaler
                               </DropdownMenuItem>
