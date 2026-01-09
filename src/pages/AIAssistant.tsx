@@ -197,7 +197,7 @@ function AIAssistantContent() {
           <Bot className="h-6 w-6 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="font-display text-xl font-bold">Kapi 🤖</h1>
+          <h1 className="font-display text-xl font-bold">Kapi</h1>
           <p className="text-sm text-muted-foreground">L'assistant intelligent de {activeResidence.name}</p>
         </div>
         <Sparkles className="h-5 w-5 text-primary ml-auto" />
