@@ -167,11 +167,11 @@ export default function Login() {
           </div>
           
           <h2 className="text-4xl lg:text-5xl font-bold text-primary-foreground mb-6 leading-tight">
-            Gérez votre copropriété en toute simplicité
+            Votre résidence, simplifiée
           </h2>
           
           <p className="text-lg text-primary-foreground/80 mb-8 max-w-md">
-            Une plateforme moderne pour la gestion de votre résidence : incidents, réservations, documents, paiements et plus encore.
+            Gestionnaires et résidents, retrouvez tout ce dont vous avez besoin : incidents, réservations, documents, paiements et bien plus.
           </p>
         </div>
       </div>
