@@ -35,8 +35,8 @@ export function ResidenceSelector({ collapsed = false }: ResidenceSelectorProps)
     ? "Toutes les résidences"
     : selectedResidence?.name || "Sélectionner...";
 
-  // Ne pas afficher le sélecteur si l'utilisateur n'a qu'une seule résidence et pas besoin de "Toutes les résidences"
-  if (residences.length === 0) {
+  // Ne pas afficher le sélecteur si l'utilisateur n'a aucune ou une seule résidence (cas du résident)
+  if (residences.length <= 1) {
     return null;
   }
 
