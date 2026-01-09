@@ -141,6 +141,7 @@ function NewsfeedContent() {
     replyToId: null as string | null,
   });
   const [posting, setPosting] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [allResidences, setAllResidences] = useState<{id: string; name: string}[]>([]);
   const [swipingPostId, setSwipingPostId] = useState<string | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -431,6 +432,7 @@ function NewsfeedContent() {
         type: isManager ? (postType || 'info') : postType,
         author_id: user!.id,
         reply_to_id: newPost.replyToId || null,
+        attachments: newPost.images.length > 0 ? { images: newPost.images } : null,
       };
 
       if (newPost.type === 'event') {
@@ -534,6 +536,55 @@ function NewsfeedContent() {
     return posts.find(p => p.id === newPost.replyToId);
   };
 
+  const handleImageUpload = async (files: FileList) => {
+    if (!user || files.length === 0) return;
+    
+    setUploadingImages(true);
+    const uploadedUrls: string[] = [];
+    
+    try {
+      for (let i = 0; i < Math.min(files.length, 4); i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${i}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, file, { upsert: false });
+        
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          continue;
+        }
+        
+        const { data } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(fileName);
+        
+        uploadedUrls.push(data.publicUrl);
+      }
+      
+      if (uploadedUrls.length > 0) {
+        setNewPost(prev => ({
+          ...prev,
+          images: [...prev.images, ...uploadedUrls]
+        }));
+        toast.success(`${uploadedUrls.length} image(s) ajoutée(s)`);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error("Erreur lors de l'upload");
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setNewPost(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -718,6 +769,20 @@ function NewsfeedContent() {
                         )}
                         <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{post.content}</p>
                       </div>
+
+                      {/* Post images */}
+                      {post.attachments?.images && post.attachments.images.length > 0 && (
+                        <div className={`grid gap-2 ${post.attachments.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                          {(post.attachments.images as string[]).slice(0, 4).map((imgUrl, idx) => (
+                            <img 
+                              key={idx}
+                              src={imgUrl} 
+                              alt={`Image ${idx + 1}`}
+                              className={`w-full object-cover rounded-lg ${post.attachments.images.length === 1 ? 'max-h-80' : 'h-40'}`}
+                            />
+                          ))}
+                        </div>
+                      )}
 
                       {/* Event Info */}
                       {post.type === 'event' && post.event_date && (
@@ -1030,10 +1095,35 @@ function NewsfeedContent() {
                 accept="image/*"
                 multiple
                 onChange={(e) => {
-                  // TODO: Implement image upload to storage
-                  toast.info("Upload d'images bientôt disponible");
+                  if (e.target.files) {
+                    handleImageUpload(e.target.files);
+                    e.target.value = '';
+                  }
                 }}
               />
+
+              {/* Uploaded images preview */}
+              {newPost.images.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {newPost.images.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={url} 
+                        alt={`Image ${index + 1}`} 
+                        className="h-20 w-20 object-cover rounded-lg border border-border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Action buttons for residents */}
               {!isManager && !newPost.replyToId && (
@@ -1043,21 +1133,23 @@ function NewsfeedContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImages || newPost.images.length >= 4}
                   >
                     <Image className="h-4 w-4 mr-1" />
-                    Photo
+                    {uploadingImages ? 'Upload...' : 'Photo'}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Trigger camera on mobile
                       if (fileInputRef.current) {
-                        fileInputRef.current.capture = "environment";
+                        fileInputRef.current.setAttribute('capture', 'environment');
                         fileInputRef.current.click();
+                        fileInputRef.current.removeAttribute('capture');
                       }
                     }}
+                    disabled={uploadingImages || newPost.images.length >= 4}
                   >
                     <Camera className="h-4 w-4 mr-1" />
                     Appareil
