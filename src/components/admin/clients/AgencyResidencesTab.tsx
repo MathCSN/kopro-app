@@ -299,8 +299,8 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
       if (error) throw error;
 
       toast({
-        title: "Lot supprimé",
-        description: "Le lot a été supprimé avec succès.",
+        title: "Appartement supprimé",
+        description: "L'appartement a été supprimé avec succès.",
       });
       refetch();
     } catch (error: any) {
@@ -349,7 +349,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Résidences ({residences.length})</h3>
-          <p className="text-sm text-muted-foreground">{totalLots} lot(s) au total</p>
+          <p className="text-sm text-muted-foreground">{totalLots} appt(s) au total</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)} size="sm" className="gap-2">
           <Plus className="h-4 w-4" />
@@ -402,8 +402,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                     )}
                   </div>
                   <Badge variant="secondary" className="hidden sm:flex">
-                    {residence.buildings.length} bât. • 
-                    {residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} lots
+                    {residence.buildings.length} bât. •{residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} appts
                   </Badge>
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <Button
@@ -430,7 +429,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openLotDialog(residence.id)}>
                           <Home className="h-4 w-4 mr-2" />
-                          Ajouter un lot
+                          Ajouter un appt
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => openBulkDialog(residence.id)}>
@@ -475,7 +474,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                           )}
                           <Home className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium flex-1">{building.name}</span>
-                          <Badge variant="outline">{building.lots.length} lots</Badge>
+                          <Badge variant="outline">{building.lots.length} appts</Badge>
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
                               variant="ghost"
@@ -557,7 +556,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                       <div className="border rounded-lg">
                         <div className="p-3 bg-muted/50">
                           <span className="font-medium text-muted-foreground">
-                            Lots sans bâtiment ({residence.unassignedLots.length})
+                            Appts sans bâtiment ({residence.unassignedLots.length})
                           </span>
                         </div>
                         <div className="border-t">
@@ -607,7 +606,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                     {residence.buildings.length === 0 && residence.unassignedLots.length === 0 && (
                       <div className="text-center py-4">
                         <p className="text-sm text-muted-foreground mb-3">
-                          Aucun bâtiment ni lot dans cette résidence
+                          Aucun bâtiment ni appartement dans cette résidence
                         </p>
                         <div className="flex justify-center gap-2">
                           <Button 
@@ -624,7 +623,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                             onClick={() => openLotDialog(residence.id)}
                           >
                             <Home className="h-4 w-4 mr-2" />
-                            Ajouter un lot
+                            Ajouter un appt
                           </Button>
                         </div>
                       </div>
@@ -724,7 +723,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer la résidence ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Tous les bâtiments, lots et données associés seront supprimés.
+              Cette action est irréversible. Tous les bâtiments, appartements et données associés seront supprimés.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -742,7 +741,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer le bâtiment ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Les lots associés seront également supprimés ou désassociés.
+              Les appartements associés seront désassociés.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -758,9 +757,9 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
       <AlertDialog open={!!deletingLot} onOpenChange={() => setDeletingLot(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer le lot ?</AlertDialogTitle>
+            <AlertDialogTitle>Supprimer l'appartement ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Toutes les données associées à ce lot seront supprimées.
+              Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
