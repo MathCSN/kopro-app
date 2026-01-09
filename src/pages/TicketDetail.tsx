@@ -136,24 +136,31 @@ function TicketDetailContent() {
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      // Use any type to avoid type errors before types are regenerated
+      const { data, error } = await (supabase as any)
         .from('ticket_comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles:user_id (
-            first_name,
-            last_name,
-            avatar_url
-          )
-        `)
+        .select('id, content, created_at, user_id')
         .eq('ticket_id', id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setComments(data || []);
+      
+      // Fetch profiles for each comment
+      const commentsWithProfiles: TicketComment[] = [];
+      for (const comment of (data || [])) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('id', comment.user_id)
+          .maybeSingle();
+        
+        commentsWithProfiles.push({
+          ...comment,
+          profiles: profile || undefined,
+        });
+      }
+      
+      setComments(commentsWithProfiles);
     } catch (error) {
       console.error('Error fetching comments:', error);
     }
@@ -183,7 +190,8 @@ function TicketDetailContent() {
     
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      // Use any type to avoid type errors before types are regenerated
+      const { error } = await (supabase as any)
         .from('ticket_comments')
         .insert({
           ticket_id: ticket.id,
