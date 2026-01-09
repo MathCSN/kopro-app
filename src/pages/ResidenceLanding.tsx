@@ -34,22 +34,36 @@ export default function ResidenceLanding() {
     try {
       // The residenceCode could be:
       // 1. A full UUID (residence ID)
-      // 2. A short code we need to look up
+      // 2. A short code (first 8 chars of UUID displayed under QR)
       
       let residenceData: Residence | null = null;
+      const code = residenceCode?.toLowerCase().trim() || "";
 
-      // First try as UUID
-      const { data: byId, error: idError } = await supabase
-        .from('residences')
-        .select('id, name, address, city')
-        .eq('id', residenceCode)
-        .maybeSingle();
+      // First try as full UUID
+      if (code.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        const { data: byId } = await supabase
+          .from('residences')
+          .select('id, name, address, city')
+          .eq('id', code)
+          .maybeSingle();
 
-      if (byId) {
-        residenceData = byId;
+        if (byId) {
+          residenceData = byId;
+        }
       }
       
-      // If not found by ID, this is an invalid code
+      // If not found by full UUID, try matching by short code (first 8 chars)
+      if (!residenceData && code.length >= 6) {
+        const { data: allResidences } = await supabase
+          .from('residences')
+          .select('id, name, address, city');
+        
+        // Find residence where ID starts with the entered code
+        residenceData = allResidences?.find(r => 
+          r.id.toLowerCase().startsWith(code)
+        ) || null;
+      }
+      
       if (!residenceData) {
         setStatus("not_found");
         return;
