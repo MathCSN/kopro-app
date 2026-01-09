@@ -402,7 +402,7 @@ export function AgencyResidencesTab({ agencyId }: AgencyResidencesTabProps) {
                     )}
                   </div>
                   <Badge variant="secondary" className="hidden sm:flex">
-                    {residence.buildings.length} bât. •{residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} appts
+                    {residence.buildings.length} bât. • {residence.buildings.reduce((s, b) => s + b.lots.length, 0) + residence.unassignedLots.length} appts
                   </Badge>
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <Button
