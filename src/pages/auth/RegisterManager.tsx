@@ -331,15 +331,21 @@ export default function RegisterManager() {
 
           <div className="text-center">
             <div className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-              <Gift className="h-7 w-7 text-primary" />
+              {trialInfo ? (
+                <Gift className="h-7 w-7 text-primary" />
+              ) : (
+                <Briefcase className="h-7 w-7 text-primary" />
+              )}
             </div>
             <h1 className="text-2xl font-semibold text-foreground">
-              Essayez gratuitement pendant 30 jours
+              {trialInfo 
+                ? `Essayez gratuitement pendant ${trialInfo.duration_days} jours`
+                : "Créer un compte gestionnaire"}
             </h1>
             <p className="text-muted-foreground mt-1">
               {trialInfo 
                 ? `Votre essai de ${trialInfo.duration_days} jours est prêt à être activé` 
-                : "Sans engagement, sans carte bancaire"}
+                : "Gérez vos résidences avec Kopro"}
             </p>
           </div>
 
