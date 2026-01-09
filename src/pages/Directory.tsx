@@ -92,10 +92,10 @@ function DirectoryContent() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredResidents.map((resident) => (
-          <Card key={resident.id} className="shadow-soft hover:shadow-medium transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <Avatar className="h-12 w-12">
+          <Card key={resident.id} className="shadow-soft hover:shadow-medium transition-shadow h-full">
+            <CardContent className="p-4 h-full flex flex-col">
+              <div className="flex items-start gap-4 flex-1">
+                <Avatar className="h-12 w-12 shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                     {resident.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
