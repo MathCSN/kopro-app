@@ -738,7 +738,29 @@ function NewsfeedContent() {
                                 <Reply className="h-4 w-4 mr-2" />
                                 Répondre
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={async () => {
+                                const postUrl = `${window.location.origin}/newsfeed?post=${post.id}`;
+                                const shareText = post.title || post.content.substring(0, 100);
+                                
+                                if (navigator.share) {
+                                  try {
+                                    await navigator.share({
+                                      title: shareText,
+                                      text: post.content.substring(0, 200),
+                                      url: postUrl
+                                    });
+                                  } catch (err) {
+                                    // User cancelled or share failed
+                                    if ((err as Error).name !== 'AbortError') {
+                                      await navigator.clipboard.writeText(postUrl);
+                                      toast.success("Lien copié dans le presse-papier");
+                                    }
+                                  }
+                                } else {
+                                  await navigator.clipboard.writeText(postUrl);
+                                  toast.success("Lien copié dans le presse-papier");
+                                }
+                              }}>
                                 <Share2 className="h-4 w-4 mr-2" />
                                 Partager
                               </DropdownMenuItem>
