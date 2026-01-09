@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/auth/AdminRoute";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 // Pages
 import ResetPassword from "./pages/ResetPassword";
@@ -146,8 +147,8 @@ const App = () => (
             <Route path="/visitors" element={<Navigate to="/dashboard" replace />} />
             
             {/* Marketplace */}
-            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-            <Route path="/marketplace/:id" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+            <Route path="/marketplace" element={<ProtectedRoute><AppLayout><Marketplace /></AppLayout></ProtectedRoute>} />
+            <Route path="/marketplace/:id" element={<ProtectedRoute><AppLayout><Marketplace /></AppLayout></ProtectedRoute>} />
             
             {/* AG / Votes */}
             <Route path="/ag" element={<ProtectedRoute><AG /></ProtectedRoute>} />
