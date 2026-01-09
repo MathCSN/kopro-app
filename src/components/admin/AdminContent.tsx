@@ -46,7 +46,7 @@ export function AdminContent() {
           </TabsTrigger>
           <TabsTrigger value="ai" className="gap-2">
             <Bot className="h-4 w-4" />
-            <span className="hidden sm:inline">Assistant IA</span>
+            <span className="hidden sm:inline">Kopy 🤖</span>
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
             <FileText className="h-4 w-4" />
@@ -91,7 +91,7 @@ export function AdminContent() {
               >
                 <CardContent className="p-6 text-center">
                   <Bot className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="font-medium">Assistant IA</p>
+                  <p className="font-medium">Kopy 🤖</p>
                 </CardContent>
               </Card>
               <Card 
