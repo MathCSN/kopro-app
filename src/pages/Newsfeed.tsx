@@ -104,11 +104,14 @@ const categoryIcons: Record<string, any> = {
 
 function NewsfeedContent() {
   const { user, profile } = useAuth();
-  const { selectedResidence } = useResidence();
+  const { selectedResidence, residences, isLoading: residenceLoading } = useResidence();
   const [posts, setPosts] = useState<PostWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Tous");
   const navigate = useNavigate();
+
+  // For residents with a single residence, use it directly even if selectedResidence is not yet set
+  const effectiveResidence = selectedResidence || (residences.length === 1 ? residences[0] : null);
 
   // New post dialog
   const [showNewPost, setShowNewPost] = useState(false);
@@ -154,13 +157,15 @@ function NewsfeedContent() {
   const [loadingComments, setLoadingComments] = useState(false);
 
   useEffect(() => {
-    if (user && selectedResidence) {
+    if (user && effectiveResidence && !residenceLoading) {
       fetchPosts();
+    } else if (!residenceLoading && !effectiveResidence) {
+      setLoading(false);
     }
-  }, [user, selectedResidence]);
+  }, [user, effectiveResidence, residenceLoading]);
 
   const fetchPosts = async () => {
-    if (!selectedResidence) return;
+    if (!effectiveResidence) return;
     
     try {
       setLoading(true);
@@ -168,7 +173,7 @@ function NewsfeedContent() {
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
-        .eq('residence_id', selectedResidence.id)
+        .eq('residence_id', effectiveResidence.id)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -392,7 +397,7 @@ function NewsfeedContent() {
 
   const handleCreatePost = async () => {
     if (!newPost.content.trim()) return;
-    if (!newPost.sendToAllResidences && !selectedResidence) return;
+    if (!newPost.sendToAllResidences && !effectiveResidence) return;
 
     setPosting(true);
     try {
@@ -440,13 +445,13 @@ function NewsfeedContent() {
           .from('posts')
           .insert({
             ...basePostData,
-            residence_id: selectedResidence!.id,
+            residence_id: effectiveResidence!.id,
           });
 
         if (error) throw error;
 
         // Send push notifications
-        sendPushNotifications(selectedResidence!.id, notificationTitle, notificationBody);
+        sendPushNotifications(effectiveResidence!.id, notificationTitle, notificationBody);
 
         toast.success('Publication créée');
       }
@@ -502,10 +507,10 @@ function NewsfeedContent() {
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Actualités</h1>
             <p className="text-muted-foreground mt-1">
-              {selectedResidence ? selectedResidence.name : "Sélectionnez une résidence"}
+              {effectiveResidence ? effectiveResidence.name : "Sélectionnez une résidence"}
             </p>
           </div>
-          <Button onClick={() => setShowNewPost(true)} disabled={!selectedResidence}>
+          <Button onClick={() => setShowNewPost(true)} disabled={!effectiveResidence}>
             <Plus className="h-4 w-4 mr-2" />
             Publier
           </Button>
@@ -531,11 +536,11 @@ function NewsfeedContent() {
         </div>
 
         {/* Posts Feed */}
-        {loading ? (
+        {loading || residenceLoading ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Chargement...</p>
           </div>
-        ) : !selectedResidence ? (
+        ) : !effectiveResidence ? (
           <Card className="shadow-soft">
             <CardContent className="p-8 text-center">
               <Newspaper className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
