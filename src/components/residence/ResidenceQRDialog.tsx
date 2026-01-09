@@ -81,8 +81,16 @@ export function ResidenceQRDialog({ residenceId, residenceName, open, onOpenChan
             />
           </div>
 
+          {/* Residence Code */}
+          <div className="text-center space-y-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Code résidence</p>
+            <p className="font-mono text-lg font-semibold bg-muted px-4 py-2 rounded-lg inline-block">
+              {residenceId.slice(0, 8).toUpperCase()}
+            </p>
+          </div>
+
           <p className="text-sm text-muted-foreground text-center">
-            En scannant ce code, les utilisateurs pourront sélectionner leur appartement et rejoindre la résidence.
+            En scannant ce code ou en saisissant le code manuellement, les utilisateurs pourront rejoindre la résidence.
           </p>
 
           <div className="flex gap-2">

@@ -131,7 +131,7 @@ export default function AccountChoice() {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => navigate("/auth/register-manager")}
+                    onClick={() => navigate("/agency-signup")}
                   >
                     Créer un compte gestionnaire
                     <ArrowRight className="h-4 w-4 ml-2" />
