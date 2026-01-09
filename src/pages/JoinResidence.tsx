@@ -147,14 +147,16 @@ export default function JoinResidence() {
         }
       }
 
-      // Fetch lots for this residence using public client (optionally filtered by building)
-      let lotsQuery = publicSupabase
+      // Fetch lots for this residence using the authenticated client.
+      // IMPORTANT: a resident needs to see the lots BEFORE having a role in the residence.
+      // Using the public (anon) client here would return an empty list because of RLS.
+      let lotsQuery = supabase
         .from('lots')
         .select('id, lot_number, door, floor, type, primary_resident_id, join_code, building_id')
         .eq('residence_id', residenceId)
         .order('floor', { ascending: true })
         .order('door', { ascending: true });
-      
+
       // Filter by building if specified
       if (buildingId) {
         lotsQuery = lotsQuery.eq('building_id', buildingId);
@@ -163,8 +165,6 @@ export default function JoinResidence() {
       const { data: lotsData, error: lotsError } = await lotsQuery;
 
       if (lotsError) throw lotsError;
-
-      // If no lots available, show no apartments screen
       if (!lotsData || lotsData.length === 0) {
         setStatus("no_apartments");
       } else {
