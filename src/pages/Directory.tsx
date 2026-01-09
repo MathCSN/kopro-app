@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useResidence } from "@/contexts/ResidenceContext";
-import { Search, MessageCircle, Mail, Phone, Building2, Users } from "lucide-react";
+import { Search, MessageCircle, Mail, Phone, Building2, Users, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface DirectoryUser {
   id: string;
@@ -21,6 +35,8 @@ interface DirectoryUser {
   role: string;
   lot_number?: string;
   building_name?: string;
+  job_title?: string;
+  user_role_id?: string;
 }
 
 const roleLabels: Record<string, string> = {
@@ -28,14 +44,32 @@ const roleLabels: Record<string, string> = {
   cs: "Collaborateur",
 };
 
+const jobTitleOptions = [
+  { value: "", label: "Aucun titre" },
+  { value: "charge_gestion", label: "Chargé de gestion" },
+  { value: "comptable", label: "Comptable" },
+  { value: "assistant", label: "Assistant(e)" },
+  { value: "charge_location", label: "Chargé de location" },
+  { value: "responsable_technique", label: "Responsable technique" },
+  { value: "directeur", label: "Directeur/Directrice" },
+];
+
+const getJobTitleLabel = (value: string | undefined) => {
+  if (!value) return null;
+  const option = jobTitleOptions.find(opt => opt.value === value);
+  return option?.label || value;
+};
+
 function DirectoryContent() {
-  const { user } = useAuth();
+  const { user, isManager } = useAuth();
   const { selectedResidence } = useResidence();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [agencyMembers, setAgencyMembers] = useState<DirectoryUser[]>([]);
   const [residents, setResidents] = useState<DirectoryUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingMember, setEditingMember] = useState<DirectoryUser | null>(null);
+  const [selectedJobTitle, setSelectedJobTitle] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -45,7 +79,6 @@ function DirectoryContent() {
     setLoading(true);
     
     try {
-      // Fetch agency members from the residence's agency
       if (selectedResidence) {
         const { data: residenceData } = await supabase
           .from('residences')
@@ -54,39 +87,41 @@ function DirectoryContent() {
           .maybeSingle();
 
         if (residenceData?.agency_id) {
-          // Fetch agency owner and team members
-          const { data: agencyData } = await supabase
-            .from('agencies')
-            .select(`
-              owner_id,
-              profiles!agencies_owner_id_fkey (
-                id,
-                first_name,
-                last_name,
-                email,
-                phone,
-                avatar_url
-              )
-            `)
-            .eq('id', residenceData.agency_id)
-            .maybeSingle();
+          // Fetch all agency team members from user_roles
+          const { data: rolesData } = await supabase
+            .from('user_roles')
+            .select('id, user_id, role, job_title')
+            .eq('agency_id', residenceData.agency_id)
+            .in('role', ['manager', 'cs']);
 
-          const agency: DirectoryUser[] = [];
-          
-          if (agencyData?.profiles) {
-            const ownerProfile = agencyData.profiles as any;
-            agency.push({
-              id: ownerProfile.id,
-              first_name: ownerProfile.first_name,
-              last_name: ownerProfile.last_name,
-              email: ownerProfile.email,
-              phone: ownerProfile.phone,
-              avatar_url: ownerProfile.avatar_url,
-              role: 'manager',
-            });
+          if (rolesData && rolesData.length > 0) {
+            const userIds = rolesData.map((r: any) => r.user_id);
+            
+            const { data: profilesData } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', userIds);
+
+            if (profilesData) {
+              const agency: DirectoryUser[] = profilesData.map(profile => {
+                const roleInfo = rolesData.find((r: any) => r.user_id === profile.id);
+                return {
+                  id: profile.id,
+                  first_name: profile.first_name,
+                  last_name: profile.last_name,
+                  email: profile.email,
+                  phone: profile.phone,
+                  avatar_url: profile.avatar_url,
+                  role: roleInfo?.role || 'cs',
+                  job_title: roleInfo?.job_title,
+                  user_role_id: roleInfo?.id,
+                };
+              });
+              setAgencyMembers(agency);
+            }
+          } else {
+            setAgencyMembers([]);
           }
-
-          setAgencyMembers(agency);
         }
 
         // Fetch residents via occupancies for this residence
@@ -104,7 +139,6 @@ function DirectoryContent() {
           .eq('is_active', true);
 
         if (occupanciesData) {
-          // Filter occupancies for this residence
           const residenceOccupancies = occupanciesData.filter((occ: any) => 
             occ.lots?.residence_id === selectedResidence.id
           );
@@ -149,6 +183,32 @@ function DirectoryContent() {
       console.error('Error fetching directory users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditJobTitle = (member: DirectoryUser) => {
+    setEditingMember(member);
+    setSelectedJobTitle(member.job_title || "none");
+  };
+
+  const handleSaveJobTitle = async () => {
+    if (!editingMember?.user_role_id) return;
+
+    try {
+      const jobTitle = selectedJobTitle === "none" ? null : selectedJobTitle;
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ job_title: jobTitle })
+        .eq('id', editingMember.user_role_id);
+
+      if (error) throw error;
+
+      toast.success("Titre mis à jour avec succès");
+      setEditingMember(null);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating job title:', error);
+      toast.error("Erreur lors de la mise à jour du titre");
     }
   };
 
@@ -218,10 +278,29 @@ function DirectoryContent() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground">{getDisplayName(member)}</h3>
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {roleLabels[member.role] || member.role}
-                        </Badge>
+                        <div className="flex items-start justify-between">
+                          <h3 className="font-semibold text-foreground">{getDisplayName(member)}</h3>
+                          {isManager() && member.role === 'cs' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 -mt-1 -mr-1"
+                              onClick={() => handleEditJobTitle(member)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {roleLabels[member.role] || member.role}
+                          </Badge>
+                          {member.job_title && (
+                            <Badge variant="outline" className="text-xs">
+                              {getJobTitleLabel(member.job_title)}
+                            </Badge>
+                          )}
+                        </div>
                         
                         <div className="mt-3 space-y-1">
                           {member.email && (
@@ -319,6 +398,42 @@ function DirectoryContent() {
           </div>
         </>
       )}
+
+      {/* Dialog for editing job title */}
+      <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le titre</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Choisissez un titre pour {editingMember && getDisplayName(editingMember)}
+              </p>
+              <Select value={selectedJobTitle} onValueChange={setSelectedJobTitle}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un titre" />
+                </SelectTrigger>
+                <SelectContent>
+                  {jobTitleOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value || "none"}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditingMember(null)}>
+                Annuler
+              </Button>
+              <Button onClick={handleSaveJobTitle}>
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

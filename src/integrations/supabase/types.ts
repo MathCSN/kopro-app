@@ -2594,6 +2594,7 @@ export type Database = {
           agency_id: string | null
           created_at: string | null
           id: string
+          job_title: string | null
           residence_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -2602,6 +2603,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string | null
           id?: string
+          job_title?: string | null
           residence_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -2610,6 +2612,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string | null
           id?: string
+          job_title?: string | null
           residence_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
