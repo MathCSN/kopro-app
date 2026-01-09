@@ -55,17 +55,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user profile and role from database
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Get profile
-      const { data: profileData, error: profileError } = await supabase
+      // Get profile (may not exist for older / partially created accounts)
+      let { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, email, first_name, last_name')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
         return null;
       }
+
+      // Auto-create missing profile row so login + redirects can proceed
+      if (!profileData) {
+        const { data: authUserData, error: authUserError } = await supabase.auth.getUser();
+        if (authUserError) {
+          console.error('Error fetching auth user:', authUserError);
+        }
+
+        const authUser = authUserData?.user;
+        const meta = (authUser?.user_metadata ?? {}) as Record<string, unknown>;
+
+        const { error: upsertError } = await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: userId,
+              email: authUser?.email ?? null,
+              first_name: (meta.first_name as string | undefined) ?? null,
+              last_name: (meta.last_name as string | undefined) ?? null,
+            },
+            { onConflict: 'id' }
+          );
+
+        if (upsertError) {
+          console.error('Error creating profile:', upsertError);
+        }
+
+        const { data: profileAfterUpsert, error: profileAfterUpsertError } = await supabase
+          .from('profiles')
+          .select('id, email, first_name, last_name')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profileAfterUpsertError) {
+          console.error('Error fetching profile after create:', profileAfterUpsertError);
+          return null;
+        }
+
+        profileData = profileAfterUpsert;
+      }
+
+      if (!profileData) return null;
 
       // Get highest role for user (roles are fetched from user_roles table via RLS)
       const { data: rolesData, error: rolesError } = await supabase
@@ -229,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasRole = (requiredRole: AppRole): boolean => {
-    if (!profile) return false;
+    if (!profile?.role) return false;
     return ROLE_HIERARCHY[profile.role] >= ROLE_HIERARCHY[requiredRole];
   };
 
