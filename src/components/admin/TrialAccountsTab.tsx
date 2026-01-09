@@ -188,19 +188,19 @@ export function TrialAccountsTab() {
         <div>
           <h2 className="text-xl font-semibold">Comptes en période d'essai</h2>
           <p className="text-muted-foreground text-sm">
-            Créez et gérez les comptes d'essai pour les gestionnaires
+            Créez et gérez les comptes d'essai pour les gestionnaires •{" "}
+            <a 
+              href="/auth/register-manager" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline inline-flex items-center gap-1"
+            >
+              Voir la page d'inscription
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => window.open("/auth/register-manager", "_blank")}
-          >
-            <ExternalLink className="h-4 w-4" />
-            Page d'inscription
-          </Button>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -259,9 +259,7 @@ export function TrialAccountsTab() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
       </div>
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>

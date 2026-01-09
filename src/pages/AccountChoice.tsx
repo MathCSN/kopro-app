@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Building2, User, Briefcase, ArrowRight } from "lucide-react";
+import { Building2, User, Briefcase, ArrowRight, Gift, LogIn } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -20,9 +20,32 @@ export default function AccountChoice() {
 
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className="w-full max-w-2xl space-y-8">
+        <div className="w-full max-w-2xl space-y-6">
+          {/* Already have an account - Primary CTA */}
+          <Card className="border-primary bg-primary/5">
+            <CardContent className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-center sm:text-left">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <LogIn className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-lg text-foreground">Vous avez déjà un compte ?</p>
+                  <p className="text-muted-foreground text-sm">Connectez-vous à votre espace</p>
+                </div>
+              </div>
+              <Button 
+                size="lg"
+                className="w-full sm:w-auto gap-2"
+                onClick={() => navigate("/auth/login")}
+              >
+                <LogIn className="h-4 w-4" />
+                Se connecter
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Title */}
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-3 pt-2">
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-foreground">
               Bienvenue sur Kopro
             </h1>
@@ -71,8 +94,7 @@ export default function AccountChoice() {
 
             {/* Manager Account */}
             <Card 
-              className="relative overflow-hidden cursor-pointer hover:border-primary transition-all hover:shadow-medium group"
-              onClick={() => navigate("/auth/register-manager")}
+              className="relative overflow-hidden hover:border-primary transition-all hover:shadow-medium group"
             >
               <CardHeader className="pb-2">
                 <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
@@ -98,25 +120,25 @@ export default function AccountChoice() {
                     Accédez aux outils professionnels
                   </li>
                 </ul>
-                <Button variant="outline" className="w-full">
-                  Créer un compte gestionnaire
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                    onClick={() => navigate("/auth/register-manager")}
+                  >
+                    <Gift className="h-4 w-4" />
+                    Essai gratuit 30 jours
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => navigate("/auth/register-manager")}
+                  >
+                    Créer un compte gestionnaire
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Already have an account */}
-          <div className="text-center pt-4">
-            <p className="text-muted-foreground">
-              Vous avez déjà un compte ?{" "}
-              <button 
-                onClick={() => navigate("/auth/login")}
-                className="text-primary hover:underline font-medium"
-              >
-                Se connecter
-              </button>
-            </p>
           </div>
         </div>
       </main>
