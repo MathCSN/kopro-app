@@ -36,6 +36,12 @@ export function useNotifications() {
     total: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('notifications_last_seen');
+    }
+    return null;
+  });
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -287,10 +293,27 @@ export function useNotifications() {
     fetchNotifications();
   };
 
+  const markAllAsRead = useCallback(() => {
+    const now = new Date().toISOString();
+    localStorage.setItem('notifications_last_seen', now);
+    setLastSeenAt(now);
+    setNotifications([]);
+    setCounts({
+      packages: 0,
+      tickets: 0,
+      posts: 0,
+      messages: 0,
+      payments: 0,
+      apartmentRequests: 0,
+      total: 0,
+    });
+  }, []);
+
   return {
     notifications,
     counts,
     loading,
     refresh,
+    markAllAsRead,
   };
 }

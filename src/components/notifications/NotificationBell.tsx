@@ -70,10 +70,15 @@ function NotificationItem({ notification, onClick }: { notification: Notificatio
 
 export function NotificationBell() {
   const navigate = useNavigate();
-  const { notifications, counts, loading } = useNotifications();
+  const { notifications, counts, loading, markAllAsRead } = useNotifications();
 
   const handleNotificationClick = (notification: Notification) => {
     navigate(notification.href);
+  };
+
+  const handleViewAll = () => {
+    markAllAsRead();
+    navigate("/dashboard");
   };
 
   return (
@@ -82,7 +87,7 @@ export function NotificationBell() {
         <Button variant="outline" size="sm" className="relative">
           <Bell className="h-4 w-4" />
           {counts.total > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse shadow-sm">
+            <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 shadow-sm">
               {counts.total > 99 ? "99+" : counts.total}
             </span>
           )}
@@ -127,7 +132,7 @@ export function NotificationBell() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="justify-center text-sm text-primary cursor-pointer"
-              onClick={() => navigate("/dashboard")}
+              onClick={handleViewAll}
             >
               Voir tout
             </DropdownMenuItem>
