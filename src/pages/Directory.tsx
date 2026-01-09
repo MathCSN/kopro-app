@@ -38,90 +38,112 @@ function DirectoryContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (selectedResidence) {
-      fetchUsers();
-    }
+    fetchUsers();
   }, [selectedResidence]);
 
   const fetchUsers = async () => {
-    if (!selectedResidence) return;
-
+    setLoading(true);
+    
     try {
-      // Fetch agency members (managers and cs) for the residence's agency
-      const { data: residenceData } = await supabase
-        .from('residences')
-        .select('agency_id')
-        .eq('id', selectedResidence.id)
-        .single();
+      // Fetch agency members from the residence's agency
+      if (selectedResidence) {
+        const { data: residenceData } = await supabase
+          .from('residences')
+          .select('agency_id')
+          .eq('id', selectedResidence.id)
+          .maybeSingle();
 
-      if (residenceData?.agency_id) {
-        // Fetch user_roles for this residence
-        const { data: rolesData } = await (supabase as any)
-          .from('user_roles')
+        if (residenceData?.agency_id) {
+          // Fetch agency owner and team members
+          const { data: agencyData } = await supabase
+            .from('agencies')
+            .select(`
+              owner_id,
+              profiles!agencies_owner_id_fkey (
+                id,
+                first_name,
+                last_name,
+                email,
+                phone,
+                avatar_url
+              )
+            `)
+            .eq('id', residenceData.agency_id)
+            .maybeSingle();
+
+          const agency: DirectoryUser[] = [];
+          
+          if (agencyData?.profiles) {
+            const ownerProfile = agencyData.profiles as any;
+            agency.push({
+              id: ownerProfile.id,
+              first_name: ownerProfile.first_name,
+              last_name: ownerProfile.last_name,
+              email: ownerProfile.email,
+              phone: ownerProfile.phone,
+              avatar_url: ownerProfile.avatar_url,
+              role: 'manager',
+            });
+          }
+
+          setAgencyMembers(agency);
+        }
+
+        // Fetch residents via occupancies for this residence
+        const { data: occupanciesData } = await supabase
+          .from('occupancies')
           .select(`
             user_id,
-            role,
-            residence_id
+            type,
+            lots (
+              lot_number,
+              residence_id,
+              buildings (name)
+            )
           `)
-          .or(`residence_id.eq.${selectedResidence.id},residence_id.is.null`);
+          .eq('is_active', true);
 
-        if (rolesData) {
-          const userIds = rolesData.map((r: any) => r.user_id);
+        if (occupanciesData) {
+          // Filter occupancies for this residence
+          const residenceOccupancies = occupanciesData.filter((occ: any) => 
+            occ.lots?.residence_id === selectedResidence.id
+          );
+
+          const userIds = [...new Set(residenceOccupancies.map((o: any) => o.user_id))];
           
-          // Fetch profiles for these users
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('id', userIds);
+          if (userIds.length > 0) {
+            const { data: profilesData } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', userIds);
 
-          if (profilesData) {
-            const agency: DirectoryUser[] = [];
-            const residentsList: DirectoryUser[] = [];
+            if (profilesData) {
+              const residentsList: DirectoryUser[] = profilesData.map(profile => {
+                const occupancy = residenceOccupancies.find((o: any) => o.user_id === profile.id);
+                const lot = occupancy?.lots as any;
+                
+                return {
+                  id: profile.id,
+                  first_name: profile.first_name,
+                  last_name: profile.last_name,
+                  email: profile.email,
+                  phone: profile.phone,
+                  avatar_url: profile.avatar_url,
+                  role: occupancy?.type || 'resident',
+                  lot_number: lot?.lot_number,
+                  building_name: lot?.buildings?.name,
+                };
+              });
 
-            for (const profile of profilesData) {
-              const userRole = rolesData.find((r: any) => r.user_id === profile.id);
-              if (!userRole) continue;
-
-              const directoryUser: DirectoryUser = {
-                id: profile.id,
-                first_name: profile.first_name,
-                last_name: profile.last_name,
-                email: profile.email,
-                phone: profile.phone,
-                avatar_url: profile.avatar_url,
-                role: userRole.role,
-              };
-
-              if (userRole.role === 'manager' || userRole.role === 'cs') {
-                agency.push(directoryUser);
-              } else if (userRole.role === 'resident') {
-                // Fetch lot info for residents
-                const { data: occupancyData } = await supabase
-                  .from('occupancies')
-                  .select(`
-                    lot_id,
-                    lots (
-                      lot_number,
-                      buildings (name)
-                    )
-                  `)
-                  .eq('user_id', profile.id)
-                  .eq('is_active', true)
-                  .single();
-
-                if (occupancyData?.lots) {
-                  const lot = occupancyData.lots as any;
-                  directoryUser.lot_number = lot.lot_number;
-                  directoryUser.building_name = lot.buildings?.name;
-                }
-                residentsList.push(directoryUser);
-              }
+              setResidents(residentsList);
             }
-
-            setAgencyMembers(agency);
-            setResidents(residentsList);
+          } else {
+            setResidents([]);
           }
         }
+      } else {
+        setAgencyMembers([]);
+        setResidents([]);
       }
     } catch (error) {
       console.error('Error fetching directory users:', error);
