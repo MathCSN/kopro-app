@@ -19,7 +19,8 @@ interface Message {
 }
 
 function AIAssistantContent() {
-  const { selectedResidence } = useResidence();
+  const { selectedResidence, residences } = useResidence();
+  const { isManager } = useAuth();
   const navigate = useNavigate();
   
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,22 +32,21 @@ function AIAssistantContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (selectedResidence) {
-      checkAiSettings();
+    const residence = selectedResidence || (residences.length > 0 ? residences[0] : null);
+    if (residence) {
+      checkAiSettings(residence.id);
     }
-  }, [selectedResidence]);
+  }, [selectedResidence, residences]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const checkAiSettings = async () => {
-    if (!selectedResidence) return;
-
+  const checkAiSettings = async (residenceId: string) => {
     const { data, error } = await supabase
       .from("residence_ai_settings")
       .select("enabled, welcome_message")
-      .eq("residence_id", selectedResidence.id)
+      .eq("residence_id", residenceId)
       .maybeSingle();
 
     if (error) {
@@ -60,7 +60,8 @@ function AIAssistantContent() {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !selectedResidence) return;
+    const activeResidence = selectedResidence || (residences.length > 0 ? residences[0] : null);
+    if (!input.trim() || isLoading || !activeResidence) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -84,7 +85,7 @@ function AIAssistantContent() {
         },
         body: JSON.stringify({
           question: userMessage.content,
-          residenceId: selectedResidence.id,
+          residenceId: activeResidence.id,
           conversationId,
         }),
       });
@@ -119,24 +120,27 @@ function AIAssistantContent() {
     }
   };
 
-  if (!selectedResidence) {
+  // If no residence selected but user has residences, use the first one
+  const activeResidence = selectedResidence || (residences.length > 0 ? residences[0] : null);
+
+  if (!activeResidence) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Sélectionnez une résidence</h2>
-        <p className="text-muted-foreground">Veuillez sélectionner une résidence pour utiliser l'assistant IA.</p>
+        <h2 className="text-xl font-semibold mb-2">Aucune résidence</h2>
+        <p className="text-muted-foreground">Vous n'êtes associé à aucune résidence.</p>
       </div>
     );
   }
 
   const handleActivateAI = async () => {
-    if (!selectedResidence) return;
+    if (!activeResidence) return;
     
     try {
       const { error } = await supabase
         .from("residence_ai_settings")
         .upsert({
-          residence_id: selectedResidence.id,
+          residence_id: activeResidence.id,
           enabled: true,
           welcome_message: "Salut ! Je suis Kopy, votre assistant kopro préféré ! 🏠 Comment puis-je vous aider aujourd'hui ?",
         }, { onConflict: "residence_id" });
@@ -153,6 +157,25 @@ function AIAssistantContent() {
   };
 
   if (aiEnabled === false) {
+    // Residents see a message to contact their manager
+    if (!isManager()) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+          <Bot className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Assistant non disponible</h2>
+          <p className="text-muted-foreground mb-6">
+            Votre gestionnaire n'a pas activé l'assistant IA pour cette résidence.<br />
+            Envoyez-lui un message pour lui demander de l'activer.
+          </p>
+          <Button onClick={() => navigate("/chat")} variant="outline" className="gap-2">
+            <Send className="h-4 w-4" />
+            Contacter le gestionnaire
+          </Button>
+        </div>
+      );
+    }
+
+    // Managers can activate it themselves
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
         <Bot className="h-16 w-16 text-muted-foreground mb-4" />
@@ -175,7 +198,7 @@ function AIAssistantContent() {
         </div>
         <div>
           <h1 className="font-display text-xl font-bold">Kopy 🤖</h1>
-          <p className="text-sm text-muted-foreground">L'assistant intelligent de {selectedResidence.name}</p>
+          <p className="text-sm text-muted-foreground">L'assistant intelligent de {activeResidence.name}</p>
         </div>
         <Sparkles className="h-5 w-5 text-primary ml-auto" />
       </div>
