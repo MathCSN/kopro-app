@@ -424,15 +424,22 @@ function NewsfeedContent() {
 
     setPosting(true);
     try {
+      const postType = newPost.type || null;
       const basePostData: any = {
-        title: isManager ? (newPost.title || null) : null,
+        title: (newPost.type === 'request' && newPost.title) ? newPost.title : (isManager ? (newPost.title || null) : null),
         content: newPost.content,
-        type: isManager ? newPost.type : null, // Residents post without type (general message)
+        type: isManager ? (postType || 'info') : postType,
         author_id: user!.id,
+        reply_to_id: newPost.replyToId || null,
       };
 
-      if (newPost.type === 'event' && newPost.event_date) {
-        basePostData.event_date = new Date(newPost.event_date).toISOString();
+      if (newPost.type === 'event') {
+        if (newPost.event_date) {
+          basePostData.event_date = new Date(newPost.event_date).toISOString();
+        }
+        if (newPost.event_end_date) {
+          basePostData.event_end_date = new Date(newPost.event_end_date).toISOString();
+        }
         basePostData.event_location = newPost.event_location || null;
       }
 
@@ -440,11 +447,12 @@ function NewsfeedContent() {
         ? 'Nouvelle annonce' 
         : newPost.type === 'event' 
         ? 'Nouvel événement' 
-        : 'Nouvelle publication';
+        : newPost.type === 'request'
+        ? 'Nouvelle demande'
+        : 'Nouveau message';
       const notificationBody = newPost.title || newPost.content.slice(0, 100);
 
       if (newPost.sendToAllResidences && isManager && allResidences.length > 0) {
-        // Create post for all residences
         const postsToInsert = allResidences.map(residence => ({
           ...basePostData,
           residence_id: residence.id,
@@ -456,14 +464,12 @@ function NewsfeedContent() {
 
         if (error) throw error;
 
-        // Send push notifications to all residences
         for (const residence of allResidences) {
           sendPushNotifications(residence.id, notificationTitle, notificationBody);
         }
 
         toast.success(`Publication envoyée à ${allResidences.length} résidence(s)`);
       } else {
-        // Create post for selected residence only
         const { error } = await supabase
           .from('posts')
           .insert({
@@ -472,11 +478,8 @@ function NewsfeedContent() {
           });
 
         if (error) throw error;
-
-        // Send push notifications
         sendPushNotifications(effectiveResidence!.id, notificationTitle, notificationBody);
-
-        toast.success('Publication créée');
+        toast.success(newPost.replyToId ? 'Réponse envoyée' : 'Message envoyé');
       }
 
       setShowNewPost(false);
@@ -488,6 +491,47 @@ function NewsfeedContent() {
     } finally {
       setPosting(false);
     }
+  };
+
+  // Handle swipe gestures for reply
+  const handleTouchStart = (e: React.TouchEvent, postId: string) => {
+    touchStartX.current = e.touches[0].clientX;
+    setSwipingPostId(postId);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!swipingPostId) return;
+    const currentX = e.touches[0].clientX;
+    const diff = touchStartX.current - currentX;
+    if (diff > 0) {
+      setSwipeOffset(Math.min(diff, 80));
+    }
+  };
+
+  const handleTouchEnd = (post: PostWithDetails) => {
+    if (swipeOffset > 50) {
+      handleReplyToPost(post);
+    }
+    setSwipeOffset(0);
+    setSwipingPostId(null);
+  };
+
+  const handleMouseSwipe = (post: PostWithDetails) => {
+    handleReplyToPost(post);
+  };
+
+  const handleReplyToPost = (post: PostWithDetails) => {
+    setNewPost(prev => ({
+      ...prev,
+      replyToId: post.id,
+      content: "",
+    }));
+    setShowNewPost(true);
+  };
+
+  const getReplyToPost = () => {
+    if (!newPost.replyToId) return null;
+    return posts.find(p => p.id === newPost.replyToId);
   };
 
 
@@ -586,216 +630,294 @@ function NewsfeedContent() {
             {filteredPosts.map((post) => {
               const Icon = categoryIcons[post.type || ''];
               const isExpanded = expandedComments === post.id;
+              const isSwiping = swipingPostId === post.id;
               
               return (
-                <Card key={post.id} className={`shadow-soft hover:shadow-medium transition-shadow ${post.is_pinned ? "border-primary/30 bg-primary/5" : ""}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                            {getAuthorInitials(post)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-sm text-foreground">{getAuthorName(post)}</span>
-                            {post.type && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
-                                {Icon && <Icon className="h-3 w-3" />}
-                                {categoryLabels[post.type]}
-                              </Badge>
-                            )}
+                <div 
+                  key={post.id} 
+                  className="relative"
+                  onTouchStart={(e) => handleTouchStart(e, post.id)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={() => handleTouchEnd(post)}
+                >
+                  {/* Swipe reply indicator */}
+                  <div 
+                    className={`absolute right-0 top-0 bottom-0 flex items-center justify-center bg-primary/10 transition-all ${isSwiping && swipeOffset > 20 ? 'opacity-100' : 'opacity-0'}`}
+                    style={{ width: swipeOffset }}
+                  >
+                    <Reply className="h-5 w-5 text-primary" />
+                  </div>
+                  
+                  <Card 
+                    className={`shadow-soft hover:shadow-medium transition-all ${post.is_pinned ? "border-primary/30 bg-primary/5" : ""}`}
+                    style={{ transform: isSwiping ? `translateX(-${swipeOffset}px)` : 'none' }}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                              {getAuthorInitials(post)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm text-foreground">{getAuthorName(post)}</span>
+                              {post.type && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
+                                  {Icon && <Icon className="h-3 w-3" />}
+                                  {categoryLabels[post.type]}
+                                </Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{formatDate(post.created_at)}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">{formatDate(post.created_at)}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          {post.is_pinned && <Pin className="h-4 w-4 text-primary" />}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleMouseSwipe(post)}>
+                                <Reply className="h-4 w-4 mr-2" />
+                                Répondre
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                Partager
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">
+                                <Flag className="h-4 w-4 mr-2" />
+                                Signaler
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
+                    </CardHeader>
 
-                      <div className="flex items-center gap-1">
-                        {post.is_pinned && <Pin className="h-4 w-4 text-primary" />}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Share2 className="h-4 w-4 mr-2" />
-                              Partager
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              <Flag className="h-4 w-4 mr-2" />
-                              Signaler
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="pt-0 space-y-4">
-                    <div>
-                      {post.title && (
-                        <h3 className="font-semibold text-foreground mb-2">{post.title}</h3>
+                    <CardContent className="pt-0 space-y-4">
+                      {/* Reply reference */}
+                      {post.reply_to_id && (
+                        <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30 border-l-2 border-primary/30">
+                          <Reply className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="text-xs text-muted-foreground line-clamp-2">
+                            En réponse à un message
+                          </div>
+                        </div>
                       )}
-                      <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-                    </div>
-
-                    {/* Event Info */}
-                    {post.type === 'event' && post.event_date && (
-                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-primary" />
-                          <span className="font-medium">
-                            {format(new Date(post.event_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                          </span>
-                        </div>
-                        {post.event_location && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{post.event_location}</span>
-                          </div>
+                      
+                      <div>
+                        {post.title && (
+                          <h3 className="font-semibold text-foreground mb-2">{post.title}</h3>
                         )}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Users className="h-4 w-4" />
-                          <span>{post.rsvp_going_count} participant{post.rsvp_going_count > 1 ? 's' : ''}</span>
-                        </div>
-
-                        {/* RSVP Buttons */}
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            variant={post.user_rsvp === 'going' ? 'default' : 'outline'}
-                            onClick={() => handleRsvp(post.id, 'going')}
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Je participe
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={post.user_rsvp === 'maybe' ? 'secondary' : 'ghost'}
-                            onClick={() => handleRsvp(post.id, 'maybe')}
-                          >
-                            Peut-être
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={post.user_rsvp === 'not_going' ? 'secondary' : 'ghost'}
-                            onClick={() => handleRsvp(post.id, 'not_going')}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Non
-                          </Button>
-                        </div>
+                        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{post.content}</p>
                       </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 pt-2 border-t border-border">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className={post.user_liked ? "text-red-500" : "text-muted-foreground"}
-                        onClick={() => handleLike(post.id, post.user_liked)}
-                      >
-                        <Heart className={`h-4 w-4 mr-1.5 ${post.user_liked ? "fill-current" : ""}`} />
-                        {post.likes_count}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-muted-foreground"
-                        onClick={() => {
-                          if (isExpanded) {
-                            setExpandedComments(null);
-                          } else {
-                            setExpandedComments(post.id);
-                            loadComments(post.id);
-                          }
-                        }}
-                      >
-                        <MessageSquare className="h-4 w-4 mr-1.5" />
-                        {post.comments_count}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto">
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                      {/* Event Info */}
+                      {post.type === 'event' && post.event_date && (
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <span className="font-medium">
+                              {format(new Date(post.event_date), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                            </span>
+                          </div>
+                          {post.event_end_date && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span>Fin : {format(new Date(post.event_end_date), "HH:mm", { locale: fr })}</span>
+                            </div>
+                          )}
+                          {post.event_location && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="h-4 w-4" />
+                              <span>{post.event_location}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Users className="h-4 w-4" />
+                            <span>{post.rsvp_going_count} participant{post.rsvp_going_count > 1 ? 's' : ''}</span>
+                          </div>
 
-                    {/* Comments Section */}
-                    {isExpanded && (
-                      <div className="space-y-3 pt-2 border-t border-border">
-                        {loadingComments ? (
-                          <p className="text-sm text-muted-foreground text-center py-2">Chargement...</p>
-                        ) : (
-                          <>
-                            {(comments[post.id] || []).map(comment => (
-                              <div key={comment.id} className="flex gap-2">
+                          {/* RSVP Buttons */}
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant={post.user_rsvp === 'going' ? 'default' : 'outline'}
+                              onClick={() => handleRsvp(post.id, 'going')}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Je participe
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={post.user_rsvp === 'maybe' ? 'secondary' : 'ghost'}
+                              onClick={() => handleRsvp(post.id, 'maybe')}
+                            >
+                              Peut-être
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={post.user_rsvp === 'not_going' ? 'secondary' : 'ghost'}
+                              onClick={() => handleRsvp(post.id, 'not_going')}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Non
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 pt-2 border-t border-border">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={post.user_liked ? "text-red-500" : "text-muted-foreground"}
+                          onClick={() => handleLike(post.id, post.user_liked)}
+                        >
+                          <Heart className={`h-4 w-4 mr-1.5 ${post.user_liked ? "fill-current" : ""}`} />
+                          {post.likes_count}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-muted-foreground"
+                          onClick={() => {
+                            if (isExpanded) {
+                              setExpandedComments(null);
+                            } else {
+                              setExpandedComments(post.id);
+                              loadComments(post.id);
+                            }
+                          }}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-1.5" />
+                          {post.comments_count}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-muted-foreground"
+                          onClick={() => handleMouseSwipe(post)}
+                        >
+                          <Reply className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-muted-foreground ml-auto">
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {/* Comments Section */}
+                      {isExpanded && (
+                        <div className="space-y-3 pt-2 border-t border-border">
+                          {loadingComments ? (
+                            <p className="text-sm text-muted-foreground text-center py-2">Chargement...</p>
+                          ) : (
+                            <>
+                              {(comments[post.id] || []).map(comment => (
+                                <div key={comment.id} className="flex gap-2">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="text-xs">
+                                      {(comment.author?.first_name?.[0] || '') + (comment.author?.last_name?.[0] || '')}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2">
+                                    <p className="text-xs font-medium">
+                                      {comment.author?.first_name} {comment.author?.last_name}
+                                    </p>
+                                    <p className="text-sm">{comment.content}</p>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {/* Add Comment */}
+                              <div className="flex gap-2">
                                 <Avatar className="h-8 w-8">
                                   <AvatarFallback className="text-xs">
-                                    {(comment.author?.first_name?.[0] || '') + (comment.author?.last_name?.[0] || '')}
+                                    {(profile.first_name?.[0] || '') + (profile.last_name?.[0] || '')}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2">
-                                  <p className="text-xs font-medium">
-                                    {comment.author?.first_name} {comment.author?.last_name}
-                                  </p>
-                                  <p className="text-sm">{comment.content}</p>
+                                <div className="flex-1 flex gap-2">
+                                  <Input
+                                    placeholder="Écrire un commentaire..."
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleAddComment(post.id);
+                                      }
+                                    }}
+                                    className="h-9"
+                                  />
+                                  <Button 
+                                    size="icon" 
+                                    className="h-9 w-9 shrink-0"
+                                    onClick={() => handleAddComment(post.id)}
+                                    disabled={!newComment.trim()}
+                                  >
+                                    <Send className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </div>
-                            ))}
-
-                            {/* Add Comment */}
-                            <div className="flex gap-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="text-xs">
-                                  {(profile.first_name?.[0] || '') + (profile.last_name?.[0] || '')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 flex gap-2">
-                                <Input
-                                  placeholder="Écrire un commentaire..."
-                                  value={newComment}
-                                  onChange={(e) => setNewComment(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                      e.preventDefault();
-                                      handleAddComment(post.id);
-                                    }
-                                  }}
-                                  className="h-9"
-                                />
-                                <Button 
-                                  size="icon" 
-                                  className="h-9 w-9 shrink-0"
-                                  onClick={() => handleAddComment(post.id)}
-                                  disabled={!newComment.trim()}
-                                >
-                                  <Send className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               );
             })}
           </div>
         )}
 
         {/* New Post Dialog */}
-        <Dialog open={showNewPost} onOpenChange={setShowNewPost}>
-          <DialogContent className={isManager ? "max-w-lg" : "max-w-md"}>
+        <Dialog open={showNewPost} onOpenChange={(open) => {
+          if (!open) {
+            setNewPost({ title: "", content: "", type: "", event_date: "", event_end_date: "", event_location: "", sendToAllResidences: false, images: [], replyToId: null });
+          }
+          setShowNewPost(open);
+        }}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{isManager ? "Nouvelle publication" : "Nouveau message"}</DialogTitle>
+              <DialogTitle>
+                {newPost.replyToId 
+                  ? "Répondre" 
+                  : isManager 
+                  ? "Nouvelle publication" 
+                  : "Nouveau message"}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {/* Type selection - Only for managers */}
-              {isManager && (
+              {/* Reply reference */}
+              {newPost.replyToId && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                  <Reply className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground mb-1">En réponse à :</p>
+                    <p className="text-sm line-clamp-2">{getReplyToPost()?.content}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => setNewPost({ ...newPost, replyToId: null })}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Type selection - For managers: all types, for residents: event, request only (optional) */}
+              {isManager ? (
                 <div className="space-y-2">
                   <Label>Type de publication</Label>
                   <div className="flex gap-2 flex-wrap">
@@ -816,39 +938,78 @@ function NewsfeedContent() {
                     })}
                   </div>
                 </div>
+              ) : !newPost.replyToId && (
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground text-xs">Optionnel : signaler un type</Label>
+                  <div className="flex gap-2 flex-wrap">
+                    {['event', 'request', 'info'].map(type => {
+                      const Icon = categoryIcons[type];
+                      return (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={newPost.type === type ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setNewPost({ ...newPost, type: newPost.type === type ? '' : type })}
+                        >
+                          {Icon && <Icon className="h-4 w-4 mr-1" />}
+                          {categoryLabels[type]}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
-              {/* Title - Only for managers */}
-              {isManager && (
+              {/* Title - For managers always, for residents only on request type */}
+              {(isManager || newPost.type === 'request') && (
                 <div className="space-y-2">
-                  <Label>Titre (optionnel)</Label>
+                  <Label>{newPost.type === 'request' ? 'Titre de la demande' : 'Titre (optionnel)'}</Label>
                   <Input
                     value={newPost.title}
                     onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                    placeholder="Titre de la publication"
+                    placeholder={newPost.type === 'request' ? 'Ex: Recherche bricoleur...' : 'Titre de la publication'}
                   />
                 </div>
               )}
 
+              {/* Message content */}
               <div className="space-y-2">
                 <Label>{isManager ? "Contenu *" : "Message"}</Label>
                 <Textarea
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  placeholder={isManager ? "Écrivez votre message..." : "Partagez quelque chose avec vos voisins..."}
+                  placeholder={
+                    newPost.replyToId 
+                      ? "Votre réponse..." 
+                      : isManager 
+                      ? "Écrivez votre message..." 
+                      : "Partagez quelque chose avec vos voisins..."
+                  }
                   className={isManager ? "min-h-[120px]" : "min-h-[80px]"}
                 />
               </div>
 
+              {/* Event fields */}
               {newPost.type === 'event' && (
                 <>
-                  <div className="space-y-2">
-                    <Label>Date et heure *</Label>
-                    <Input
-                      type="datetime-local"
-                      value={newPost.event_date}
-                      onChange={(e) => setNewPost({ ...newPost, event_date: e.target.value })}
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>Début *</Label>
+                      <Input
+                        type="datetime-local"
+                        value={newPost.event_date}
+                        onChange={(e) => setNewPost({ ...newPost, event_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Fin (optionnel)</Label>
+                      <Input
+                        type="datetime-local"
+                        value={newPost.event_end_date}
+                        onChange={(e) => setNewPost({ ...newPost, event_end_date: e.target.value })}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Lieu</Label>
@@ -859,6 +1020,49 @@ function NewsfeedContent() {
                     />
                   </div>
                 </>
+              )}
+
+              {/* Image upload - hidden input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  // TODO: Implement image upload to storage
+                  toast.info("Upload d'images bientôt disponible");
+                }}
+              />
+
+              {/* Action buttons for residents */}
+              {!isManager && !newPost.replyToId && (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Image className="h-4 w-4 mr-1" />
+                    Photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Trigger camera on mobile
+                      if (fileInputRef.current) {
+                        fileInputRef.current.capture = "environment";
+                        fileInputRef.current.click();
+                      }
+                    }}
+                  >
+                    <Camera className="h-4 w-4 mr-1" />
+                    Appareil
+                  </Button>
+                </div>
               )}
 
               {/* Send to all residences - Manager only */}
@@ -886,13 +1090,14 @@ function NewsfeedContent() {
               </Button>
               <Button 
                 onClick={handleCreatePost} 
-                disabled={posting || !newPost.content.trim()}
+                disabled={posting || !newPost.content.trim() || (newPost.type === 'event' && !newPost.event_date)}
               >
-                {posting ? 'Envoi...' : (isManager ? 'Publier' : 'Envoyer')}
+                <Send className="h-4 w-4 mr-2" />
+                {posting ? 'Envoi...' : 'Envoyer'}
               </Button>
             </DialogFooter>
           </DialogContent>
-      </Dialog>
+        </Dialog>
     </div>
   );
 }

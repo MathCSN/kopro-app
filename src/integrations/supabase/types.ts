@@ -1561,9 +1561,11 @@ export type Database = {
           content: string
           created_at: string
           event_date: string | null
+          event_end_date: string | null
           event_location: string | null
           id: string
           is_pinned: boolean | null
+          reply_to_id: string | null
           residence_id: string
           title: string | null
           type: string | null
@@ -1575,9 +1577,11 @@ export type Database = {
           content: string
           created_at?: string
           event_date?: string | null
+          event_end_date?: string | null
           event_location?: string | null
           id?: string
           is_pinned?: boolean | null
+          reply_to_id?: string | null
           residence_id: string
           title?: string | null
           type?: string | null
@@ -1589,15 +1593,24 @@ export type Database = {
           content?: string
           created_at?: string
           event_date?: string | null
+          event_end_date?: string | null
           event_location?: string | null
           id?: string
           is_pinned?: boolean | null
+          reply_to_id?: string | null
           residence_id?: string
           title?: string | null
           type?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_residence_id_fkey"
             columns: ["residence_id"]
