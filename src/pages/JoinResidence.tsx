@@ -11,6 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NoApartmentAvailable } from "@/components/residence/NoApartmentAvailable";
 import { AUTH_MESSAGES } from "@/lib/messages";
+import { createClient } from "@supabase/supabase-js";
+
+// Public client for fetching residence data without auth restrictions
+const publicSupabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  { auth: { persistSession: false } }
+);
 
 type Lot = {
   id: string;
@@ -90,14 +98,15 @@ export default function JoinResidence() {
         return;
       }
 
-      // Fetch residence info
-      const { data: residenceData, error: resError } = await supabase
+      // Fetch residence info using public client to bypass RLS
+      const { data: residenceData, error: resError } = await publicSupabase
         .from('residences')
         .select('id, name, address, city')
         .eq('id', residenceId)
         .maybeSingle();
 
       if (resError || !residenceData) {
+        console.error('Residence fetch error:', resError);
         setStatus("error");
         setErrorMessage(AUTH_MESSAGES.RESIDENCE_NOT_FOUND);
         return;
@@ -105,8 +114,8 @@ export default function JoinResidence() {
 
       setResidence(residenceData);
 
-      // Fetch manager email for contact
-      const { data: managerRoles } = await supabase
+      // Fetch manager email for contact using public client
+      const { data: managerRoles } = await publicSupabase
         .from('user_roles')
         .select('user_id')
         .eq('residence_id', residenceId)
@@ -114,11 +123,11 @@ export default function JoinResidence() {
         .limit(1);
 
       if (managerRoles && managerRoles.length > 0) {
-        const { data: managerProfile } = await supabase
+        const { data: managerProfile } = await publicSupabase
           .from('profiles')
           .select('email')
           .eq('id', managerRoles[0].user_id)
-          .single();
+          .maybeSingle();
         
         if (managerProfile?.email) {
           setManagerEmail(managerProfile.email);
@@ -127,7 +136,7 @@ export default function JoinResidence() {
 
       // If buildingId is specified, fetch building info
       if (buildingId) {
-        const { data: buildingData } = await supabase
+        const { data: buildingData } = await publicSupabase
           .from('buildings')
           .select('id, name')
           .eq('id', buildingId)
@@ -138,8 +147,8 @@ export default function JoinResidence() {
         }
       }
 
-      // Fetch lots for this residence (optionally filtered by building)
-      let lotsQuery = supabase
+      // Fetch lots for this residence using public client (optionally filtered by building)
+      let lotsQuery = publicSupabase
         .from('lots')
         .select('id, lot_number, door, floor, type, primary_resident_id, join_code, building_id')
         .eq('residence_id', residenceId)
