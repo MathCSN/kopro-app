@@ -46,7 +46,7 @@ const messageTypes = [
 ];
 
 export function NewConversationDialog({ onCreated }: NewConversationDialogProps) {
-  const { user } = useAuth();
+  const { user, isManager } = useAuth();
   const { selectedResidence, residences, isAllResidences } = useResidence();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -384,28 +384,30 @@ export function NewConversationDialog({ onCreated }: NewConversationDialogProps)
             )}
           </div>
 
-          {/* Message Type */}
-          <div className="space-y-2">
-            <Label>Type de message</Label>
-            <Select value={messageType} onValueChange={setMessageType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {messageTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div className="flex items-center gap-2">
-                        <Icon className={`h-4 w-4 ${type.color}`} />
-                        {type.label}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Message Type - Only for managers */}
+          {isManager() && (
+            <div className="space-y-2">
+              <Label>Type de message</Label>
+              <Select value={messageType} onValueChange={setMessageType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {messageTypes.map((type) => {
+                    const Icon = type.icon;
+                    return (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className={`h-4 w-4 ${type.color}`} />
+                          {type.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* First Message */}
           <div className="space-y-2">
