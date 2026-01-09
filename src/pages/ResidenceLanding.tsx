@@ -54,14 +54,18 @@ export default function ResidenceLanding() {
       
       // If not found by full UUID, try matching by short code (first 8 chars)
       if (!residenceData && code.length >= 6) {
-        const { data: allResidences } = await supabase
+        const { data: allResidences, error } = await supabase
           .from('residences')
           .select('id, name, address, city');
+        
+        console.log("Searching for code:", code, "in residences:", allResidences?.map(r => r.id.substring(0, 8)));
         
         // Find residence where ID starts with the entered code
         residenceData = allResidences?.find(r => 
           r.id.toLowerCase().startsWith(code)
         ) || null;
+        
+        console.log("Found residence:", residenceData);
       }
       
       if (!residenceData) {
