@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Building2, Loader2, Smartphone, ArrowRight, Apple, Download, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/useAuth";
 import { AUTH_MESSAGES } from "@/lib/messages";
 
@@ -19,6 +19,20 @@ type Building = {
   name: string;
   residence_id: string;
 };
+
+// Public client (no session) so the landing page works even if the user is logged in
+// without leaking their authenticated token into a route meant to be public.
+const publicSupabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  }
+);
 
 export default function ResidenceLanding() {
   const { residenceCode } = useParams<{ residenceCode: string }>();
@@ -50,10 +64,10 @@ export default function ResidenceLanding() {
 
       // First try as full UUID for residence
       if (code.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        const { data: byId } = await supabase
-          .from('residences')
-          .select('id, name, address, city')
-          .eq('id', code)
+        const { data: byId } = await publicSupabase
+          .from("residences")
+          .select("id, name, address, city")
+          .eq("id", code)
           .maybeSingle();
 
         if (byId) {
@@ -63,19 +77,19 @@ export default function ResidenceLanding() {
       
       // If not found as residence UUID, try as building UUID
       if (!residenceData && code.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        const { data: buildingById } = await supabase
-          .from('buildings')
-          .select('id, name, residence_id')
-          .eq('id', code)
+        const { data: buildingById } = await publicSupabase
+          .from("buildings")
+          .select("id, name, residence_id")
+          .eq("id", code)
           .maybeSingle();
 
         if (buildingById) {
           buildingData = buildingById;
           // Get residence info for this building
-          const { data: resForBuilding } = await supabase
-            .from('residences')
-            .select('id, name, address, city')
-            .eq('id', buildingById.residence_id)
+          const { data: resForBuilding } = await publicSupabase
+            .from("residences")
+            .select("id, name, address, city")
+            .eq("id", buildingById.residence_id)
             .maybeSingle();
           
           if (resForBuilding) {
@@ -86,34 +100,30 @@ export default function ResidenceLanding() {
       
       // If not found by full UUID, try matching by short code (first 8 chars) for residence
       if (!residenceData && code.length >= 6) {
-        const { data: allResidences } = await supabase
-          .from('residences')
-          .select('id, name, address, city');
+        const { data: allResidences } = await publicSupabase
+          .from("residences")
+          .select("id, name, address, city");
         
         // Find residence where ID starts with the entered code
-        residenceData = allResidences?.find(r => 
-          r.id.toLowerCase().startsWith(code)
-        ) || null;
+        residenceData = allResidences?.find((r) => r.id.toLowerCase().startsWith(code)) || null;
       }
       
       // If still not found, try short code for building
       if (!residenceData && code.length >= 6) {
-        const { data: allBuildings } = await supabase
-          .from('buildings')
-          .select('id, name, residence_id');
+        const { data: allBuildings } = await publicSupabase
+          .from("buildings")
+          .select("id, name, residence_id");
         
         // Find building where ID starts with the entered code
-        const foundBuilding = allBuildings?.find(b => 
-          b.id.toLowerCase().startsWith(code)
-        );
+        const foundBuilding = allBuildings?.find((b) => b.id.toLowerCase().startsWith(code));
         
         if (foundBuilding) {
           buildingData = foundBuilding;
           // Get residence info for this building
-          const { data: resForBuilding } = await supabase
-            .from('residences')
-            .select('id, name, address, city')
-            .eq('id', foundBuilding.residence_id)
+          const { data: resForBuilding } = await publicSupabase
+            .from("residences")
+            .select("id, name, address, city")
+            .eq("id", foundBuilding.residence_id)
             .maybeSingle();
           
           if (resForBuilding) {
@@ -121,7 +131,7 @@ export default function ResidenceLanding() {
           }
         }
       }
-      
+
       if (!residenceData) {
         setStatus("not_found");
         return;
