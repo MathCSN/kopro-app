@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,13 +20,35 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { ListingImageUpload } from "./ListingImageUpload";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-interface CreateListingDialogProps {
+interface Listing {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number | null;
+  category: string | null;
+  condition: string | null;
+  images: string[] | null;
+  status: string | null;
+}
+
+interface EditListingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  residenceId: string;
+  listing: Listing;
   onSuccess: () => void;
 }
 
@@ -49,19 +71,31 @@ const CONDITIONS = [
   { value: "correct", label: "État correct" },
 ];
 
-export function CreateListingDialog({
+export function EditListingDialog({
   open,
   onOpenChange,
-  residenceId,
+  listing,
   onSuccess,
-}: CreateListingDialogProps) {
+}: EditListingDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [condition, setCondition] = useState("");
   const [images, setImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (listing && open) {
+      setTitle(listing.title);
+      setDescription(listing.description || "");
+      setPrice(listing.price?.toString() || "");
+      setCategory(listing.category || "");
+      setCondition(listing.condition || "");
+      setImages(Array.isArray(listing.images) ? listing.images : []);
+    }
+  }, [listing, open]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -71,51 +105,59 @@ export function CreateListingDialog({
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
-
-      const { error } = await supabase.from("marketplace_listings").insert({
-        title: title.trim(),
-        description: description.trim() || null,
-        price: price ? parseFloat(price) : null,
-        category: category || null,
-        condition: condition || null,
-        residence_id: residenceId,
-        seller_id: user.id,
-        status: "active",
-        images: images.length > 0 ? images : null,
-      });
+      const { error } = await supabase
+        .from("marketplace_listings")
+        .update({
+          title: title.trim(),
+          description: description.trim() || null,
+          price: price ? parseFloat(price) : null,
+          category: category || null,
+          condition: condition || null,
+          images: images.length > 0 ? images : null,
+        })
+        .eq("id", listing.id);
 
       if (error) throw error;
 
-      toast.success("Annonce publiée avec succès !");
-      resetForm();
+      toast.success("Annonce modifiée avec succès !");
       onOpenChange(false);
       onSuccess();
     } catch (error) {
-      console.error("Error creating listing:", error);
-      toast.error("Erreur lors de la publication");
+      console.error("Error updating listing:", error);
+      toast.error("Erreur lors de la modification");
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setPrice("");
-    setCategory("");
-    setCondition("");
-    setImages([]);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("marketplace_listings")
+        .delete()
+        .eq("id", listing.id);
+
+      if (error) throw error;
+
+      toast.success("Annonce supprimée");
+      onOpenChange(false);
+      onSuccess();
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      toast.error("Erreur lors de la suppression");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Déposer une annonce</DialogTitle>
+          <DialogTitle>Modifier l'annonce</DialogTitle>
           <DialogDescription>
-            Publiez votre annonce pour vos voisins
+            Modifiez les informations de votre annonce
           </DialogDescription>
         </DialogHeader>
 
@@ -126,9 +168,9 @@ export function CreateListingDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Titre *</Label>
+            <Label htmlFor="edit-title">Titre *</Label>
             <Input
-              id="title"
+              id="edit-title"
               placeholder="Ex: Canapé 3 places"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -136,9 +178,9 @@ export function CreateListingDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="edit-description">Description</Label>
             <Textarea
-              id="description"
+              id="edit-description"
               placeholder="Décrivez votre article..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -148,9 +190,9 @@ export function CreateListingDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Prix (€)</Label>
+              <Label htmlFor="edit-price">Prix (€)</Label>
               <Input
-                id="price"
+                id="edit-price"
                 type="number"
                 min="0"
                 step="0.01"
@@ -194,14 +236,40 @@ export function CreateListingDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Annuler
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Publier
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full sm:w-auto" disabled={loading || deleting}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Supprimer l'annonce ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action est irréversible. L'annonce sera définitivement supprimée.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading || deleting} className="flex-1">
+              Annuler
+            </Button>
+            <Button onClick={handleSubmit} disabled={loading || deleting} className="flex-1">
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Enregistrer
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
