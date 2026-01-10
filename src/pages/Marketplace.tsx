@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { ShoppingBag, Plus, Heart, Search, MessageCircle } from "lucide-react";
+import { ShoppingBag, Plus, Heart, Search, MessageCircle, Pencil } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { CreateListingDialog } from "@/components/marketplace/CreateListingDialog";
+import { EditListingDialog } from "@/components/marketplace/EditListingDialog";
+
+interface SellerProfile {
+  first_name: string | null;
+  last_name: string | null;
+}
 
 interface Listing {
   id: string;
@@ -21,6 +27,7 @@ interface Listing {
   status: string | null;
   created_at: string;
   seller_id: string;
+  seller?: SellerProfile | null;
 }
 
 function ListingDetail({ id }: { id: string }) {
@@ -127,6 +134,7 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingListing, setEditingListing] = useState<Listing | null>(null);
 
   const activeResidence = selectedResidence || (residences.length > 0 ? residences[0] : null);
 
@@ -140,12 +148,15 @@ export default function Marketplace() {
     try {
       const { data, error } = await supabase
         .from('marketplace_listings')
-        .select('*')
+        .select(`
+          *,
+          seller:profiles(first_name, last_name)
+        `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setListings(data || []);
+      setListings((data || []) as Listing[]);
     } catch (error) {
       console.error('Error fetching listings:', error);
     } finally {
@@ -166,6 +177,13 @@ export default function Marketplace() {
   if (id) {
     return <ListingDetail id={id} />;
   }
+
+  const getSellerName = (listing: Listing) => {
+    if (listing.seller?.first_name || listing.seller?.last_name) {
+      return `${listing.seller.first_name || ''} ${listing.seller.last_name || ''}`.trim();
+    }
+    return "Vendeur";
+  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -226,18 +244,41 @@ export default function Marketplace() {
               className="shadow-soft hover:shadow-medium transition-all cursor-pointer group overflow-hidden"
               onClick={() => navigate(`/marketplace/${listing.id}`)}
             >
-              <div className="aspect-square bg-muted flex items-center justify-center relative">
-                <ShoppingBag className="h-12 w-12 text-muted-foreground/30" />
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  <Heart className="h-4 w-4" />
-                </Button>
+              <div className="aspect-square bg-muted flex items-center justify-center relative overflow-hidden">
+                {listing.images && listing.images.length > 0 ? (
+                  <img 
+                    src={listing.images[0]} 
+                    alt={listing.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ShoppingBag className="h-12 w-12 text-muted-foreground/30" />
+                )}
+                <div className="absolute top-2 right-2 flex gap-1">
+                  {user && listing.seller_id === user.id && (
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="bg-background/80 backdrop-blur-sm h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingListing(listing);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="bg-background/80 backdrop-blur-sm h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <Heart className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <CardContent className="p-3">
                 <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
@@ -246,6 +287,7 @@ export default function Marketplace() {
                 {listing.price !== null && (
                   <p className="text-lg font-bold text-primary mt-1">{listing.price} €</p>
                 )}
+                <p className="text-xs text-muted-foreground mt-1">{getSellerName(listing)}</p>
                 <div className="flex items-center justify-between mt-2">
                   {listing.category && (
                     <Badge variant="secondary" className="text-xs">{listing.category}</Badge>
@@ -263,6 +305,15 @@ export default function Marketplace() {
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
           residenceId={activeResidence.id}
+          onSuccess={fetchListings}
+        />
+      )}
+
+      {editingListing && (
+        <EditListingDialog
+          open={!!editingListing}
+          onOpenChange={(open) => !open && setEditingListing(null)}
+          listing={editingListing}
           onSuccess={fetchListings}
         />
       )}
