@@ -146,17 +146,31 @@ export default function Marketplace() {
 
   const fetchListings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: listingsData, error } = await supabase
         .from('marketplace_listings')
-        .select(`
-          *,
-          seller:profiles(first_name, last_name)
-        `)
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setListings((data || []) as Listing[]);
+
+      // Fetch seller profiles separately
+      const sellerIds = [...new Set((listingsData || []).map(l => l.seller_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', sellerIds);
+
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.id, { first_name: p.first_name, last_name: p.last_name }])
+      );
+
+      const listingsWithSellers = (listingsData || []).map(listing => ({
+        ...listing,
+        seller: profilesMap.get(listing.seller_id) || null
+      })) as Listing[];
+
+      setListings(listingsWithSellers);
     } catch (error) {
       console.error('Error fetching listings:', error);
     } finally {
