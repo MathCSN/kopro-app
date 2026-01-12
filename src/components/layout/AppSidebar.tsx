@@ -22,6 +22,11 @@ import {
   Calendar,
   Cog,
   Bot,
+  Calculator,
+  Building2,
+  ClipboardList,
+  PieChart,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,9 +54,13 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   units: Home,
   vacancies: FileText,
   applications: Users,
-  analytics: BarChart3,
+  analytics: PieChart,
   admin: Settings,
   vault: Lock,
+  accounting: Calculator,
+  syndic: Building2,
+  workorders: ClipboardList,
+  inspections: ClipboardCheck,
 };
 
 // Role restrictions for items
@@ -64,6 +73,10 @@ const itemRoleRestrictions: Record<string, string[]> = {
   admin: ["manager", "admin", "owner"],
   household: ["resident"],
   marketplace: ["resident", "cs"],
+  accounting: ["manager", "admin", "owner"],
+  syndic: ["manager", "admin", "owner"],
+  workorders: ["manager", "admin", "owner"],
+  inspections: ["manager", "admin", "owner"],
 };
 
 interface AppSidebarProps {

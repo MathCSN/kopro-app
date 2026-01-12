@@ -26,8 +26,9 @@ export interface NavSettings {
 const defaultCategories: NavCategory[] = [
   { id: "main", title: "Principal", visible: true, order: 0 },
   { id: "management", title: "Gestion", visible: true, order: 1 },
-  { id: "rental", title: "Gestion locative", visible: true, order: 2 },
-  { id: "admin", title: "Administration", visible: true, order: 3 },
+  { id: "professional", title: "Professionnel", visible: true, order: 2 },
+  { id: "rental", title: "Gestion locative", visible: true, order: 3 },
+  { id: "admin", title: "Administration", visible: true, order: 4 },
 ];
 
 const defaultItems: NavItem[] = [
@@ -44,6 +45,10 @@ const defaultItems: NavItem[] = [
   { id: "payments", title: "Paiements", href: "/payments", visible: true, order: 1, categoryId: "management" },
   { id: "ag", title: "Assemblées", href: "/ag", visible: true, order: 2, categoryId: "management" },
   { id: "providers", title: "Prestataires", href: "/providers", visible: true, order: 3, categoryId: "management" },
+  { id: "accounting", title: "Comptabilité", href: "/accounting", visible: true, order: 0, categoryId: "professional" },
+  { id: "syndic", title: "Copropriété", href: "/syndic", visible: true, order: 1, categoryId: "professional" },
+  { id: "workorders", title: "Ordres de service", href: "/work-orders", visible: true, order: 2, categoryId: "professional" },
+  { id: "inspections", title: "États des lieux", href: "/inspections", visible: true, order: 3, categoryId: "professional" },
   { id: "units", title: "Biens immobiliers", href: "/rental/units", visible: true, order: 0, categoryId: "rental" },
   { id: "vacancies", title: "Offres de location", href: "/rental/vacancies", visible: true, order: 1, categoryId: "rental" },
   { id: "applications", title: "Candidatures", href: "/rental/applications", visible: true, order: 2, categoryId: "rental" },
