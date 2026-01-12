@@ -39,6 +39,11 @@ import Household from "./pages/Household";
 import ServiceProviders from "./pages/ServiceProviders";
 import AIAssistant from "./pages/AIAssistant";
 import Marketplace from "./pages/Marketplace";
+import Accounting from "./pages/Accounting";
+import Syndic from "./pages/Syndic";
+import WorkOrders from "./pages/WorkOrders";
+import Analytics from "./pages/Analytics";
+import PropertyInspections from "./pages/PropertyInspections";
 
 // Auth Pages
 import AccountChoice from "./pages/AccountChoice";
@@ -186,7 +191,13 @@ const App = () => (
             <Route path="/household" element={<ProtectedRoute><Household /></ProtectedRoute>} />
             <Route path="/providers" element={<ProtectedRoute><ServiceProviders /></ProtectedRoute>} />
             <Route path="/settings" element={<Navigate to="/admin" replace />} />
-            <Route path="/analytics" element={<ProtectedRoute requiredRole="manager"><Dashboard /></ProtectedRoute>} />
+            
+            {/* Professional modules - Manager/Admin only */}
+            <Route path="/accounting" element={<ProtectedRoute requiredRole="manager"><Accounting /></ProtectedRoute>} />
+            <Route path="/syndic" element={<ProtectedRoute requiredRole="manager"><Syndic /></ProtectedRoute>} />
+            <Route path="/work-orders" element={<ProtectedRoute requiredRole="manager"><WorkOrders /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute requiredRole="manager"><Analytics /></ProtectedRoute>} />
+            <Route path="/inspections" element={<ProtectedRoute requiredRole="manager"><PropertyInspections /></ProtectedRoute>} />
             
             {/* Rental module - requires manager/admin */}
             <Route path="/rental" element={<ProtectedRoute requireRental><Rental /></ProtectedRoute>} />
