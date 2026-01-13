@@ -26,12 +26,15 @@ import { CoproCalls } from "@/components/syndic/CoproCalls";
 import { DistributionKeys } from "@/components/syndic/DistributionKeys";
 import { WorksFund } from "@/components/syndic/WorksFund";
 import { LotTantiemes } from "@/components/syndic/LotTantiemes";
+import { NewCoproCallDialog } from "@/components/syndic/NewCoproCallDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCsv } from "@/lib/exportData";
 
 function SyndicContent() {
   const { selectedResidence } = useResidence();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showNewCallDialog, setShowNewCallDialog] = useState(false);
 
   // Fetch real stats
   const { data: stats, isLoading } = useQuery({
@@ -97,6 +100,20 @@ function SyndicContent() {
     enabled: !!selectedResidence?.id,
   });
 
+  const handleExport = async () => {
+    if (!selectedResidence?.id) return;
+
+    const { data } = await supabase
+      .from("lots")
+      .select("lot_number, type, floor, door, surface, tantiemes, owner_id")
+      .eq("residence_id", selectedResidence.id)
+      .order("lot_number");
+
+    if (data) {
+      exportToCsv(data, `copropriete_${selectedResidence.name}`);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -112,11 +129,11 @@ function SyndicContent() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Exporter données
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setShowNewCallDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvel appel de fonds
           </Button>
@@ -246,6 +263,13 @@ function SyndicContent() {
           <WorksFund residenceId={selectedResidence?.id} />
         </TabsContent>
       </Tabs>
+
+      {/* New Call Dialog */}
+      <NewCoproCallDialog
+        open={showNewCallDialog}
+        onOpenChange={setShowNewCallDialog}
+        residenceId={selectedResidence?.id}
+      />
     </div>
   );
 }
