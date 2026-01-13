@@ -16,21 +16,106 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { InspectionsList } from "@/components/inspections/InspectionsList";
 import { InspectionTemplates } from "@/components/inspections/InspectionTemplates";
+import { NewInspectionDialog } from "@/components/inspections/NewInspectionDialog";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { exportToCsv } from "@/lib/exportData";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default function PropertyInspections() {
   const { user, profile, logout, isManager } = useAuth();
   const { selectedResidence } = useResidence();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("list");
+  const [showNewInspectionDialog, setShowNewInspectionDialog] = useState(false);
+
+  // Fetch lots for the residence to determine if there are apartments
+  const { data: lots, isLoading: lotsLoading } = useQuery({
+    queryKey: ["lots-count", selectedResidence?.id],
+    queryFn: async () => {
+      if (!selectedResidence?.id) return [];
+
+      const { data, error } = await supabase
+        .from("lots")
+        .select("id, lot_number, building:buildings(name)")
+        .eq("residence_id", selectedResidence.id);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedResidence?.id,
+  });
+
+  // Fetch leases with end dates coming soon (for upcoming inspections)
+  const { data: upcomingInspection } = useQuery({
+    queryKey: ["upcoming-inspection", selectedResidence?.id],
+    queryFn: async () => {
+      if (!selectedResidence?.id) return null;
+
+      // Get leases with start_date in the future (entry inspections) or end_date coming soon (exit)
+      const now = new Date();
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+      const { data, error } = await supabase
+        .from("leases")
+        .select(`
+          id,
+          start_date,
+          end_date,
+          tenant:profiles!leases_tenant_id_fkey(first_name, last_name),
+          lot:lots!leases_lot_id_fkey(lot_number, building:buildings(name))
+        `)
+        .eq("residence_id", selectedResidence.id)
+        .or(`start_date.gte.${now.toISOString()},end_date.gte.${now.toISOString()},end_date.lte.${nextMonth.toISOString()}`)
+        .order("start_date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedResidence?.id && (lots?.length || 0) > 0,
+  });
 
   const handleLogout = async () => {
     await logout();
     navigate("/auth");
+  };
+
+  const handleExport = async () => {
+    if (!selectedResidence?.id) return;
+
+    // Export leases data as inspection records
+    const { data } = await supabase
+      .from("leases")
+      .select(`
+        start_date,
+        end_date,
+        status,
+        tenant:profiles!leases_tenant_id_fkey(first_name, last_name),
+        lot:lots!leases_lot_id_fkey(lot_number)
+      `)
+      .eq("residence_id", selectedResidence.id)
+      .order("start_date", { ascending: false });
+
+    if (data) {
+      const exportData = data.map((lease: any) => ({
+        lot: lease.lot?.lot_number || "",
+        locataire: `${lease.tenant?.first_name || ""} ${lease.tenant?.last_name || ""}`.trim(),
+        date_entree: lease.start_date,
+        date_sortie: lease.end_date || "",
+        statut: lease.status,
+      }));
+      exportToCsv(exportData, `etats_des_lieux_${selectedResidence.name}`);
+    }
   };
 
   if (!user || !profile) {
@@ -41,6 +126,8 @@ export default function PropertyInspections() {
     navigate("/dashboard");
     return null;
   }
+
+  const hasLots = (lots?.length || 0) > 0;
 
   return (
     <AppLayout userRole={profile.role} onLogout={handleLogout}>
@@ -58,11 +145,11 @@ export default function PropertyInspections() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Exporter
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={() => setShowNewInspectionDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nouvel état des lieux
             </Button>
@@ -77,7 +164,11 @@ export default function PropertyInspections() {
                 <Calendar className="h-5 w-5 text-warning" />
               </div>
               <div className="mt-3">
-                <p className="text-2xl font-bold text-foreground">3</p>
+                {lotsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <p className="text-2xl font-bold text-foreground">0</p>
+                )}
                 <p className="text-xs text-muted-foreground">Programmés ce mois</p>
               </div>
             </CardContent>
@@ -89,7 +180,7 @@ export default function PropertyInspections() {
                 <Clock className="h-5 w-5 text-primary" />
               </div>
               <div className="mt-3">
-                <p className="text-2xl font-bold text-foreground">2</p>
+                <p className="text-2xl font-bold text-foreground">0</p>
                 <p className="text-xs text-muted-foreground">En attente signature</p>
               </div>
             </CardContent>
@@ -101,7 +192,7 @@ export default function PropertyInspections() {
                 <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
               <div className="mt-3">
-                <p className="text-2xl font-bold text-foreground">24</p>
+                <p className="text-2xl font-bold text-foreground">0</p>
                 <p className="text-xs text-muted-foreground">Complétés cette année</p>
               </div>
             </CardContent>
@@ -113,30 +204,56 @@ export default function PropertyInspections() {
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
               <div className="mt-3">
-                <p className="text-2xl font-bold text-foreground">1</p>
+                <p className="text-2xl font-bold text-foreground">0</p>
                 <p className="text-xs text-muted-foreground">Litiges en cours</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Upcoming Inspection Alert */}
-        <Card className="shadow-soft border-primary/30 bg-primary/5">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-              <Home className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground">Prochain état des lieux</h3>
-              <p className="text-sm text-muted-foreground">
-                Entrée - Appartement 12B - M. Dupont - 18 janvier 2026 à 10h00
+        {/* Upcoming Inspection Alert - Only show if there are lots and an upcoming inspection */}
+        {hasLots && upcomingInspection && (
+          <Card className="shadow-soft border-primary/30 bg-primary/5">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <Home className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground">Prochain état des lieux</h3>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(upcomingInspection.start_date) > new Date() ? "Entrée" : "Sortie"} - 
+                  {(upcomingInspection.lot as any)?.lot_number}
+                  {(upcomingInspection.lot as any)?.building && ` (${(upcomingInspection.lot as any).building.name})`} - 
+                  {(upcomingInspection.tenant as any)?.first_name} {(upcomingInspection.tenant as any)?.last_name} - 
+                  {format(
+                    new Date(upcomingInspection.start_date > new Date().toISOString() ? upcomingInspection.start_date : upcomingInspection.end_date || upcomingInspection.start_date),
+                    "d MMMM yyyy",
+                    { locale: fr }
+                  )}
+                </p>
+              </div>
+              <Button variant="outline" size="sm">
+                Préparer
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No apartments message */}
+        {!hasLots && !lotsLoading && (
+          <Card className="shadow-soft border-muted">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Home className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-2">Aucun appartement dans cette résidence</h3>
+              <p className="text-sm text-muted-foreground max-w-[400px]">
+                Vous devez d'abord créer des lots/appartements avant de pouvoir programmer des états des lieux.
+                Les états des lieux à venir s'afficheront ici une fois des baux créés.
               </p>
-            </div>
-            <Button variant="outline" size="sm">
-              Préparer
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -153,6 +270,13 @@ export default function PropertyInspections() {
             <InspectionTemplates residenceId={selectedResidence?.id} />
           </TabsContent>
         </Tabs>
+
+        {/* New Inspection Dialog */}
+        <NewInspectionDialog
+          open={showNewInspectionDialog}
+          onOpenChange={setShowNewInspectionDialog}
+          residenceId={selectedResidence?.id}
+        />
       </div>
     </AppLayout>
   );

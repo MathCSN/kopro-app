@@ -26,6 +26,8 @@ import { WorkOrdersList } from "@/components/maintenance/WorkOrdersList";
 import { SupplierQuotes } from "@/components/maintenance/SupplierQuotes";
 import { MaintenanceCalendar } from "@/components/maintenance/MaintenanceCalendar";
 import { MaintenanceContracts } from "@/components/maintenance/MaintenanceContracts";
+import { NewWorkOrderDialog } from "@/components/maintenance/NewWorkOrderDialog";
+import { WorkOrdersFilterSheet, WorkOrderFilters } from "@/components/maintenance/WorkOrdersFilterSheet";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -34,6 +36,15 @@ import { fr } from "date-fns/locale";
 function WorkOrdersContent() {
   const { selectedResidence } = useResidence();
   const [activeTab, setActiveTab] = useState("orders");
+  const [showNewOrderDialog, setShowNewOrderDialog] = useState(false);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [filters, setFilters] = useState<WorkOrderFilters>({
+    status: "all",
+    priority: "all",
+    category: "all",
+    dateFrom: "",
+    dateTo: "",
+  });
 
   // Fetch real stats from tickets (work orders are based on tickets with category 'maintenance')
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -112,11 +123,11 @@ function WorkOrdersContent() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowFilterSheet(true)}>
             <Filter className="h-4 w-4 mr-2" />
             Filtrer
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setShowNewOrderDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvel ordre de service
           </Button>
@@ -210,7 +221,7 @@ function WorkOrdersContent() {
                 {nextMaintenance.next_maintenance && ` - ${format(new Date(nextMaintenance.next_maintenance), "d MMMM yyyy", { locale: fr })}`}
               </p>
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setActiveTab("calendar")}>
               Voir le planning
             </Button>
           </CardContent>
@@ -227,7 +238,7 @@ function WorkOrdersContent() {
         </TabsList>
 
         <TabsContent value="orders" className="mt-6">
-          <WorkOrdersList residenceId={selectedResidence?.id} />
+          <WorkOrdersList residenceId={selectedResidence?.id} filters={filters} />
         </TabsContent>
 
         <TabsContent value="quotes" className="mt-6">
@@ -242,6 +253,20 @@ function WorkOrdersContent() {
           <MaintenanceContracts residenceId={selectedResidence?.id} />
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <NewWorkOrderDialog
+        open={showNewOrderDialog}
+        onOpenChange={setShowNewOrderDialog}
+        residenceId={selectedResidence?.id}
+      />
+
+      <WorkOrdersFilterSheet
+        open={showFilterSheet}
+        onOpenChange={setShowFilterSheet}
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
     </div>
   );
 }

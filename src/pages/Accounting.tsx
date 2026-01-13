@@ -31,11 +31,14 @@ import { AccountingJournal } from "@/components/accounting/AccountingJournal";
 import { BankReconciliation } from "@/components/accounting/BankReconciliation";
 import { BudgetManagement } from "@/components/accounting/BudgetManagement";
 import { ChargesRegularization } from "@/components/accounting/ChargesRegularization";
+import { NewAccountingEntryDialog } from "@/components/accounting/NewAccountingEntryDialog";
 import { startOfMonth, endOfMonth } from "date-fns";
+import { exportToCsv } from "@/lib/exportData";
 
 function AccountingContent() {
   const { selectedResidence } = useResidence();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showNewEntryDialog, setShowNewEntryDialog] = useState(false);
 
   const now = new Date();
   const monthStart = startOfMonth(now);
@@ -114,6 +117,20 @@ function AccountingContent() {
     enabled: !!selectedResidence?.id,
   });
 
+  const handleExport = async () => {
+    if (!selectedResidence?.id) return;
+
+    const { data } = await supabase
+      .from("accounting_lines")
+      .select("date, label, reference, debit, credit")
+      .eq("residence_id", selectedResidence.id)
+      .order("date", { ascending: false });
+
+    if (data) {
+      exportToCsv(data, `comptabilite_${selectedResidence.name}`);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -129,11 +146,11 @@ function AccountingContent() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Exporter
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setShowNewEntryDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle écriture
           </Button>
@@ -250,6 +267,13 @@ function AccountingContent() {
           <ChargesRegularization residenceId={selectedResidence?.id} />
         </TabsContent>
       </Tabs>
+
+      {/* New Entry Dialog */}
+      <NewAccountingEntryDialog
+        open={showNewEntryDialog}
+        onOpenChange={setShowNewEntryDialog}
+        residenceId={selectedResidence?.id}
+      />
     </div>
   );
 }
