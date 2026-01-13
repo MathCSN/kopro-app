@@ -80,8 +80,8 @@ type UserWithRole = {
   roles: UserRole[];
 };
 
-// Rôles: owner = KOPRO (admin global), autres = par résidence
-const ALL_ROLES: AppRole[] = ['owner', 'manager', 'cs', 'resident'];
+// Rôles: admin = KOPRO (admin global), autres = par résidence
+const ALL_ROLES: AppRole[] = ['admin', 'manager', 'cs', 'resident'];
 
 export default function OwnerUsers() {
   const { user, logout } = useAuth();
@@ -272,7 +272,7 @@ export default function OwnerUsers() {
   const filteredByResidence = selectedResidenceId === 'all' 
     ? users 
     : users.filter(u => 
-        u.roles.some(r => r.role === 'owner' || r.residence_id === selectedResidenceId)
+        u.roles.some(r => r.role === 'admin' || r.residence_id === selectedResidenceId)
       );
 
   const filteredUsers = filteredByResidence.filter(u => 
@@ -287,7 +287,7 @@ export default function OwnerUsers() {
 
   const stats = {
     total: filteredByResidence.length,
-    owners: filteredByResidence.filter(u => u.roles.some(r => r.role === 'owner')).length,
+    admins: filteredByResidence.filter(u => u.roles.some(r => r.role === 'admin')).length,
     managers: filteredByResidence.filter(u => u.roles.some(r => r.role === 'manager')).length,
     support: filteredByResidence.filter(u => u.roles.some(r => r.role === 'cs')).length,
     residents: filteredByResidence.filter(u => u.roles.some(r => r.role === 'resident')).length,
@@ -295,7 +295,7 @@ export default function OwnerUsers() {
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case 'owner': return 'default';
+      case 'admin': return 'default';
       case 'manager': return 'secondary';
       default: return 'outline';
     }
@@ -303,7 +303,7 @@ export default function OwnerUsers() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'owner': return 'KOPRO';
+      case 'admin': return 'KOPRO';
       case 'manager': return 'Gestionnaire';
       case 'cs': return 'Support';
       case 'resident': return 'Résident';
@@ -315,7 +315,7 @@ export default function OwnerUsers() {
     if (selectedResidenceId === 'all') {
       return userRoles;
     }
-    return userRoles.filter(r => r.role === 'owner' || r.residence_id === selectedResidenceId);
+    return userRoles.filter(r => r.role === 'admin' || r.residence_id === selectedResidenceId);
   };
 
   const selectedResidenceName = selectedResidenceId === 'all' 
@@ -402,7 +402,7 @@ export default function OwnerUsers() {
           </Card>
           <Card className="shadow-soft">
             <CardContent className="p-4">
-              <p className="text-2xl font-bold">{stats.owners}</p>
+              <p className="text-2xl font-bold">{stats.admins}</p>
               <p className="text-sm text-muted-foreground">KOPRO</p>
             </CardContent>
           </Card>
