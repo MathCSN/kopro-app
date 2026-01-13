@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useResidence } from "@/contexts/ResidenceContext";
@@ -30,10 +31,88 @@ import { AccountingJournal } from "@/components/accounting/AccountingJournal";
 import { BankReconciliation } from "@/components/accounting/BankReconciliation";
 import { BudgetManagement } from "@/components/accounting/BudgetManagement";
 import { ChargesRegularization } from "@/components/accounting/ChargesRegularization";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 function AccountingContent() {
   const { selectedResidence } = useResidence();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+
+  // Fetch real accounting stats
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["accounting-stats", selectedResidence?.id],
+    queryFn: async () => {
+      if (!selectedResidence?.id) return null;
+
+      // Get accounting lines for current month
+      const { data: lines } = await supabase
+        .from("accounting_lines")
+        .select("debit, credit")
+        .eq("residence_id", selectedResidence.id)
+        .gte("date", monthStart.toISOString())
+        .lte("date", monthEnd.toISOString());
+
+      const monthRevenue = lines?.reduce((sum, l) => sum + (l.credit || 0), 0) || 0;
+      const monthExpenses = lines?.reduce((sum, l) => sum + (l.debit || 0), 0) || 0;
+
+      // Get bank account balance (treasury)
+      const { data: bankAccounts } = await supabase
+        .from("bank_accounts")
+        .select("balance")
+        .eq("residence_id", selectedResidence.id);
+
+      const treasury = bankAccounts?.reduce((sum, ba) => sum + (ba.balance || 0), 0) || 0;
+
+      // Get unpaid amounts from copro call items
+      const { data: unpaidItems } = await supabase
+        .from("copro_call_items")
+        .select(`
+          amount,
+          paid_amount,
+          call:copro_calls!inner(residence_id)
+        `)
+        .eq("status", "pending");
+
+      const filteredUnpaid = unpaidItems?.filter(
+        (item: any) => item.call?.residence_id === selectedResidence.id
+      ) || [];
+
+      const unpaidAmount = filteredUnpaid.reduce(
+        (sum, item) => sum + ((item.amount || 0) - (item.paid_amount || 0)),
+        0
+      );
+
+      // Calculate month variation (compare with previous month)
+      const prevMonthStart = new Date(monthStart);
+      prevMonthStart.setMonth(prevMonthStart.getMonth() - 1);
+      const prevMonthEnd = new Date(monthEnd);
+      prevMonthEnd.setMonth(prevMonthEnd.getMonth() - 1);
+
+      const { data: prevLines } = await supabase
+        .from("accounting_lines")
+        .select("credit")
+        .eq("residence_id", selectedResidence.id)
+        .gte("date", prevMonthStart.toISOString())
+        .lte("date", prevMonthEnd.toISOString());
+
+      const prevMonthRevenue = prevLines?.reduce((sum, l) => sum + (l.credit || 0), 0) || 0;
+      const revenueVariation = prevMonthRevenue > 0 
+        ? ((monthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 
+        : 0;
+
+      return {
+        monthRevenue,
+        monthExpenses,
+        treasury,
+        unpaidAmount,
+        revenueVariation,
+      };
+    },
+    enabled: !!selectedResidence?.id,
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -67,10 +146,20 @@ function AccountingContent() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <TrendingUp className="h-5 w-5 text-success" />
-              <Badge variant="outline" className="text-success border-success/30">+12%</Badge>
+              {stats && stats.revenueVariation !== 0 && (
+                <Badge variant="outline" className={`${stats.revenueVariation >= 0 ? "text-success border-success/30" : "text-destructive border-destructive/30"}`}>
+                  {stats.revenueVariation >= 0 ? "+" : ""}{stats.revenueVariation.toFixed(0)}%
+                </Badge>
+              )}
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-bold text-foreground">45 280 €</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <p className="text-2xl font-bold text-foreground">
+                  {(stats?.monthRevenue || 0).toLocaleString()} €
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">Recettes du mois</p>
             </div>
           </CardContent>
@@ -80,10 +169,15 @@ function AccountingContent() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <TrendingDown className="h-5 w-5 text-destructive" />
-              <Badge variant="outline" className="text-destructive border-destructive/30">-5%</Badge>
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-bold text-foreground">32 150 €</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <p className="text-2xl font-bold text-foreground">
+                  {(stats?.monthExpenses || 0).toLocaleString()} €
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">Dépenses du mois</p>
             </div>
           </CardContent>
@@ -95,7 +189,13 @@ function AccountingContent() {
               <PiggyBank className="h-5 w-5 text-primary" />
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-bold text-foreground">156 420 €</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <p className="text-2xl font-bold text-foreground">
+                  {(stats?.treasury || 0).toLocaleString()} €
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">Trésorerie</p>
             </div>
           </CardContent>
@@ -107,7 +207,13 @@ function AccountingContent() {
               <Receipt className="h-5 w-5 text-warning" />
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-bold text-foreground">8 450 €</p>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <p className="text-2xl font-bold text-foreground">
+                  {(stats?.unpaidAmount || 0).toLocaleString()} €
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">Impayés</p>
             </div>
           </CardContent>
