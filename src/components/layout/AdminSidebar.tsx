@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -72,29 +72,41 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
     return location.pathname.startsWith(href);
   };
 
-  const NavItemLink = ({ item }: { item: NavItem }) => (
-    <NavLink
-      to={item.href}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
-        isActive(item.href)
-          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-soft"
-          : "text-slate-300 hover:bg-slate-800 hover:text-white"
-      )}
-    >
-      <item.icon className={cn("h-5 w-5 shrink-0", collapsed && !isMobile && "mx-auto")} />
-      {(!collapsed || isMobile) && (
-        <>
-          <span className="font-medium truncate">{item.title}</span>
-          {item.badge && (
-            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 text-sidebar-primary-foreground text-xs font-semibold px-1.5">
-              {item.badge}
-            </span>
-          )}
-        </>
-      )}
-    </NavLink>
-  );
+  // Auto-scroll to active item on mount
+  useEffect(() => {
+    const activeElement = document.querySelector('[data-active="true"]');
+    if (activeElement) {
+      activeElement.scrollIntoView({ block: "nearest", behavior: "instant" });
+    }
+  }, [location.pathname]);
+
+  const NavItemLink = ({ item }: { item: NavItem }) => {
+    const active = isActive(item.href);
+    return (
+      <NavLink
+        to={item.href}
+        data-active={active}
+        className={cn(
+          "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+          active
+            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-soft"
+            : "text-slate-300 hover:bg-slate-800 hover:text-white"
+        )}
+      >
+        <item.icon className={cn("h-5 w-5 shrink-0", collapsed && !isMobile && "mx-auto")} />
+        {(!collapsed || isMobile) && (
+          <>
+            <span className="font-medium truncate">{item.title}</span>
+            {item.badge && (
+              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 text-sidebar-primary-foreground text-xs font-semibold px-1.5">
+                {item.badge}
+              </span>
+            )}
+          </>
+        )}
+      </NavLink>
+    );
+  };
 
   return (
     <div className={cn(
@@ -190,8 +202,17 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
   );
 }
 
+const ADMIN_SIDEBAR_COLLAPSED_KEY = "kopro_admin_sidebar_collapsed";
+
 export function AdminSidebar({ onLogout }: AdminSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = localStorage.getItem(ADMIN_SIDEBAR_COLLAPSED_KEY);
+    return saved === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem(ADMIN_SIDEBAR_COLLAPSED_KEY, String(collapsed));
+  }, [collapsed]);
 
   return (
     <aside
