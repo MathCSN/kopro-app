@@ -34,7 +34,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
 
 function WorkOrdersContent() {
-  const { selectedResidence } = useResidence();
+  const { selectedResidence, isAllResidences, residences } = useResidence();
   const [activeTab, setActiveTab] = useState("orders");
   const [showNewOrderDialog, setShowNewOrderDialog] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
@@ -46,11 +46,16 @@ function WorkOrdersContent() {
     dateTo: "",
   });
 
+  // Get residence IDs to filter by
+  const residenceIds = isAllResidences 
+    ? residences.map(r => r.id) 
+    : selectedResidence?.id ? [selectedResidence.id] : [];
+
   // Fetch real stats from tickets (work orders are based on tickets with category 'maintenance')
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["work-orders-stats", selectedResidence?.id],
+    queryKey: ["work-orders-stats", residenceIds, isAllResidences],
     queryFn: async () => {
-      if (!selectedResidence?.id) return { pending: 0, inProgress: 0, completed: 0, monthExpenses: 0 };
+      if (residenceIds.length === 0) return { pending: 0, inProgress: 0, completed: 0, monthExpenses: 0 };
 
       const now = new Date();
       const monthStart = startOfMonth(now);
@@ -60,7 +65,7 @@ function WorkOrdersContent() {
       const { data: tickets, error: ticketsError } = await supabase
         .from("tickets")
         .select("id, status, created_at")
-        .eq("residence_id", selectedResidence.id);
+        .in("residence_id", residenceIds);
 
       if (ticketsError) throw ticketsError;
 
@@ -76,7 +81,7 @@ function WorkOrdersContent() {
       const { data: maintenanceLogs, error: maintenanceError } = await supabase
         .from("maintenance_logs")
         .select("contract_amount")
-        .eq("residence_id", selectedResidence.id)
+        .in("residence_id", residenceIds)
         .gte("last_maintenance", monthStart.toISOString())
         .lte("last_maintenance", monthEnd.toISOString());
 
@@ -84,19 +89,19 @@ function WorkOrdersContent() {
 
       return { pending, inProgress, completed, monthExpenses };
     },
-    enabled: !!selectedResidence?.id,
+    enabled: residenceIds.length > 0,
   });
 
   // Fetch next scheduled maintenance
   const { data: nextMaintenance } = useQuery({
-    queryKey: ["next-maintenance", selectedResidence?.id],
+    queryKey: ["next-maintenance", residenceIds, isAllResidences],
     queryFn: async () => {
-      if (!selectedResidence?.id) return null;
+      if (residenceIds.length === 0) return null;
 
       const { data, error } = await supabase
         .from("maintenance_logs")
         .select("equipment_name, equipment_type, next_maintenance, building:buildings(name)")
-        .eq("residence_id", selectedResidence.id)
+        .in("residence_id", residenceIds)
         .gte("next_maintenance", new Date().toISOString())
         .order("next_maintenance", { ascending: true })
         .limit(1)
@@ -105,7 +110,7 @@ function WorkOrdersContent() {
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedResidence?.id,
+    enabled: residenceIds.length > 0,
   });
 
   return (
@@ -238,19 +243,19 @@ function WorkOrdersContent() {
         </TabsList>
 
         <TabsContent value="orders" className="mt-6">
-          <WorkOrdersList residenceId={selectedResidence?.id} filters={filters} />
+          <WorkOrdersList residenceIds={residenceIds} filters={filters} />
         </TabsContent>
 
         <TabsContent value="quotes" className="mt-6">
-          <SupplierQuotes residenceId={selectedResidence?.id} />
+          <SupplierQuotes residenceIds={residenceIds} />
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">
-          <MaintenanceCalendar residenceId={selectedResidence?.id} />
+          <MaintenanceCalendar residenceIds={residenceIds} />
         </TabsContent>
 
         <TabsContent value="contracts" className="mt-6">
-          <MaintenanceContracts residenceId={selectedResidence?.id} />
+          <MaintenanceContracts residenceIds={residenceIds} />
         </TabsContent>
       </Tabs>
 

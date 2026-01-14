@@ -1,12 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface SupplierQuotesProps { residenceId?: string; }
+export interface SupplierQuotesProps { residenceIds?: string[]; }
 
-export function SupplierQuotes({ residenceId }: SupplierQuotesProps) {
+export function SupplierQuotes({ residenceIds }: SupplierQuotesProps) {
   return (
     <Card className="shadow-soft">
       <CardHeader><CardTitle>Devis prestataires</CardTitle></CardHeader>
-      <CardContent><p className="text-muted-foreground">3 devis en attente de validation</p></CardContent>
+      <CardContent><p className="text-muted-foreground">Aucun devis en attente</p></CardContent>
     </Card>
   );
 }
