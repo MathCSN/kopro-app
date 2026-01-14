@@ -31,33 +31,38 @@ import { fr } from "date-fns/locale";
 
 export default function PropertyInspections() {
   const { user, profile, logout, isManager } = useAuth();
-  const { selectedResidence } = useResidence();
+  const { selectedResidence, isAllResidences, residences } = useResidence();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("list");
   const [showNewInspectionDialog, setShowNewInspectionDialog] = useState(false);
 
+  // Get residence IDs to filter by
+  const residenceIds = isAllResidences 
+    ? residences.map(r => r.id) 
+    : selectedResidence?.id ? [selectedResidence.id] : [];
+
   // Fetch lots for the residence to determine if there are apartments
   const { data: lots, isLoading: lotsLoading } = useQuery({
-    queryKey: ["lots-count", selectedResidence?.id],
+    queryKey: ["lots-count", residenceIds, isAllResidences],
     queryFn: async () => {
-      if (!selectedResidence?.id) return [];
+      if (residenceIds.length === 0) return [];
 
       const { data, error } = await supabase
         .from("lots")
-        .select("id, lot_number, building:buildings(name)")
-        .eq("residence_id", selectedResidence.id);
+        .select("id, lot_number, residence_id, building:buildings(name)")
+        .in("residence_id", residenceIds);
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!selectedResidence?.id,
+    enabled: residenceIds.length > 0,
   });
 
   // Fetch leases with end dates coming soon (for upcoming inspections)
   const { data: upcomingInspection } = useQuery({
-    queryKey: ["upcoming-inspection", selectedResidence?.id],
+    queryKey: ["upcoming-inspection", residenceIds, isAllResidences],
     queryFn: async () => {
-      if (!selectedResidence?.id) return null;
+      if (residenceIds.length === 0) return null;
 
       // Get leases with start_date in the future (entry inspections) or end_date coming soon (exit)
       const now = new Date();
@@ -73,7 +78,7 @@ export default function PropertyInspections() {
           tenant:profiles!leases_tenant_id_fkey(first_name, last_name),
           lot:lots!leases_lot_id_fkey(lot_number, building:buildings(name))
         `)
-        .eq("residence_id", selectedResidence.id)
+        .in("residence_id", residenceIds)
         .or(`start_date.gte.${now.toISOString()},end_date.gte.${now.toISOString()},end_date.lte.${nextMonth.toISOString()}`)
         .order("start_date", { ascending: true })
         .limit(1)
@@ -82,7 +87,7 @@ export default function PropertyInspections() {
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedResidence?.id && (lots?.length || 0) > 0,
+    enabled: residenceIds.length > 0 && (lots?.length || 0) > 0,
   });
 
   const handleLogout = async () => {
@@ -91,7 +96,7 @@ export default function PropertyInspections() {
   };
 
   const handleExport = async () => {
-    if (!selectedResidence?.id) return;
+    if (residenceIds.length === 0) return;
 
     // Export leases data as inspection records
     const { data } = await supabase
@@ -103,7 +108,7 @@ export default function PropertyInspections() {
         tenant:profiles!leases_tenant_id_fkey(first_name, last_name),
         lot:lots!leases_lot_id_fkey(lot_number)
       `)
-      .eq("residence_id", selectedResidence.id)
+      .in("residence_id", residenceIds)
       .order("start_date", { ascending: false });
 
     if (data) {
@@ -114,7 +119,8 @@ export default function PropertyInspections() {
         date_sortie: lease.end_date || "",
         statut: lease.status,
       }));
-      exportToCsv(exportData, `etats_des_lieux_${selectedResidence.name}`);
+      const filename = isAllResidences ? "etats_des_lieux_toutes_residences" : `etats_des_lieux_${selectedResidence?.name}`;
+      exportToCsv(exportData, filename);
     }
   };
 
@@ -263,11 +269,11 @@ export default function PropertyInspections() {
           </TabsList>
 
           <TabsContent value="list" className="mt-6">
-            <InspectionsList residenceId={selectedResidence?.id} />
+            <InspectionsList residenceIds={residenceIds} />
           </TabsContent>
 
           <TabsContent value="templates" className="mt-6">
-            <InspectionTemplates residenceId={selectedResidence?.id} />
+            <InspectionTemplates residenceIds={residenceIds} />
           </TabsContent>
         </Tabs>
 
@@ -275,7 +281,8 @@ export default function PropertyInspections() {
         <NewInspectionDialog
           open={showNewInspectionDialog}
           onOpenChange={setShowNewInspectionDialog}
-          residenceId={selectedResidence?.id}
+          residenceIds={residenceIds}
+          lots={lots || []}
         />
       </div>
     </AppLayout>

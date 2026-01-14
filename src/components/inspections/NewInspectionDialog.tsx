@@ -4,18 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
 import { Home } from "lucide-react";
 
-interface NewInspectionDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  residenceId?: string;
+interface Lot {
+  id: string;
+  lot_number: string;
+  residence_id: string;
+  building?: { name: string } | null;
+  floor?: number | null;
+  door?: string | null;
 }
 
-export function NewInspectionDialog({ open, onOpenChange, residenceId }: NewInspectionDialogProps) {
+export interface NewInspectionDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  residenceIds?: string[];
+  lots?: Lot[];
+}
+
+export function NewInspectionDialog({ open, onOpenChange, residenceIds, lots = [] }: NewInspectionDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     lot_id: "",
@@ -24,27 +32,9 @@ export function NewInspectionDialog({ open, onOpenChange, residenceId }: NewInsp
     scheduled_time: "10:00",
   });
 
-  // Fetch available lots for the residence
-  const { data: lots, isLoading: lotsLoading } = useQuery({
-    queryKey: ["lots-for-inspection", residenceId],
-    queryFn: async () => {
-      if (!residenceId) return [];
-
-      const { data, error } = await supabase
-        .from("lots")
-        .select("id, lot_number, floor, door, type, building:buildings(name)")
-        .eq("residence_id", residenceId)
-        .order("lot_number");
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!residenceId && open,
-  });
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!residenceId) {
+    if (!residenceIds || residenceIds.length === 0) {
       toast.error("Veuillez sélectionner une résidence");
       return;
     }
@@ -85,7 +75,7 @@ export function NewInspectionDialog({ open, onOpenChange, residenceId }: NewInsp
           </DialogDescription>
         </DialogHeader>
 
-        {!hasLots && !lotsLoading ? (
+        {!hasLots ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <Home className="h-8 w-8 text-muted-foreground" />
@@ -113,8 +103,8 @@ export function NewInspectionDialog({ open, onOpenChange, residenceId }: NewInsp
                   {lots?.map((lot) => (
                     <SelectItem key={lot.id} value={lot.id}>
                       {lot.lot_number}
-                      {lot.building && ` - ${(lot.building as any).name}`}
-                      {lot.floor !== null && ` (Étage ${lot.floor})`}
+                      {lot.building && ` - ${lot.building.name}`}
+                      {lot.floor !== null && lot.floor !== undefined && ` (Étage ${lot.floor})`}
                       {lot.door && ` - Porte ${lot.door}`}
                     </SelectItem>
                   ))}

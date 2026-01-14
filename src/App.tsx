@@ -107,8 +107,8 @@ const App = () => (
             {/* Public quote page */}
             <Route path="/quote/:quoteNumber" element={<QuotePublic />} />
             
-            {/* Legacy agency signup - redirect to new manager registration */}
-            <Route path="/agency-signup" element={<Navigate to="/auth/register-manager" replace />} />
+            {/* Agency signup for trial users upgrading to subscription */}
+            <Route path="/agency-signup" element={<AgencySignup />} />
             
             {/* Admin routes - Global platform admin */}
             <Route path="/admin/platform" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

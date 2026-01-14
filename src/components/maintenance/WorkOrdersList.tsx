@@ -1,12 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkOrderFilters } from "./WorkOrdersFilterSheet";
 
-interface WorkOrdersListProps { 
-  residenceId?: string; 
+export interface WorkOrdersListProps { 
+  residenceIds?: string[]; 
   filters?: WorkOrderFilters;
 }
 
-export function WorkOrdersList({ residenceId, filters }: WorkOrdersListProps) {
+export function WorkOrdersList({ residenceIds, filters }: WorkOrdersListProps) {
   return (
     <Card className="shadow-soft">
       <CardHeader><CardTitle>Liste des ordres de service</CardTitle></CardHeader>

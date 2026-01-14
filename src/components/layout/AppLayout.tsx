@@ -11,13 +11,13 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, userRole = "resident", onLogout }: AppLayoutProps) {
   return (
-    <div className="flex min-h-screen w-full bg-background flex-col">
-      {/* Trial banner for managers */}
+    <div className="flex flex-col min-h-screen w-full bg-background">
+      {/* Trial banner for managers - outside flex for proper layout */}
       <TrialBanner />
 
-      <div className="flex flex-1">
-        {/* Desktop Sidebar - Fixed position, full height */}
-        <div className="hidden md:block shrink-0">
+      <div className="flex flex-1 min-h-0">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:flex shrink-0">
           <AppSidebar userRole={userRole} onLogout={onLogout} />
         </div>
 
@@ -25,7 +25,7 @@ export function AppLayout({ children, userRole = "resident", onLogout }: AppLayo
         <MobileNav userRole={userRole} onLogout={onLogout} />
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-h-screen w-full overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Mobile top padding - increased for residence selector */}
           <div className="h-[104px] md:hidden shrink-0" />
 
