@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
@@ -79,16 +79,60 @@ const itemRoleRestrictions: Record<string, string[]> = {
   inspections: ["manager", "admin", "owner"],
 };
 
+const APP_SIDEBAR_COLLAPSED_KEY = "kopro_app_sidebar_collapsed";
+const APP_SIDEBAR_SCROLLTOP_KEY = "kopro_app_sidebar_scrolltop";
+
 interface AppSidebarProps {
   userRole?: string;
   onLogout?: () => void;
 }
 
 export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = localStorage.getItem(APP_SIDEBAR_COLLAPSED_KEY);
+    return saved === "true";
+  });
   const [navSettingsOpen, setNavSettingsOpen] = useState(false);
   const location = useLocation();
   const { navSettings, isLoading } = useNavSettings();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Persist collapsed state
+  useEffect(() => {
+    localStorage.setItem(APP_SIDEBAR_COLLAPSED_KEY, String(collapsed));
+  }, [collapsed]);
+
+  // Restore scroll position and auto-scroll to active item
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const saved = localStorage.getItem(APP_SIDEBAR_SCROLLTOP_KEY);
+    if (saved !== null) {
+      const val = Number.parseInt(saved, 10);
+      if (!Number.isNaN(val)) {
+        container.scrollTop = val;
+      }
+    }
+
+    requestAnimationFrame(() => {
+      const activeEl = container.querySelector('[data-active="true"]');
+      if (!(activeEl instanceof HTMLElement)) return;
+
+      const c = container.getBoundingClientRect();
+      const a = activeEl.getBoundingClientRect();
+      const inView = a.top >= c.top && a.bottom <= c.bottom;
+      if (!inView) {
+        activeEl.scrollIntoView({ block: "nearest", behavior: "auto" });
+      }
+    });
+  }, [location.pathname]);
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    localStorage.setItem(APP_SIDEBAR_SCROLLTOP_KEY, String(container.scrollTop));
+  };
 
   const isActive = (href: string) => location.pathname === href || location.pathname.startsWith(href + "/");
 
@@ -115,12 +159,14 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
 
   const NavItemLink = ({ item }: { item: { id: string; title: string; href: string } }) => {
     const Icon = iconMap[item.id] || FileText;
+    const active = isActive(item.href);
     return (
       <NavLink
         to={item.href}
+        data-active={active}
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
-          isActive(item.href)
+          active
             ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-soft"
             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         )}
@@ -159,7 +205,7 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
       )}
 
       {/* Navigation */}
-      <div className="flex-1 px-3 py-4 overflow-y-auto">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 px-3 py-4 overflow-y-auto">
         <nav className="space-y-6">
           {visibleCategories.map((category) => {
             const items = getItemsForCategory(category.id);
