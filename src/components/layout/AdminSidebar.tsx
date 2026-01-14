@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -62,8 +62,12 @@ interface AdminSidebarContentProps {
   isMobile?: boolean;
 }
 
+const ADMIN_SIDEBAR_COLLAPSED_KEY = "kopro_admin_sidebar_collapsed";
+const ADMIN_SIDEBAR_SCROLLTOP_KEY = "kopro_admin_sidebar_scrolltop";
+
 function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = false }: AdminSidebarContentProps) {
   const location = useLocation();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (href: string) => {
     if (href === "/admin/platform") {
@@ -72,13 +76,36 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
     return location.pathname.startsWith(href);
   };
 
-  // Auto-scroll to active item on mount
   useEffect(() => {
-    const activeElement = document.querySelector('[data-active="true"]');
-    if (activeElement) {
-      activeElement.scrollIntoView({ block: "nearest", behavior: "instant" });
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const saved = localStorage.getItem(ADMIN_SIDEBAR_SCROLLTOP_KEY);
+    if (saved !== null) {
+      const val = Number.parseInt(saved, 10);
+      if (!Number.isNaN(val)) {
+        container.scrollTop = val;
+      }
     }
+
+    requestAnimationFrame(() => {
+      const activeEl = container.querySelector('[data-active="true"]');
+      if (!(activeEl instanceof HTMLElement)) return;
+
+      const c = container.getBoundingClientRect();
+      const a = activeEl.getBoundingClientRect();
+      const inView = a.top >= c.top && a.bottom <= c.bottom;
+      if (!inView) {
+        activeEl.scrollIntoView({ block: "nearest", behavior: "auto" });
+      }
+    });
   }, [location.pathname]);
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    localStorage.setItem(ADMIN_SIDEBAR_SCROLLTOP_KEY, String(container.scrollTop));
+  };
 
   const NavItemLink = ({ item }: { item: NavItem }) => {
     const active = isActive(item.href);
@@ -129,7 +156,7 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 px-3 py-4 overflow-y-auto">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 px-3 py-4 overflow-y-auto">
         <nav className="space-y-6">
           {/* Main Section */}
           <div className="space-y-1">
@@ -201,8 +228,6 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
     </div>
   );
 }
-
-const ADMIN_SIDEBAR_COLLAPSED_KEY = "kopro_admin_sidebar_collapsed";
 
 export function AdminSidebar({ onLogout }: AdminSidebarProps) {
   const [collapsed, setCollapsed] = useState(() => {
