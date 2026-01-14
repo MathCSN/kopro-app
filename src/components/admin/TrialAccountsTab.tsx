@@ -373,21 +373,34 @@ export function TrialAccountsTab() {
                               variant="outline"
                               size="sm"
                               onClick={() => window.open(getTrialUrl(trial.token), "_blank")}
+                              aria-label="Ouvrir le lien d'inscription"
                             >
                               <ExternalLink className="h-3 w-3" />
                             </Button>
                           </>
                         )}
-                        {(trial.status === "pending" || trial.status === "expired") && (
+
+                        {trial.agency_id && trial.status !== "pending" && (
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => deleteMutation.mutate(trial.id)}
-                            className="text-destructive hover:text-destructive"
+                            onClick={() => window.open(`${window.location.origin}/admin/clients/${trial.agency_id}`, "_blank")}
+                            className="gap-1"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <ExternalLink className="h-3 w-3" />
+                            Voir agence
                           </Button>
                         )}
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteMutation.mutate(trial.id)}
+                          className="text-destructive hover:text-destructive"
+                          aria-label="Supprimer le compte d'essai"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
