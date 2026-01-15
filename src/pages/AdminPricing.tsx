@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Euro, Save, Loader2, History, Info } from "lucide-react";
+import { Euro, Save, Loader2, History, Info, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,6 +258,22 @@ export default function AdminPricing() {
             </Card>
           </div>
         )}
+
+        {/* Link to payment page */}
+        <Card className="shadow-soft">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Page de paiement publique</h3>
+              <p className="text-sm text-muted-foreground">
+                Consultez la page de paiement visible par les clients
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => navigate("/admin/payment-page")} className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Voir la page de paiement
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );
