@@ -18,6 +18,7 @@ import {
   DollarSign,
   UserCheck,
   Calculator,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ const mainNavItems: NavItem[] = [
   { title: "Vue d'ensemble", href: "/admin/platform", icon: LayoutDashboard },
   { title: "Clients", href: "/admin/clients", icon: Building2 },
   { title: "Comptes d'essai", href: "/admin/trials", icon: Users },
+  { title: "Tickets", href: "/admin/tickets", icon: Ticket },
 ];
 
 const financeNavItems: NavItem[] = [

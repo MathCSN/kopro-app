@@ -158,7 +158,7 @@ export default function OwnerDashboard() {
               <p className="text-xs text-muted-foreground">Utilisateurs</p>
             </CardContent>
           </Card>
-          <Card className="shadow-soft">
+          <Card className="shadow-soft cursor-pointer hover:shadow-medium transition-shadow" onClick={() => navigate("/admin/tickets")}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <AlertTriangle className="h-5 w-5 text-kopro-rose" />
