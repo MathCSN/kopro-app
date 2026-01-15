@@ -14,17 +14,8 @@ import {
   Filter,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -34,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { AgencyResidenceFilter } from "@/components/admin/AgencyResidenceFilter";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -75,6 +67,7 @@ export default function AdminTickets() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAgency, setSelectedAgency] = useState<string>("all");
   const [selectedResidence, setSelectedResidence] = useState<string>("all");
 
   // Fetch all tickets with residence info
@@ -91,20 +84,6 @@ export default function AdminTickets() {
 
       if (error) throw error;
       return (data || []) as TicketWithResidence[];
-    },
-  });
-
-  // Fetch residences for filter
-  const { data: residences = [] } = useQuery({
-    queryKey: ["admin-residences-list"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("residences")
-        .select("id, name")
-        .order("name");
-
-      if (error) throw error;
-      return data || [];
     },
   });
 
@@ -127,6 +106,11 @@ export default function AdminTickets() {
 
   const filterTickets = (status: string) => {
     let filtered = tickets;
+    
+    // Filter by agency
+    if (selectedAgency !== "all") {
+      filtered = filtered.filter((t) => t.residence?.agency_id === selectedAgency);
+    }
     
     // Filter by status
     if (status !== "all") {
@@ -152,9 +136,15 @@ export default function AdminTickets() {
   };
 
   const getStatusCounts = () => {
-    const filtered = selectedResidence === "all" 
-      ? tickets 
-      : tickets.filter(t => t.residence_id === selectedResidence);
+    let filtered = tickets;
+    
+    if (selectedAgency !== "all") {
+      filtered = filtered.filter(t => t.residence?.agency_id === selectedAgency);
+    }
+    
+    if (selectedResidence !== "all") {
+      filtered = filtered.filter(t => t.residence_id === selectedResidence);
+    }
     
     return {
       all: filtered.length,
@@ -222,8 +212,14 @@ export default function AdminTickets() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-4">
+          <AgencyResidenceFilter
+            selectedAgency={selectedAgency}
+            selectedResidence={selectedResidence}
+            onAgencyChange={setSelectedAgency}
+            onResidenceChange={setSelectedResidence}
+          />
+          <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Rechercher par titre, n° ticket ou résidence..."
@@ -232,20 +228,6 @@ export default function AdminTickets() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Select value={selectedResidence} onValueChange={setSelectedResidence}>
-            <SelectTrigger className="w-full sm:w-64">
-              <Building2 className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Toutes les résidences" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les résidences</SelectItem>
-              {residences.map((residence) => (
-                <SelectItem key={residence.id} value={residence.id}>
-                  {residence.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Tickets Table */}
