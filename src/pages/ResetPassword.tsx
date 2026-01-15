@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Building2, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react";
+import { Lock, Eye, EyeOff, ArrowRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 const passwordSchema = z.object({
   password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").max(128, "Mot de passe trop long"),
@@ -135,9 +136,7 @@ export default function ResetPassword() {
         
         <div className="relative z-10 flex flex-col justify-center p-12 lg:p-16">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl gradient-accent flex items-center justify-center shadow-glow">
-              <Building2 className="h-7 w-7 text-accent-foreground" />
-            </div>
+            <img src={koproLogo} alt="KOPRO" className="w-12 h-12" />
             <h1 className="font-display text-3xl font-bold text-primary-foreground">Kopro</h1>
           </div>
           
@@ -156,9 +155,7 @@ export default function ResetPassword() {
         <div className="w-full max-w-md space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-soft">
-              <Building2 className="h-6 w-6 text-accent-foreground" />
-            </div>
+            <img src={koproLogo} alt="KOPRO" className="w-10 h-10" />
             <h1 className="font-display text-2xl font-bold text-foreground">Kopro</h1>
           </div>
 

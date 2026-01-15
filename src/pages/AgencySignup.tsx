@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Building2, Users, Euro, CheckCircle2, ArrowRight, Loader2,
-  Shield, Minus, Plus, CreditCard
+  Minus, Plus, CreditCard
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 interface PricingConfig {
   activation_price_per_residence: number;
@@ -195,9 +196,7 @@ export default function AgencySignup() {
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <img src={koproLogo} alt="KOPRO" className="w-9 h-9" />
             <span className="font-display font-bold text-xl">KOPRO</span>
           </div>
           <Button variant="ghost" onClick={() => navigate("/auth")}>
