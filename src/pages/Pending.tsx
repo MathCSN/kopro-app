@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AUTH_MESSAGES } from "@/lib/messages";
 import { QrScannerDialog } from "@/components/residence/QrScannerDialog";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 export default function Pending() {
   const { user, logout } = useAuth();
@@ -148,9 +149,7 @@ export default function Pending() {
       {/* Header */}
       <header className="border-b bg-card p-4">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-            <Building2 className="h-5 w-5 text-accent-foreground" />
-          </div>
+          <img src={koproLogo} alt="KOPRO" className="w-8 h-8" />
           <span className="font-display font-bold text-lg">KOPRO</span>
         </div>
       </header>

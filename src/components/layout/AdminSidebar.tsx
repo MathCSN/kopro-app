@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import koproLogo from "@/assets/kopro-logo.svg";
 
 interface NavItem {
   title: string;
@@ -146,9 +147,7 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-800">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-kopro-amber flex items-center justify-center shadow-soft">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
+          <img src={koproLogo} alt="KOPRO" className="w-9 h-9" />
           {(!collapsed || isMobile) && (
             <div>
               <h1 className="font-display font-bold text-lg text-white">KOPRO</h1>
