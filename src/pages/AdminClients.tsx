@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -15,7 +15,9 @@ import {
   Users, 
   Home,
   ChevronRight,
-  Filter
+  Filter,
+  Trash2,
+  MoreVertical
 } from "lucide-react";
 import {
   Select,
@@ -24,7 +26,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AgencyFormDialog } from "@/components/admin/clients/AgencyFormDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface Agency {
   id: string;
@@ -48,9 +67,13 @@ interface Agency {
 
 export default function AdminClients() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [agencyToDelete, setAgencyToDelete] = useState<Agency | null>(null);
 
   const { data: agencies = [], isLoading, refetch } = useQuery({
     queryKey: ["admin-agencies"],
@@ -139,6 +162,56 @@ export default function AdminClients() {
     const first = owner.first_name?.[0] || "";
     const last = owner.last_name?.[0] || "";
     return (first + last).toUpperCase() || "?";
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (agencyId: string) => {
+      // Delete related data first (residences will cascade delete lots, buildings, etc.)
+      const { error: residencesError } = await supabase
+        .from("residences")
+        .delete()
+        .eq("agency_id", agencyId);
+      
+      if (residencesError) throw residencesError;
+
+      // Delete user_roles linked to this agency
+      const { error: rolesError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("agency_id", agencyId);
+      
+      if (rolesError) throw rolesError;
+
+      // Delete the agency
+      const { error } = await supabase
+        .from("agencies")
+        .delete()
+        .eq("id", agencyId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-agencies"] });
+      toast({
+        title: "Agence supprimée",
+        description: "L'agence et toutes ses données ont été supprimées.",
+      });
+      setDeleteDialogOpen(false);
+      setAgencyToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer l'agence.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteClick = (agency: Agency, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setAgencyToDelete(agency);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -308,16 +381,41 @@ export default function AdminClients() {
                           <Home className="h-4 w-4" />
                           <span className="font-semibold text-foreground">{agency.residences_count}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">Résidences</p>
+                        <p className="text-xs text-muted-foreground">
+                          {agency.residences_count <= 1 ? "Résidence" : "Résidences"}
+                        </p>
                       </div>
                       <div className="text-center">
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <Users className="h-4 w-4" />
                           <span className="font-semibold text-foreground">{agency.lots_count}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">Lots</p>
+                        <p className="text-xs text-muted-foreground">
+                          {agency.lots_count <= 1 ? "Lot" : "Lots"}
+                        </p>
                       </div>
                     </div>
+
+                    {/* Actions Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover">
+                        <DropdownMenuItem onClick={() => navigate(`/admin/clients/${agency.id}`)}>
+                          Voir les détails
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => handleDeleteClick(agency, e)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
                     {/* Arrow */}
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -337,6 +435,33 @@ export default function AdminClients() {
           setIsFormOpen(false);
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'agence ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Toutes les données liées à l'agence{" "}
+              <strong>{agencyToDelete?.name}</strong> seront supprimées, incluant :
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>{agencyToDelete?.residences_count || 0} résidence(s)</li>
+                <li>{agencyToDelete?.lots_count || 0} lot(s)</li>
+                <li>Tous les bâtiments et utilisateurs associés</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => agencyToDelete && deleteMutation.mutate(agencyToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

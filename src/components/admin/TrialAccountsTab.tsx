@@ -190,7 +190,7 @@ export function TrialAccountsTab() {
           <p className="text-muted-foreground text-sm">
             Créez et gérez les comptes d'essai pour les gestionnaires •{" "}
             <a 
-              href="/auth/register-manager" 
+              href="/auth/register-trial" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-primary hover:underline inline-flex items-center gap-1"

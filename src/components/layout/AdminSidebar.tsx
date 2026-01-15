@@ -35,6 +35,7 @@ const mainNavItems: NavItem[] = [
   { title: "Clients", href: "/admin/clients", icon: Building2 },
   { title: "Comptes d'essai", href: "/admin/trials", icon: Users },
   { title: "Tickets", href: "/admin/tickets", icon: Ticket },
+  { title: "Utilisateurs", href: "/admin/global-users", icon: Shield },
 ];
 
 const financeNavItems: NavItem[] = [

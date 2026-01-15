@@ -59,9 +59,15 @@ import { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
+type Agency = {
+  id: string;
+  name: string;
+};
+
 type Residence = {
   id: string;
   name: string;
+  agency_id: string | null;
 };
 
 type UserRole = {
@@ -89,9 +95,11 @@ export default function OwnerUsers() {
   const { toast } = useToast();
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
+  const [agencies, setAgencies] = useState<Agency[]>([]);
   const [residences, setResidences] = useState<Residence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string>("all");
   const [selectedResidenceId, setSelectedResidenceId] = useState<string>("all");
   const [residenceSearchOpen, setResidenceSearchOpen] = useState(false);
   const [residenceSearchQuery, setResidenceSearchQuery] = useState("");
@@ -115,16 +123,19 @@ export default function OwnerUsers() {
     try {
       setIsLoading(true);
       
-      const [residencesRes, profilesRes, rolesRes] = await Promise.all([
-        supabase.from('residences').select('id, name').order('name'),
+      const [agenciesRes, residencesRes, profilesRes, rolesRes] = await Promise.all([
+        supabase.from('agencies').select('id, name').order('name'),
+        supabase.from('residences').select('id, name, agency_id').order('name'),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('user_roles').select('id, user_id, role, residence_id'),
       ]);
 
+      if (agenciesRes.error) throw agenciesRes.error;
       if (residencesRes.error) throw residencesRes.error;
       if (profilesRes.error) throw profilesRes.error;
       if (rolesRes.error) throw rolesRes.error;
 
+      setAgencies(agenciesRes.data || []);
       setResidences(residencesRes.data || []);
 
       const residenceMap = new Map((residencesRes.data || []).map(r => [r.id, r.name]));
@@ -269,11 +280,39 @@ export default function OwnerUsers() {
 
   if (!user) return null;
 
-  const filteredByResidence = selectedResidenceId === 'all' 
-    ? users 
-    : users.filter(u => 
+  // Get residences filtered by selected agency
+  const filteredResidencesByAgency = selectedAgencyId === 'all'
+    ? residences
+    : residences.filter(r => r.agency_id === selectedAgencyId);
+
+  // Reset residence selection when agency changes
+  const handleAgencyChange = (agencyId: string) => {
+    setSelectedAgencyId(agencyId);
+    setSelectedResidenceId("all");
+  };
+
+  const filteredByResidence = (() => {
+    let result = users;
+    
+    // Filter by agency first
+    if (selectedAgencyId !== 'all') {
+      const agencyResidenceIds = residences
+        .filter(r => r.agency_id === selectedAgencyId)
+        .map(r => r.id);
+      result = result.filter(u => 
+        u.roles.some(r => r.role === 'admin' || (r.residence_id && agencyResidenceIds.includes(r.residence_id)))
+      );
+    }
+    
+    // Then filter by residence
+    if (selectedResidenceId !== 'all') {
+      result = result.filter(u => 
         u.roles.some(r => r.role === 'admin' || r.residence_id === selectedResidenceId)
       );
+    }
+    
+    return result;
+  })();
 
   const filteredUsers = filteredByResidence.filter(u => 
     u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -281,7 +320,7 @@ export default function OwnerUsers() {
     (u.last_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  const filteredResidences = residences.filter(r =>
+  const filteredResidences = filteredResidencesByAgency.filter(r =>
     r.name.toLowerCase().includes(residenceSearchQuery.toLowerCase())
   );
 
@@ -312,14 +351,25 @@ export default function OwnerUsers() {
   };
 
   const getUserRolesForDisplay = (userRoles: UserRole[]) => {
-    if (selectedResidenceId === 'all') {
+    if (selectedResidenceId === 'all' && selectedAgencyId === 'all') {
       return userRoles;
     }
-    return userRoles.filter(r => r.role === 'admin' || r.residence_id === selectedResidenceId);
+    if (selectedResidenceId !== 'all') {
+      return userRoles.filter(r => r.role === 'admin' || r.residence_id === selectedResidenceId);
+    }
+    // Filter by agency residences
+    const agencyResidenceIds = residences
+      .filter(r => r.agency_id === selectedAgencyId)
+      .map(r => r.id);
+    return userRoles.filter(r => r.role === 'admin' || (r.residence_id && agencyResidenceIds.includes(r.residence_id)));
   };
 
+  const selectedAgencyName = selectedAgencyId === 'all' 
+    ? 'Toutes les agences' 
+    : agencies.find(a => a.id === selectedAgencyId)?.name || 'Agence';
+
   const selectedResidenceName = selectedResidenceId === 'all' 
-    ? 'Toutes les résidences' 
+    ? (selectedAgencyId === 'all' ? 'Toutes les résidences' : 'Toutes les résidences de l\'agence')
     : residences.find(r => r.id === selectedResidenceId)?.name || 'Résidence';
 
   if (isLoading) {
@@ -342,9 +392,41 @@ export default function OwnerUsers() {
           </div>
         </div>
 
-        {/* Residence selector with search */}
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
+        {/* Agency and Residence selectors */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Agency selector */}
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[240px] justify-between">
+                  {selectedAgencyName}
+                  <Search className="h-4 w-4 ml-2 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[240px] p-0 bg-popover" align="start">
+                <Command>
+                  <CommandInput placeholder="Rechercher une agence..." />
+                  <CommandList>
+                    <CommandEmpty>Aucune agence trouvée.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="all" onSelect={() => handleAgencyChange("all")}>
+                        Toutes les agences
+                      </CommandItem>
+                      {agencies.map(agency => (
+                        <CommandItem key={agency.id} value={agency.name} onSelect={() => handleAgencyChange(agency.id)}>
+                          {agency.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Residence selector */}
+          <div className="flex items-center gap-2">
           <Popover open={residenceSearchOpen} onOpenChange={setResidenceSearchOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-[280px] justify-between">
@@ -390,6 +472,7 @@ export default function OwnerUsers() {
               </Command>
             </PopoverContent>
           </Popover>
+          </div>
         </div>
 
         {/* Stats */}

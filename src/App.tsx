@@ -75,6 +75,7 @@ import AdminClients from "./pages/AdminClients";
 import AdminClientDetail from "./pages/AdminClientDetail";
 import AdminTrials from "./pages/AdminTrials";
 import AdminTickets from "./pages/AdminTickets";
+import AdminPaymentPage from "./pages/AdminPaymentPage";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +124,7 @@ const App = () => (
             <Route path="/admin/global-users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
             <Route path="/admin/quotes" element={<AdminRoute><AdminQuotes /></AdminRoute>} />
             <Route path="/admin/pricing" element={<AdminRoute><AdminPricing /></AdminRoute>} />
+            <Route path="/admin/payment-page" element={<AdminRoute><AdminPaymentPage /></AdminRoute>} />
             <Route path="/admin/crm" element={<AdminRoute><AdminCRM /></AdminRoute>} />
             <Route path="/admin/accounting" element={<AdminRoute><AdminAccounting /></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
