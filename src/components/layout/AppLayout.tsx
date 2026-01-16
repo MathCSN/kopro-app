@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { MobileNav } from "./MobileNav";
 import { TrialBanner } from "./TrialBanner";
+import { BugReportButton } from "@/components/BugReportButton";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -37,6 +38,9 @@ export function AppLayout({ children, userRole = "resident", onLogout }: AppLayo
           <div className="h-20 md:hidden shrink-0" />
         </main>
       </div>
+
+      {/* Bug Report Button */}
+      <BugReportButton />
     </div>
   );
 }

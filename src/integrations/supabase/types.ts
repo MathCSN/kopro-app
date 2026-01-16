@@ -993,6 +993,90 @@ export type Database = {
           },
         ]
       }
+      bug_reports: {
+        Row: {
+          account_type: string | null
+          admin_notes: string | null
+          app_version: string | null
+          attachments: Json | null
+          created_at: string | null
+          current_url: string | null
+          description: string
+          device_model: string | null
+          id: string
+          os_version: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          screen_name: string | null
+          screenshot_url: string | null
+          status: string | null
+          type: string | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          account_type?: string | null
+          admin_notes?: string | null
+          app_version?: string | null
+          attachments?: Json | null
+          created_at?: string | null
+          current_url?: string | null
+          description: string
+          device_model?: string | null
+          id?: string
+          os_version?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screen_name?: string | null
+          screenshot_url?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          account_type?: string | null
+          admin_notes?: string | null
+          app_version?: string | null
+          attachments?: Json | null
+          created_at?: string | null
+          current_url?: string | null
+          description?: string
+          device_model?: string | null
+          id?: string
+          os_version?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screen_name?: string | null
+          screenshot_url?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bug_reports_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bug_reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buildings: {
         Row: {
           address: string | null
@@ -1071,6 +1155,92 @@ export type Database = {
             columns: ["lease_id"]
             isOneToOne: false
             referencedRelation: "leases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cold_email_campaigns: {
+        Row: {
+          active_days: Json | null
+          batch_size: number | null
+          created_at: string | null
+          created_by: string | null
+          end_hour: number | null
+          html_content: string
+          id: string
+          interval_minutes: number | null
+          name: string
+          start_hour: number | null
+          status: string | null
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          active_days?: Json | null
+          batch_size?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          end_hour?: number | null
+          html_content: string
+          id?: string
+          interval_minutes?: number | null
+          name: string
+          start_hour?: number | null
+          status?: string | null
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          active_days?: Json | null
+          batch_size?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          end_hour?: number | null
+          html_content?: string
+          id?: string
+          interval_minutes?: number | null
+          name?: string
+          start_hour?: number | null
+          status?: string | null
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cold_email_recipients: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          email: string
+          error_message: string | null
+          id: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          email: string
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          email?: string
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cold_email_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "cold_email_campaigns"
             referencedColumns: ["id"]
           },
         ]
@@ -1644,6 +1814,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_blacklist: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
       }
       email_templates: {
         Row: {

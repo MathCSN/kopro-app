@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { BugReportButton } from "@/components/BugReportButton";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -59,6 +60,9 @@ export function AdminLayout({ children, onLogout }: AdminLayoutProps) {
 
         <div className="flex-1 p-4 md:p-6 lg:p-8">{children}</div>
       </main>
+
+      {/* Bug Report Button */}
+      <BugReportButton />
     </div>
   );
 }
