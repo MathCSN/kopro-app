@@ -19,6 +19,8 @@ import {
   UserCheck,
   Calculator,
   Ticket,
+  Bug,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,8 @@ const settingsNavItems: NavItem[] = [
   { title: "Paramètres globaux", href: "/admin/global-settings", icon: Settings },
   { title: "Intégrations", href: "/admin/integrations", icon: Plug },
   { title: "Emails & Templates", href: "/admin/emails", icon: Mail },
+  { title: "Cold Emailing", href: "/admin/cold-emailing", icon: Send },
+  { title: "Tickets Support", href: "/admin/bug-reports", icon: Bug },
   { title: "Stockage", href: "/admin/storage", icon: Database },
   { title: "Journal d'audit", href: "/admin/audit", icon: Activity },
 ];
