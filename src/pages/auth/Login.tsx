@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppEnvironment } from "@/hooks/useAppEnvironment";
 import { AUTH_MESSAGES, parseAuthError } from "@/lib/messages";
 import { z } from "zod";
 import koproLogo from "@/assets/kopro-logo.svg";
@@ -25,10 +26,13 @@ export default function Login() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [residentBlockedOnWeb, setResidentBlockedOnWeb] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, profile, isLoading: authLoading, hasResidence, login, resetPassword } = useAuth();
+  const { user, profile, isLoading: authLoading, hasResidence, login, resetPassword, logout } = useAuth();
+  const { isNative, isMobile } = useAppEnvironment();
+  const isWebDesktop = !isNative && !isMobile;
 
   // Redirect if already logged in based on role
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function Login() {
     }
   }, [user, profile, authLoading, hasResidence]);
 
-  const redirectBasedOnRole = () => {
+  const redirectBasedOnRole = async () => {
     // If no role assigned, user needs to complete registration flow
     if (!profile?.role) {
       toast({
@@ -45,6 +49,13 @@ export default function Login() {
         description: "Veuillez finaliser la création de votre compte.",
       });
       navigate("/pending");
+      return;
+    }
+
+    // Block residents on web desktop - they must use mobile app
+    if (profile.role === 'resident' && isWebDesktop) {
+      setResidentBlockedOnWeb(true);
+      await logout();
       return;
     }
 
@@ -199,7 +210,50 @@ export default function Login() {
         {/* Form content */}
         <main className="flex-1 flex items-center justify-center p-6 pb-safe">
           <div className="w-full max-w-md space-y-8">
-            {showForgotPassword ? (
+            {/* Resident blocked on web message */}
+            {residentBlockedOnWeb ? (
+              <div className="space-y-6">
+                <div className="space-y-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                    <Smartphone className="h-8 w-8 text-primary" />
+                  </div>
+                  <h2 className="text-2xl font-semibold text-foreground">Application mobile requise</h2>
+                  <p className="text-muted-foreground">
+                    Compte Résident détecté. Veuillez télécharger l'application mobile Kopro pour accéder à votre espace.
+                  </p>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-foreground">Téléchargez l'application :</p>
+                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" className="w-full justify-start gap-3" asChild>
+                      <a href="#" target="_blank" rel="noopener noreferrer">
+                        <span className="text-xl">🍎</span>
+                        App Store (iPhone)
+                      </a>
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start gap-3" asChild>
+                      <a href="#" target="_blank" rel="noopener noreferrer">
+                        <span className="text-xl">🤖</span>
+                        Google Play (Android)
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setResidentBlockedOnWeb(false);
+                    setEmail("");
+                    setPassword("");
+                  }}
+                >
+                  ← Retour à la connexion
+                </Button>
+              </div>
+            ) : showForgotPassword ? (
               // Forgot password form
               <div className="space-y-6">
                 <div className="space-y-2 text-center">
@@ -350,22 +404,35 @@ export default function Login() {
                   <p className="text-muted-foreground">
                     Pas encore de compte ?
                   </p>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => navigate("/auth/register-resident")}
-                    >
-                      Créer un compte résident
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => navigate("/auth/register-manager")}
-                    >
-                      Compte gestionnaire
-                    </Button>
-                  </div>
+                  {/* On web desktop, only show manager options */}
+                  {isWebDesktop ? (
+                    <div className="flex flex-col gap-3">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => navigate("/auth/register-trial")}
+                      >
+                        Essai gratuit 30 jours
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => navigate("/auth/register-manager")}
+                      >
+                        Créer un compte gestionnaire
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => navigate("/auth/register-resident")}
+                      >
+                        Créer un compte résident
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
