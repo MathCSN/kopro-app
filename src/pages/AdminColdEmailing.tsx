@@ -285,14 +285,38 @@ export default function AdminColdEmailing() {
     }
   };
 
+  const [isSendingTest, setIsSendingTest] = useState(false);
+
   const handleSendTest = async () => {
     if (!selectedCampaign || !testEmail) return;
 
-    toast({
-      title: "Email test envoyé",
-      description: `L'email de test a été envoyé à ${testEmail}`,
-    });
-    setTestEmail("");
+    setIsSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cold-email-sender", {
+        body: {
+          test: true,
+          email: testEmail,
+          campaignId: selectedCampaign.id,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email test envoyé",
+        description: `L'email de test a été envoyé à ${testEmail}`,
+      });
+      setTestEmail("");
+    } catch (error) {
+      console.error("Test email error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer l'email de test",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
   };
 
   const toggleDay = (day: string) => {
