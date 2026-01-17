@@ -451,6 +451,14 @@ export default function AdminColdEmailing() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedCampaign(campaign)}
+                            title="Voir / Tester"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           {campaign.status === 'draft' && (
                             <>
                               <Button
@@ -686,6 +694,103 @@ export default function AdminColdEmailing() {
               >
                 {isImporting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Importer {importPreview.valid.length} emails
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Campaign Detail / Test Dialog */}
+        <Dialog open={!!selectedCampaign && !isImportOpen} onOpenChange={() => setSelectedCampaign(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedCampaign?.name}</DialogTitle>
+              <DialogDescription>
+                Aperçu et test de la campagne
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedCampaign && (
+              <Tabs defaultValue="preview" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="preview">Aperçu</TabsTrigger>
+                  <TabsTrigger value="test">Test</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="preview" className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Objet</Label>
+                    <div className="p-3 bg-muted rounded-lg font-medium">
+                      {selectedCampaign.subject}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Contenu</Label>
+                    <div 
+                      className="p-4 bg-white border rounded-lg prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: selectedCampaign.html_content }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Lot:</span>{" "}
+                      <span className="font-medium">{selectedCampaign.batch_size} emails</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Intervalle:</span>{" "}
+                      <span className="font-medium">{selectedCampaign.interval_minutes} min</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Horaires:</span>{" "}
+                      <span className="font-medium">{selectedCampaign.start_hour}h - {selectedCampaign.end_hour}h</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Progression:</span>{" "}
+                      <span className="font-medium">
+                        {selectedCampaign.sent_count || 0} / {selectedCampaign.recipients_count || 0}
+                      </span>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="test" className="space-y-4">
+                  <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-5 w-5 text-primary" />
+                      <h3 className="font-medium">Envoyer un email de test</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Testez votre campagne en envoyant un email de prévisualisation à une adresse de votre choix.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="votre@email.com"
+                        value={testEmail}
+                        onChange={(e) => setTestEmail(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={handleSendTest}
+                        disabled={!testEmail || isSendingTest}
+                      >
+                        {isSendingTest ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Envoyer
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedCampaign(null)}>
+                Fermer
               </Button>
             </DialogFooter>
           </DialogContent>
