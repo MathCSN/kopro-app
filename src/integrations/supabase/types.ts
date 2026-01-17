@@ -3573,6 +3573,94 @@ export type Database = {
           },
         ]
       }
+      syndic_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          residence_id: string
+          status: string | null
+          syndic_user_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          residence_id: string
+          status?: string | null
+          syndic_user_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          residence_id?: string
+          status?: string | null
+          syndic_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "syndic_assignments_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      syndic_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          residence_id: string
+          status: string | null
+          syndic_name: string | null
+          syndic_phone: string | null
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          residence_id: string
+          status?: string | null
+          syndic_name?: string | null
+          syndic_phone?: string | null
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          residence_id?: string
+          status?: string | null
+          syndic_name?: string | null
+          syndic_phone?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "syndic_invitations_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_documents: {
         Row: {
           created_at: string | null
@@ -3744,9 +3832,12 @@ export type Database = {
           description: string | null
           id: string
           location: string | null
+          manager_intervention_enabled: boolean | null
           priority: string | null
           residence_id: string
           status: string | null
+          syndic_notified_at: string | null
+          ticket_type: string | null
           title: string
           updated_at: string
         }
@@ -3758,9 +3849,12 @@ export type Database = {
           description?: string | null
           id?: string
           location?: string | null
+          manager_intervention_enabled?: boolean | null
           priority?: string | null
           residence_id: string
           status?: string | null
+          syndic_notified_at?: string | null
+          ticket_type?: string | null
           title: string
           updated_at?: string
         }
@@ -3772,9 +3866,12 @@ export type Database = {
           description?: string | null
           id?: string
           location?: string | null
+          manager_intervention_enabled?: boolean | null
           priority?: string | null
           residence_id?: string
           status?: string | null
+          syndic_notified_at?: string | null
+          ticket_type?: string | null
           title?: string
           updated_at?: string
         }
@@ -4293,6 +4390,12 @@ export type Database = {
         Args: { _residence_id: string; _user_id: string }
         Returns: boolean
       }
+      get_syndic_residences: {
+        Args: { _user_id: string }
+        Returns: {
+          residence_id: string
+        }[]
+      }
       has_cs_permission: {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
@@ -4311,9 +4414,13 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_owner: { Args: { _user_id: string }; Returns: boolean }
+      is_syndic_for_residence: {
+        Args: { _residence_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      app_role: "owner" | "admin" | "manager" | "cs" | "resident"
+      app_role: "owner" | "admin" | "manager" | "cs" | "resident" | "syndic"
       application_status:
         | "new"
         | "under_review"
@@ -4450,7 +4557,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "admin", "manager", "cs", "resident"],
+      app_role: ["owner", "admin", "manager", "cs", "resident", "syndic"],
       application_status: [
         "new",
         "under_review",

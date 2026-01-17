@@ -12,6 +12,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
+import { TicketLocationSelector } from "@/components/tickets/TicketLocationSelector";
 
 function NewTicketContent() {
   const { user, profile } = useAuth();
@@ -20,6 +21,7 @@ function NewTicketContent() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [ticketType, setTicketType] = useState<"private" | "common">("private");
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -91,6 +93,7 @@ function NewTicketContent() {
           title,
           description,
           category,
+          ticket_type: ticketType,
           residence_id: effectiveResidence.id,
           created_by: user.id,
           status: 'open',
@@ -98,6 +101,22 @@ function NewTicketContent() {
         });
 
       if (error) throw error;
+
+      // If common ticket, notify the syndic
+      if (ticketType === "common") {
+        // Check if there's a syndic assigned to this residence
+        const { data: syndicAssignment } = await supabase
+          .from("syndic_assignments")
+          .select("syndic_user_id")
+          .eq("residence_id", effectiveResidence.id)
+          .eq("status", "active")
+          .single();
+
+        if (syndicAssignment) {
+          // TODO: Send notification to syndic
+          console.log("Syndic notified:", syndicAssignment.syndic_user_id);
+        }
+      }
 
       toast.success("Incident signalé avec succès");
       navigate("/tickets");
@@ -121,20 +140,36 @@ function NewTicketContent() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Location selector - private or common area */}
+            <TicketLocationSelector value={ticketType} onChange={setTicketType} />
+
             <div className="space-y-2">
               <Label htmlFor="title">Titre</Label>
-              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Fuite robinet cuisine" required />
+              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder={ticketType === "private" ? "Ex: Fuite robinet cuisine" : "Ex: Porte hall cassée"} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Catégorie</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="plomberie">Plomberie</SelectItem>
-                  <SelectItem value="electricite">Électricité</SelectItem>
-                  <SelectItem value="parties_communes">Parties communes</SelectItem>
-                  <SelectItem value="structure">Structure</SelectItem>
-                  <SelectItem value="autre">Autre</SelectItem>
+                  {ticketType === "private" ? (
+                    <>
+                      <SelectItem value="plomberie">Plomberie</SelectItem>
+                      <SelectItem value="electricite">Électricité</SelectItem>
+                      <SelectItem value="chauffage">Chauffage</SelectItem>
+                      <SelectItem value="menuiserie">Menuiserie</SelectItem>
+                      <SelectItem value="autre">Autre</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="ascenseur">Ascenseur</SelectItem>
+                      <SelectItem value="hall_entree">Hall / Entrée</SelectItem>
+                      <SelectItem value="toiture">Toiture</SelectItem>
+                      <SelectItem value="parking">Parking</SelectItem>
+                      <SelectItem value="espaces_verts">Espaces verts</SelectItem>
+                      <SelectItem value="autre">Autre</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

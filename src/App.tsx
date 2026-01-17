@@ -45,6 +45,7 @@ import Syndic from "./pages/Syndic";
 import WorkOrders from "./pages/WorkOrders";
 import Analytics from "./pages/Analytics";
 import PropertyInspections from "./pages/PropertyInspections";
+import SyndicPortal from "./pages/SyndicPortal";
 
 // Auth Pages
 import AccountChoice from "./pages/AccountChoice";
@@ -113,6 +114,9 @@ const App = () => (
             
             {/* Agency signup for trial users upgrading to subscription */}
             <Route path="/agency-signup" element={<AgencySignup />} />
+            
+            {/* Syndic portal - accessible via magic link or logged-in syndics */}
+            <Route path="/syndic-portal" element={<SyndicPortal />} />
             
             {/* Admin routes - Global platform admin */}
             <Route path="/admin/platform" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

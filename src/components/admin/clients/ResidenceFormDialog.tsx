@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Building2, UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { InviteSyndicDialog } from "@/components/syndic/InviteSyndicDialog";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
@@ -55,7 +60,55 @@ export function ResidenceFormDialog({
 }: ResidenceFormDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inviteSyndicOpen, setInviteSyndicOpen] = useState(false);
   const isEditing = !!residence;
+
+  // Fetch current syndic info for editing mode
+  const { data: syndicInfo, refetch: refetchSyndic } = useQuery({
+    queryKey: ["residence-syndic", residence?.id],
+    queryFn: async () => {
+      if (!residence?.id) return null;
+      
+      // Check for active assignment
+      const { data: assignment } = await supabase
+        .from("syndic_assignments")
+        .select("*")
+        .eq("residence_id", residence.id)
+        .eq("status", "active")
+        .single();
+      
+      if (assignment) {
+        // Fetch syndic profile separately
+        const { data: syndicProfile } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, email")
+          .eq("id", assignment.syndic_user_id)
+          .single();
+        
+        return { 
+          type: "assigned" as const, 
+          data: { ...assignment, syndic: syndicProfile } 
+        };
+      }
+      
+      // Check for pending invitation
+      const { data: invitation } = await supabase
+        .from("syndic_invitations")
+        .select("*")
+        .eq("residence_id", residence.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (invitation) {
+        return { type: "pending" as const, data: invitation };
+      }
+      
+      return null;
+    },
+    enabled: isEditing,
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -220,6 +273,65 @@ export function ResidenceFormDialog({
               )}
             />
 
+            {/* Syndic section - only show when editing */}
+            {isEditing && (
+              <>
+                <Separator className="my-4" />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Syndic de l'immeuble</span>
+                    </div>
+                    {syndicInfo?.type === "assigned" && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-700">
+                        Actif
+                      </Badge>
+                    )}
+                    {syndicInfo?.type === "pending" && (
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                        Invitation en attente
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {syndicInfo?.type === "assigned" && syndicInfo.data.syndic && (
+                    <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                      <p className="font-medium text-foreground">
+                        {syndicInfo.data.syndic.first_name} {syndicInfo.data.syndic.last_name}
+                      </p>
+                      <p>{syndicInfo.data.syndic.email}</p>
+                    </div>
+                  )}
+                  
+                  {syndicInfo?.type === "pending" && (
+                    <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                      <p className="font-medium text-foreground">{syndicInfo.data.syndic_name}</p>
+                      <p>{syndicInfo.data.email}</p>
+                      <p className="text-xs mt-1">Invitation envoyée</p>
+                    </div>
+                  )}
+                  
+                  {!syndicInfo && (
+                    <p className="text-sm text-muted-foreground">
+                      Aucun syndic associé à cette résidence.
+                    </p>
+                  )}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setInviteSyndicOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {syndicInfo ? "Changer de syndic" : "Inviter un syndic"}
+                  </Button>
+                </div>
+              </>
+            )}
+
             <div className="flex justify-end gap-3 pt-4">
               <Button 
                 type="button" 
@@ -240,6 +352,17 @@ export function ResidenceFormDialog({
           </form>
         </Form>
       </DialogContent>
+
+      {/* Invite Syndic Dialog */}
+      {residence && (
+        <InviteSyndicDialog
+          open={inviteSyndicOpen}
+          onOpenChange={setInviteSyndicOpen}
+          residenceId={residence.id}
+          residenceName={residence.name}
+          onSuccess={() => refetchSyndic()}
+        />
+      )}
     </Dialog>
   );
 }
