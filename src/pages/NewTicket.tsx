@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { TicketLocationSelector } from "@/components/tickets/TicketLocationSelector";
+import { notifySyndicForCommonTicket, notifyManagerForCommonTicket } from "@/hooks/useSyndicNotification";
 
 function NewTicketContent() {
   const { user, profile } = useAuth();
@@ -87,7 +88,7 @@ function NewTicketContent() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      const { data: newTicket, error } = await supabase
         .from('tickets')
         .insert({
           title,
@@ -98,24 +99,38 @@ function NewTicketContent() {
           created_by: user.id,
           status: 'open',
           priority: 'medium',
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // If common ticket, notify the syndic
-      if (ticketType === "common") {
-        // Check if there's a syndic assigned to this residence
-        const { data: syndicAssignment } = await supabase
-          .from("syndic_assignments")
-          .select("syndic_user_id")
-          .eq("residence_id", effectiveResidence.id)
-          .eq("status", "active")
-          .single();
-
-        if (syndicAssignment) {
-          // TODO: Send notification to syndic
-          console.log("Syndic notified:", syndicAssignment.syndic_user_id);
+      // If common ticket, notify the syndic and manager
+      if (ticketType === "common" && newTicket) {
+        const reporterName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Un résident";
+        
+        // Notify syndic
+        const syndicNotified = await notifySyndicForCommonTicket({
+          residenceId: effectiveResidence.id,
+          ticketId: newTicket.id,
+          ticketTitle: title,
+          ticketDescription: description,
+          ticketCategory: category,
+          reporterName,
+        });
+        
+        if (syndicNotified) {
+          toast.info("Le syndic a été notifié de cet incident");
         }
+        
+        // Also notify manager (CC)
+        notifyManagerForCommonTicket({
+          residenceId: effectiveResidence.id,
+          ticketTitle: title,
+          ticketCategory: category,
+          reporterName,
+          syndicNotified,
+        });
       }
 
       toast.success("Incident signalé avec succès");
