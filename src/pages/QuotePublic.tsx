@@ -179,37 +179,40 @@ export default function QuotePublic() {
   };
 
   const handlePayment = async () => {
+    if (!quote) return;
+    
     setIsProcessing(true);
     
     try {
-      // TODO: Integrate with Stripe
-      toast({
-        title: "Paiement en cours",
-        description: "Redirection vers la page de paiement...",
-      });
-
-      // Simulate payment success
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // Update quote status
-      if (quote) {
-        await supabase
-          .from('quotes')
-          .update({ status: 'paid', paid_at: new Date().toISOString() })
-          .eq('id', quote.id);
+      if (!user) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez vous connecter pour continuer.",
+          variant: "destructive",
+        });
+        setIsPaymentStep(false);
+        return;
       }
 
-      toast({
-        title: "Paiement réussi",
-        description: "Votre paiement a été traité avec succès. Vous allez être redirigé.",
+      const { data, error } = await supabase.functions.invoke('create-quote-checkout', {
+        body: {
+          quoteId: quote.id,
+          userId: user.id,
+          successUrl: `${window.location.origin}/quote/${quoteNumber}?payment=success`,
+          cancelUrl: `${window.location.origin}/quote/${quoteNumber}?payment=cancelled`,
+        },
       });
 
-      setIsAuthDialogOpen(false);
+      if (error) throw error;
       
-      // Redirect to dashboard
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
     } catch (error: any) {
       toast({
         title: "Erreur de paiement",
@@ -220,6 +223,35 @@ export default function QuotePublic() {
       setIsProcessing(false);
     }
   };
+
+  // Handle payment success/cancel from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success' && quote) {
+      supabase
+        .from('quotes')
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .eq('id', quote.id)
+        .then(() => {
+          toast({
+            title: "Paiement réussi",
+            description: "Votre paiement a été traité avec succès !",
+          });
+          // Clear URL params
+          window.history.replaceState({}, '', `/quote/${quoteNumber}`);
+          fetchQuote();
+        });
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Paiement annulé",
+        description: "Le paiement a été annulé.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, '', `/quote/${quoteNumber}`);
+    }
+  }, [quote?.id, quoteNumber]);
 
   if (isLoading) {
     return (

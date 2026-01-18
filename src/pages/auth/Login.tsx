@@ -227,13 +227,13 @@ export default function Login() {
                   <p className="text-sm font-medium text-foreground">Téléchargez l'application :</p>
                   <div className="flex flex-col gap-2">
                     <Button variant="outline" className="w-full justify-start gap-3" asChild>
-                      <a href="#" target="_blank" rel="noopener noreferrer">
+                      <a href="https://apps.apple.com/app/kopro" target="_blank" rel="noopener noreferrer">
                         <span className="text-xl">🍎</span>
                         App Store (iPhone)
                       </a>
                     </Button>
                     <Button variant="outline" className="w-full justify-start gap-3" asChild>
-                      <a href="#" target="_blank" rel="noopener noreferrer">
+                      <a href="https://play.google.com/store/apps/details?id=app.kopro" target="_blank" rel="noopener noreferrer">
                         <span className="text-xl">🤖</span>
                         Google Play (Android)
                       </a>

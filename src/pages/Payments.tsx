@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, useParams } from "react-router-dom";
-import { CreditCard, Download, Clock, CheckCircle2, AlertCircle, ArrowLeft, Euro, Building2, TrendingUp, TrendingDown } from "lucide-react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { CreditCard, Download, Clock, CheckCircle2, AlertCircle, ArrowLeft, Euro, Building2, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 
 interface Payment {
   id: string;
@@ -38,8 +39,27 @@ interface LotFinance {
 function PaymentDetail({ id }: { id: string }) {
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [payment, setPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Check for successful payment return
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    const paymentId = searchParams.get('payment_id');
+    if (sessionId && paymentId) {
+      // Mark payment as paid
+      supabase
+        .from('payments')
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .eq('id', paymentId)
+        .then(() => {
+          toast.success("Paiement effectué avec succès !");
+          navigate(`/payments/${paymentId}`, { replace: true });
+        });
+    }
+  }, [searchParams, navigate]);
 
   useEffect(() => {
     fetchPayment();
@@ -65,6 +85,42 @@ function PaymentDetail({ id }: { id: string }) {
   const handleLogout = async () => {
     await logout();
     navigate("/auth");
+  };
+
+  const handleCardPayment = async () => {
+    if (!payment || !user) return;
+    
+    setIsProcessingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment-checkout', {
+        body: {
+          paymentId: payment.id,
+          userId: user.id,
+          successUrl: `${window.location.origin}/payments/${payment.id}`,
+          cancelUrl: `${window.location.origin}/payments/${payment.id}`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error("Erreur lors de la création du paiement", {
+        description: error.message || "Veuillez réessayer plus tard",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleSepaPayment = () => {
+    toast.info("Prélèvement SEPA", {
+      description: "Cette fonctionnalité sera bientôt disponible. Veuillez utiliser le paiement par carte.",
+    });
   };
 
   if (loading) {
@@ -122,11 +178,25 @@ function PaymentDetail({ id }: { id: string }) {
 
             {payment.status === 'pending' ? (
               <div className="space-y-3">
-                <Button className="w-full" size="lg">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Payer par carte
+                <Button 
+                  className="w-full" 
+                  size="lg"
+                  onClick={handleCardPayment}
+                  disabled={isProcessingPayment}
+                >
+                  {isProcessingPayment ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CreditCard className="h-4 w-4 mr-2" />
+                  )}
+                  {isProcessingPayment ? "Redirection..." : "Payer par carte"}
                 </Button>
-                <Button variant="outline" className="w-full" size="lg">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  size="lg"
+                  onClick={handleSepaPayment}
+                >
                   <Euro className="h-4 w-4 mr-2" />
                   Payer par prélèvement SEPA
                 </Button>
@@ -293,7 +363,10 @@ function PaymentsContent() {
                 <h3 className="font-semibold text-foreground">Montant en attente</h3>
                 <p className="text-sm text-muted-foreground">{pendingTotal} € à régler</p>
               </div>
-              <Button>Payer maintenant</Button>
+              <Button onClick={() => {
+                const firstPending = myPayments.find(p => p.status === 'pending');
+                if (firstPending) navigate(`/payments/${firstPending.id}`);
+              }}>Payer maintenant</Button>
             </CardContent>
           </Card>
         )}

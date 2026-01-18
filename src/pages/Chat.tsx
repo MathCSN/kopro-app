@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { MessageCircle, Send, AlertTriangle, Info, Megaphone } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Conversation {
   id: string;
@@ -44,17 +45,96 @@ export default function Chat() {
   const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("normal");
 
+  // Handle creating new conversation from ?to= parameter
+  useEffect(() => {
+    const toUserId = searchParams.get('to');
+    if (toUserId && user && !id) {
+      createOrOpenConversation(toUserId);
+    }
+  }, [searchParams, user, id]);
+
+  const createOrOpenConversation = async (targetUserId: string) => {
+    if (!user) return;
+    
+    try {
+      // First, check if a direct conversation already exists between these users
+      const { data: existingParticipations } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      if (existingParticipations) {
+        for (const part of existingParticipations) {
+          const { data: otherParticipants } = await supabase
+            .from('conversation_participants')
+            .select('user_id')
+            .eq('conversation_id', part.conversation_id);
+
+          if (otherParticipants && otherParticipants.length === 2) {
+            const hasTarget = otherParticipants.some(p => p.user_id === targetUserId);
+            if (hasTarget) {
+              // Found existing conversation
+              navigate(`/chat/${part.conversation_id}`, { replace: true });
+              return;
+            }
+          }
+        }
+      }
+
+      // Get target user's name for conversation title
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', targetUserId)
+        .single();
+
+      const conversationName = targetProfile
+        ? `${targetProfile.first_name || ''} ${targetProfile.last_name || ''}`.trim() || targetProfile.email
+        : 'Conversation';
+
+      // Create new conversation
+      const { data: newConversation, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          name: conversationName,
+          type: 'direct',
+        })
+        .select()
+        .single();
+
+      if (convError) throw convError;
+
+      // Add both participants
+      const { error: partError } = await supabase
+        .from('conversation_participants')
+        .insert([
+          { conversation_id: newConversation.id, user_id: user.id },
+          { conversation_id: newConversation.id, user_id: targetUserId },
+        ]);
+
+      if (partError) throw partError;
+
+      toast.success("Conversation créée");
+      navigate(`/chat/${newConversation.id}`, { replace: true });
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      toast.error("Erreur lors de la création de la conversation");
+      navigate('/chat', { replace: true });
+    }
+  };
+
   useEffect(() => {
     if (user) {
       if (id) {
         fetchMessages(id);
-      } else {
+      } else if (!searchParams.get('to')) {
         fetchConversations();
       }
     }

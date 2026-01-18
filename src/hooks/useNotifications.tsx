@@ -227,7 +227,7 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return;
 
-    console.log("Setting up realtime notification subscriptions");
+    if (!user) return;
 
     const channel = supabase
       .channel('notifications-realtime')
@@ -304,12 +304,9 @@ export function useNotifications() {
         { event: 'UPDATE', schema: 'public', table: 'tickets' },
         () => fetchNotifications()
       )
-      .subscribe((status) => {
-        console.log("Realtime subscription status:", status);
-      });
+      .subscribe();
 
     return () => {
-      console.log("Cleaning up realtime notification subscriptions");
       supabase.removeChannel(channel);
     };
   }, [user, fetchNotifications]);

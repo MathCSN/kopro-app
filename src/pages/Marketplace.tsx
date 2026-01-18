@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { CreateListingDialog } from "@/components/marketplace/CreateListingDialog";
 import { EditListingDialog } from "@/components/marketplace/EditListingDialog";
+import { toast } from "sonner";
 
 interface SellerProfile {
   first_name: string | null;
@@ -28,6 +29,7 @@ interface Listing {
   created_at: string;
   seller_id: string;
   seller?: SellerProfile | null;
+  isFavorite?: boolean;
 }
 
 function ListingDetail({ id }: { id: string }) {
@@ -35,10 +37,12 @@ function ListingDetail({ id }: { id: string }) {
   const navigate = useNavigate();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     fetchListing();
-  }, [id]);
+    if (user) fetchFavoriteStatus();
+  }, [id, user]);
 
   const fetchListing = async () => {
     try {
@@ -54,6 +58,46 @@ function ListingDetail({ id }: { id: string }) {
       console.error('Error fetching listing:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFavoriteStatus = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('marketplace_favorites')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('listing_id', id)
+      .maybeSingle();
+    setIsFavorite(!!data);
+  };
+
+  const toggleFavorite = async () => {
+    if (!user) {
+      toast.error("Connectez-vous pour ajouter aux favoris");
+      return;
+    }
+    
+    if (isFavorite) {
+      await supabase
+        .from('marketplace_favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('listing_id', id);
+      setIsFavorite(false);
+      toast.success("Retiré des favoris");
+    } else {
+      await supabase
+        .from('marketplace_favorites')
+        .insert({ user_id: user.id, listing_id: id });
+      setIsFavorite(true);
+      toast.success("Ajouté aux favoris");
+    }
+  };
+
+  const handleContact = () => {
+    if (listing?.seller_id) {
+      navigate(`/chat/new?to=${listing.seller_id}`);
     }
   };
 
@@ -111,12 +155,12 @@ function ListingDetail({ id }: { id: string }) {
           )}
 
           <div className="flex gap-3 mt-6">
-            <Button className="flex-1">
+            <Button className="flex-1" onClick={handleContact}>
               <MessageCircle className="h-4 w-4 mr-2" />
               Contacter
             </Button>
-            <Button variant="outline" size="icon">
-              <Heart className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={toggleFavorite}>
+              <Heart className={`h-4 w-4 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
             </Button>
           </div>
         </CardContent>
@@ -131,6 +175,7 @@ export default function Marketplace() {
   const { id } = useParams();
   const { selectedResidence, residences } = useResidence();
   const [listings, setListings] = useState<Listing[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -141,8 +186,49 @@ export default function Marketplace() {
   useEffect(() => {
     if (user && !id) {
       fetchListings();
+      fetchFavorites();
     }
   }, [user, id]);
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('marketplace_favorites')
+      .select('listing_id')
+      .eq('user_id', user.id);
+    
+    if (data) {
+      setFavorites(new Set(data.map(f => f.listing_id)));
+    }
+  };
+
+  const toggleFavorite = async (e: React.MouseEvent, listingId: string) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Connectez-vous pour ajouter aux favoris");
+      return;
+    }
+    
+    if (favorites.has(listingId)) {
+      await supabase
+        .from('marketplace_favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('listing_id', listingId);
+      setFavorites(prev => {
+        const next = new Set(prev);
+        next.delete(listingId);
+        return next;
+      });
+      toast.success("Retiré des favoris");
+    } else {
+      await supabase
+        .from('marketplace_favorites')
+        .insert({ user_id: user.id, listing_id: listingId });
+      setFavorites(prev => new Set(prev).add(listingId));
+      toast.success("Ajouté aux favoris");
+    }
+  };
 
   const fetchListings = async () => {
     try {
@@ -286,11 +372,9 @@ export default function Marketplace() {
                     size="icon" 
                     variant="ghost" 
                     className="bg-background/80 backdrop-blur-sm h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
+                    onClick={(e) => toggleFavorite(e, listing.id)}
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className={`h-4 w-4 ${favorites.has(listing.id) ? 'fill-red-500 text-red-500' : ''}`} />
                   </Button>
                 </div>
               </div>

@@ -286,10 +286,30 @@ function DocumentsContent() {
                         </p>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon-sm">
+                        <Button 
+                          variant="ghost" 
+                          size="icon-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(doc.file_url, '_blank');
+                          }}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon-sm">
+                        <Button 
+                          variant="ghost" 
+                          size="icon-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const link = document.createElement('a');
+                            link.href = doc.file_url;
+                            link.download = doc.file_name || doc.title;
+                            link.target = '_blank';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                         {canDeleteDocument(doc) && (
