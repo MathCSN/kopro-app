@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.stripe-syndic-webhook]
 verify_jwt = false
+
+[functions.create-payment-checkout]
+verify_jwt = true
+
+[functions.create-quote-checkout]
+verify_jwt = true
