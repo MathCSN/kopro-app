@@ -104,6 +104,15 @@ ${ticketDescription}
 Vous pouvez consulter et gérer cet incident directement sur votre portail Syndic :
 ${portalUrl}
 
+---
+
+💡 Passez à Kopro Pro pour accéder au tableau de bord complet :
+• Historique des interventions
+• Statistiques et rapports
+• Gestion centralisée multi-résidences
+
+${portalUrl}
+
 Cordialement,
 L'équipe Kopro`,
       },
