@@ -2671,6 +2671,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           monthly_price_per_apartment: number
+          syndic_monthly_price_per_residence: number | null
           updated_at: string | null
         }
         Insert: {
@@ -2680,6 +2681,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           monthly_price_per_apartment?: number
+          syndic_monthly_price_per_residence?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -2689,6 +2691,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           monthly_price_per_apartment?: number
+          syndic_monthly_price_per_residence?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -3661,6 +3664,56 @@ export type Database = {
           },
         ]
       }
+      syndic_subscriptions: {
+        Row: {
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          residence_id: string
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          syndic_user_id: string | null
+          trial_ends_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          residence_id: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          syndic_user_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          residence_id?: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          syndic_user_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "syndic_subscriptions_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_documents: {
         Row: {
           created_at: string | null
@@ -4416,6 +4469,10 @@ export type Database = {
       is_owner: { Args: { _user_id: string }; Returns: boolean }
       is_syndic_for_residence: {
         Args: { _residence_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_syndic_subscription_active: {
+        Args: { p_residence_id: string; p_user_id: string }
         Returns: boolean
       }
     }
