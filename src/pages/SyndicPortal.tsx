@@ -16,6 +16,7 @@ import {
   LogIn,
   Wrench,
   Filter,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { SyndicPaywall } from "@/components/syndic/SyndicPaywall";
+import { useSyndicSubscription } from "@/hooks/useSyndicSubscription";
 
 interface Ticket {
   id: string;
@@ -64,6 +67,8 @@ function SyndicPortalContent() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
+  const success = searchParams.get("success");
+  const canceled = searchParams.get("canceled");
   
   const [selectedResidence, setSelectedResidence] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("open");
@@ -71,6 +76,19 @@ function SyndicPortalContent() {
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [statusComment, setStatusComment] = useState("");
+  const [showPaywall, setShowPaywall] = useState(true);
+
+  // Show toast messages for payment results
+  useEffect(() => {
+    if (success === "true") {
+      toast.success("Paiement réussi ! Accès complet activé.");
+      // Remove query params
+      navigate("/syndic-portal", { replace: true });
+    } else if (canceled === "true") {
+      toast.info("Paiement annulé");
+      navigate("/syndic-portal", { replace: true });
+    }
+  }, [success, canceled, navigate]);
 
   // Validate magic link token
   const { data: tokenData, isLoading: tokenLoading } = useQuery({
@@ -112,6 +130,17 @@ function SyndicPortalContent() {
   const availableResidences = user 
     ? syndicResidences?.map(sr => sr.residence) || []
     : tokenData?.residence ? [tokenData.residence] : [];
+
+  // Get first residence for subscription check
+  const firstResidenceId = selectedResidence !== "all" 
+    ? selectedResidence 
+    : availableResidences[0]?.id;
+  
+  const firstResidenceName = availableResidences.find(r => r.id === firstResidenceId)?.name || "";
+
+  // Check subscription status
+  const { isActive: hasActiveSubscription, isTrial, trialDaysRemaining, isLoading: subscriptionLoading } = 
+    useSyndicSubscription(user?.id, firstResidenceId);
 
   // Get tickets for common areas
   const { data: tickets, isLoading: ticketsLoading } = useQuery({
@@ -263,9 +292,37 @@ function SyndicPortalContent() {
     navigate("/");
   };
 
+  // Show paywall if no active subscription
+  if (user && !subscriptionLoading && !hasActiveSubscription && showPaywall && firstResidenceId) {
+    return (
+      <AppLayout userRole="syndic" onLogout={handleLogout}>
+        <SyndicPaywall
+          residenceId={firstResidenceId}
+          residenceName={firstResidenceName}
+          userId={user.id}
+          onContinueFree={() => setShowPaywall(false)}
+        />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout userRole="syndic" onLogout={handleLogout}>
       <div className="space-y-6">
+        {/* Trial banner */}
+        {isTrial && trialDaysRemaining > 0 && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-amber-500" />
+              <span className="text-sm">
+                <span className="font-medium">Période d'essai</span> - {trialDaysRemaining} jour{trialDaysRemaining > 1 ? 's' : ''} restant{trialDaysRemaining > 1 ? 's' : ''}
+              </span>
+            </div>
+            <Button size="sm" variant="outline" className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10">
+              S'abonner
+            </Button>
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">

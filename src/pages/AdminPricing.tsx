@@ -16,6 +16,7 @@ interface PricingConfig {
   id: string;
   activation_price_per_residence: number;
   monthly_price_per_apartment: number;
+  syndic_monthly_price_per_residence: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -29,6 +30,7 @@ export default function AdminPricing() {
   const [formData, setFormData] = useState({
     activation_price_per_residence: 299,
     monthly_price_per_apartment: 2.5,
+    syndic_monthly_price_per_residence: 29.90,
   });
 
   const { data: pricing, isLoading } = useQuery({
@@ -50,6 +52,7 @@ export default function AdminPricing() {
       setFormData({
         activation_price_per_residence: pricing.activation_price_per_residence,
         monthly_price_per_apartment: pricing.monthly_price_per_apartment,
+        syndic_monthly_price_per_residence: pricing.syndic_monthly_price_per_residence || 29.90,
       });
     }
   }, [pricing]);
@@ -63,6 +66,7 @@ export default function AdminPricing() {
         .update({
           activation_price_per_residence: data.activation_price_per_residence,
           monthly_price_per_apartment: data.monthly_price_per_apartment,
+          syndic_monthly_price_per_residence: data.syndic_monthly_price_per_residence,
           updated_at: new Date().toISOString(),
         })
         .eq("id", pricing.id);
@@ -180,6 +184,34 @@ export default function AdminPricing() {
                       <p className="text-xs text-muted-foreground">
                         Abonnement mensuel par lot/appartement
                       </p>
+                    </div>
+
+                    {/* Syndic pricing section */}
+                    <div className="pt-4 border-t">
+                      <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                        🏢 Tarification Syndic
+                      </h4>
+                      <div className="space-y-2">
+                        <Label htmlFor="syndic_price">
+                          Prix mensuel par résidence (€)
+                        </Label>
+                        <Input
+                          id="syndic_price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.syndic_monthly_price_per_residence}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              syndic_monthly_price_per_residence: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Abonnement mensuel pour l'accès au portail syndic par résidence
+                        </p>
+                      </div>
                     </div>
                   </div>
 
