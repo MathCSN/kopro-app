@@ -48,7 +48,7 @@ import PropertyInspections from "./pages/PropertyInspections";
 import SyndicPortal from "./pages/SyndicPortal";
 
 // Auth Pages
-import AccountChoice from "./pages/AccountChoice";
+import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import RegisterResident from "./pages/auth/RegisterResident";
 import RegisterManager from "./pages/auth/RegisterManager";
@@ -92,7 +92,7 @@ const App = () => (
           <ResidenceProvider>
             <Routes>
             {/* Public routes */}
-            <Route path="/" element={<AccountChoice />} />
+            <Route path="/" element={<Index />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register-resident" element={<RegisterResident />} />
             <Route path="/auth/register-manager" element={<RegisterManager />} />
