@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Gift, LogIn, Building2, FileText, MessageSquare } from "lucide-react";
+import { LogIn, Building2, FileText, MessageSquare, Home, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import koproLogo from "@/assets/kopro-logo.svg";
@@ -42,30 +42,51 @@ export default function LandingB2B() {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="space-y-3">
-              <Button 
-                size="lg"
-                className="w-full h-12 gap-2"
-                onClick={() => navigate("/auth/login")}
+            {/* Login */}
+            <Button 
+              size="lg"
+              className="w-full h-12 gap-2"
+              onClick={() => navigate("/auth/login")}
+            >
+              <LogIn className="h-5 w-5" />
+              Se connecter
+            </Button>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Créer un compte</span>
+              </div>
+            </div>
+
+            {/* Account type selection */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                onClick={() => navigate("/auth/register-trial?type=bailleur")}
               >
-                <LogIn className="h-5 w-5" />
-                Se connecter
+                <Home className="h-6 w-6 text-primary" />
+                <span className="text-sm font-medium">Bailleur</span>
+                <span className="text-xs text-muted-foreground font-normal">Propriétaire bailleur</span>
               </Button>
               
-              <Button 
-                size="lg"
+              <Button
                 variant="outline"
-                className="w-full h-12 gap-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700"
-                onClick={() => navigate("/auth/register-trial")}
+                className="h-auto py-4 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                onClick={() => navigate("/auth/register-trial?type=syndic")}
               >
-                <Gift className="h-5 w-5" />
-                Essai gratuit 30 jours
+                <Users className="h-6 w-6 text-primary" />
+                <span className="text-sm font-medium">Syndic</span>
+                <span className="text-xs text-muted-foreground font-normal">Gestionnaire pro</span>
               </Button>
             </div>
 
             <p className="text-center text-xs text-muted-foreground">
-              Sans engagement • Configuration en 5 minutes
+              Essai gratuit 30 jours • Sans engagement
             </p>
           </CardContent>
         </Card>
