@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogIn, Building2, FileText, MessageSquare, Home, Users } from "lucide-react";
+import { LogIn, Building2, FileText, MessageSquare, Home, Users, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import koproLogo from "@/assets/kopro-logo.svg";
@@ -12,7 +12,7 @@ export default function LandingB2B() {
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center p-6">
         <Card className="w-full max-w-md shadow-medium border-0">
-          <CardContent className="p-8 space-y-8">
+          <CardContent className="p-8 space-y-6">
             {/* Logo & Title */}
             <div className="text-center space-y-3">
               <div className="flex justify-center">
@@ -52,6 +52,17 @@ export default function LandingB2B() {
               Se connecter
             </Button>
 
+            {/* Free trial */}
+            <Button 
+              size="lg"
+              variant="outline"
+              className="w-full h-12 gap-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700"
+              onClick={() => navigate("/auth/register-trial")}
+            >
+              <Gift className="h-5 w-5" />
+              Essai gratuit 30 jours
+            </Button>
+
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -67,27 +78,23 @@ export default function LandingB2B() {
               <Button
                 variant="outline"
                 className="h-auto py-4 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
-                onClick={() => navigate("/auth/register-trial?type=bailleur")}
+                onClick={() => navigate("/auth/register-manager?type=bailleur")}
               >
                 <Home className="h-6 w-6 text-primary" />
                 <span className="text-sm font-medium">Bailleur</span>
-                <span className="text-xs text-muted-foreground font-normal">Propriétaire bailleur</span>
+                <span className="text-xs text-muted-foreground font-normal">Propriétaire</span>
               </Button>
               
               <Button
                 variant="outline"
                 className="h-auto py-4 flex flex-col gap-2 hover:border-primary hover:bg-primary/5"
-                onClick={() => navigate("/auth/register-trial?type=syndic")}
+                onClick={() => navigate("/auth/register-manager?type=syndic")}
               >
                 <Users className="h-6 w-6 text-primary" />
                 <span className="text-sm font-medium">Syndic</span>
                 <span className="text-xs text-muted-foreground font-normal">Gestionnaire pro</span>
               </Button>
             </div>
-
-            <p className="text-center text-xs text-muted-foreground">
-              Essai gratuit 30 jours • Sans engagement
-            </p>
           </CardContent>
         </Card>
       </main>
