@@ -38,6 +38,8 @@ interface TrialInfo {
 export default function RegisterManager() {
   const [searchParams] = useSearchParams();
   const trialToken = searchParams.get("trial");
+  const accountType = searchParams.get("type") as "bailleur" | "syndic" | null;
+  const effectiveType = accountType || "bailleur";
 
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -58,6 +60,27 @@ export default function RegisterManager() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
+
+  const isSyndic = effectiveType === "syndic";
+  const typeLabels = {
+    bailleur: {
+      icon: "🏠",
+      title: "Créer un compte Bailleur",
+      subtitle: "Gérez vos biens locatifs avec Kopro",
+      companyLabel: "Nom de votre société",
+      companyPlaceholder: "SCI Dupont ou votre nom",
+      buttonText: "Créer mon compte bailleur",
+    },
+    syndic: {
+      icon: "🏢",
+      title: "Créer un compte Syndic",
+      subtitle: "Gérez vos copropriétés avec Kopro",
+      companyLabel: "Nom du cabinet",
+      companyPlaceholder: "Cabinet Syndic Pro",
+      buttonText: "Créer mon compte syndic",
+    },
+  };
+  const labels = typeLabels[effectiveType];
 
   // Check trial token and prefill
   useEffect(() => {
@@ -150,7 +173,7 @@ export default function RegisterManager() {
       // Determine agency status (trial or active)
       const agencyStatus = trialInfo ? "trial" : "active";
 
-      // Create agency
+      // Create agency with type (bailleur or syndic)
       const { data: agencyData, error: agencyError } = await supabase.from("agencies").insert([{
         name: formData.company,
         email: formData.email,
@@ -159,6 +182,7 @@ export default function RegisterManager() {
         owner_id: userId,
         status: agencyStatus,
         trial_account_id: trialInfo?.id || null,
+        type: effectiveType,
       }]).select().single();
 
       if (agencyError) throw agencyError;
@@ -330,22 +354,22 @@ export default function RegisterManager() {
           </div>
 
           <div className="text-center">
-            <div className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+            <div className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4 text-3xl">
               {trialInfo ? (
                 <Gift className="h-7 w-7 text-primary" />
               ) : (
-                <Briefcase className="h-7 w-7 text-primary" />
+                <span>{labels.icon}</span>
               )}
             </div>
             <h1 className="text-2xl font-semibold text-foreground">
               {trialInfo 
                 ? `Essayez gratuitement pendant ${trialInfo.duration_days} jours`
-                : "Créer un compte gestionnaire"}
+                : labels.title}
             </h1>
             <p className="text-muted-foreground mt-1">
               {trialInfo 
                 ? `Votre essai de ${trialInfo.duration_days} jours est prêt à être activé` 
-                : "Gérez vos résidences avec Kopro"}
+                : labels.subtitle}
             </p>
           </div>
 
@@ -391,14 +415,14 @@ export default function RegisterManager() {
 
             {/* Company info */}
             <div className="space-y-2">
-              <Label htmlFor="company">Nom de l'agence *</Label>
+              <Label htmlFor="company">{labels.companyLabel} *</Label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="company"
                   name="company"
                   type="text"
-                  placeholder="Agence Immobilière XYZ"
+                  placeholder={labels.companyPlaceholder}
                   className="pl-10 h-12"
                   value={formData.company}
                   onChange={handleChange}
@@ -528,7 +552,7 @@ export default function RegisterManager() {
                 className="w-full h-14 text-lg" 
                 disabled={isLoading || !isFormValid}
               >
-                {isLoading ? "Création..." : trialInfo ? "Démarrer mon essai gratuit" : "Créer mon compte gestionnaire"}
+                {isLoading ? "Création..." : trialInfo ? "Démarrer mon essai gratuit" : labels.buttonText}
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </div>
