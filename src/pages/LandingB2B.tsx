@@ -1,13 +1,28 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Building2, FileText, MessageSquare, Home, Users, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import koproLogo from "@/assets/kopro-logo.svg";
 
 export default function LandingB2B() {
   const navigate = useNavigate();
+  const [showTrialTypeDialog, setShowTrialTypeDialog] = useState(false);
+
+  const handleTrialChoice = (type: "bailleur" | "syndic") => {
+    setShowTrialTypeDialog(false);
+    navigate(`/auth/register-trial?type=${type}`);
+  };
 
   return (
+    <>
     <div className="min-h-screen flex flex-col bg-background">
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center p-6">
@@ -57,7 +72,7 @@ export default function LandingB2B() {
               size="lg"
               variant="outline"
               className="w-full h-12 gap-2 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700"
-              onClick={() => navigate("/auth/register-trial")}
+              onClick={() => setShowTrialTypeDialog(true)}
             >
               <Gift className="h-5 w-5" />
               Essai gratuit 30 jours
@@ -106,5 +121,47 @@ export default function LandingB2B() {
         </p>
       </footer>
     </div>
+
+    {/* Trial Type Selection Dialog */}
+    <Dialog open={showTrialTypeDialog} onOpenChange={setShowTrialTypeDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-center">Quel type de compte souhaitez-vous ?</DialogTitle>
+          <DialogDescription className="text-center">
+            Choisissez le profil qui correspond à votre activité
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-4 py-4">
+          <Button
+            variant="outline"
+            className="h-auto py-6 flex flex-col gap-3 hover:border-primary hover:bg-primary/5"
+            onClick={() => handleTrialChoice("bailleur")}
+          >
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Home className="h-6 w-6 text-primary" />
+            </div>
+            <div className="text-center">
+              <span className="text-base font-semibold block">Bailleur</span>
+              <span className="text-xs text-muted-foreground">Propriétaire / Investisseur</span>
+            </div>
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="h-auto py-6 flex flex-col gap-3 hover:border-primary hover:bg-primary/5"
+            onClick={() => handleTrialChoice("syndic")}
+          >
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
+            <div className="text-center">
+              <span className="text-base font-semibold block">Syndic</span>
+              <span className="text-xs text-muted-foreground">Gestionnaire professionnel</span>
+            </div>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft, Phone, Hash, Building2, Gift } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, User, ArrowLeft, Phone, Hash, Building2, Gift, Home, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,31 @@ import koproLogo from "@/assets/kopro-logo.svg";
 import { addDays } from "date-fns";
 
 const TRIAL_DURATION_DAYS = 30;
+
+type AccountType = "bailleur" | "syndic";
+
+const typeLabels: Record<AccountType, {
+  title: string;
+  subtitle: string;
+  companyLabel: string;
+  companyPlaceholder: string;
+  icon: typeof Home;
+}> = {
+  bailleur: {
+    title: "Essai gratuit - Compte Bailleur",
+    subtitle: "Gérez vos biens locatifs simplement",
+    companyLabel: "Nom de votre société",
+    companyPlaceholder: "Société Immobilière XYZ",
+    icon: Home,
+  },
+  syndic: {
+    title: "Essai gratuit - Compte Syndic",
+    subtitle: "Gérez vos copropriétés efficacement",
+    companyLabel: "Nom du cabinet",
+    companyPlaceholder: "Cabinet de Syndic ABC",
+    icon: Users,
+  },
+};
 
 const signUpSchema = z.object({
   firstName: z.string().min(1, AUTH_MESSAGES.FIRST_NAME_REQUIRED).max(100),
@@ -46,8 +71,15 @@ export default function RegisterTrial() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
+
+  // Get account type from URL
+  const accountType = searchParams.get("type") as AccountType | null;
+  const effectiveType: AccountType = accountType === "syndic" ? "syndic" : "bailleur";
+  const labels = typeLabels[effectiveType];
+  const TypeIcon = labels.icon;
 
   // Redirect if already logged in
   useEffect(() => {
@@ -124,7 +156,7 @@ export default function RegisterTrial() {
 
       if (trialError) throw trialError;
 
-      // Create agency with trial status
+      // Create agency with trial status and type
       const { data: agencyData, error: agencyError } = await supabase.from("agencies").insert([{
         name: formData.company,
         email: formData.email,
@@ -133,6 +165,7 @@ export default function RegisterTrial() {
         owner_id: userId,
         status: "trial",
         trial_account_id: trialData.id,
+        type: effectiveType,
       }]).select().single();
 
       if (agencyError) throw agencyError;
@@ -280,14 +313,17 @@ export default function RegisterTrial() {
 
           <div className="text-center">
             <div className="mx-auto w-14 h-14 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-              <Gift className="h-7 w-7 text-green-600 dark:text-green-400" />
+              <TypeIcon className="h-7 w-7 text-green-600 dark:text-green-400" />
             </div>
             <h1 className="text-2xl font-semibold text-foreground">
-              Essayez gratuitement pendant {TRIAL_DURATION_DAYS} jours
+              {labels.title}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Sans engagement, sans carte bancaire
+              {labels.subtitle}
             </p>
+            <Badge className="mt-2 bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/30">
+              {TRIAL_DURATION_DAYS} jours gratuits • Sans engagement
+            </Badge>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -332,14 +368,14 @@ export default function RegisterTrial() {
 
             {/* Company info */}
             <div className="space-y-2">
-              <Label htmlFor="company">Nom de l'agence *</Label>
+              <Label htmlFor="company">{labels.companyLabel} *</Label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="company"
                   name="company"
                   type="text"
-                  placeholder="Agence Immobilière XYZ"
+                  placeholder={labels.companyPlaceholder}
                   className="pl-10 h-12"
                   value={formData.company}
                   onChange={handleChange}
