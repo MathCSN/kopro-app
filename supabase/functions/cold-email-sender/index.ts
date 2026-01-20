@@ -36,6 +36,21 @@ const DAYS_MAP: Record<number, string> = {
   6: "saturday",
 };
 
+// Verify admin role for a user
+async function verifyAdminRole(supabase: any, userId: string): Promise<boolean> {
+  const { data: roles, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error checking roles:", error);
+    return false;
+  }
+
+  return roles?.some((r: { role: string }) => r.role === "admin") || false;
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -54,28 +69,115 @@ serve(async (req: Request) => {
 
     const resend = new Resend(resendApiKey);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Create service client for database operations
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse request body for test mode or manual trigger
+    // Parse request body
     let isTestMode = false;
+    let isScheduledRun = false;
     let testEmail = "";
     let campaignId = "";
+    let schedulerSecret = "";
     
     try {
       const body = await req.json();
       isTestMode = body.test === true;
       testEmail = body.email || "";
       campaignId = body.campaignId || "";
+      schedulerSecret = body.scheduler_secret || "";
+      isScheduledRun = body.scheduled === true;
     } catch {
-      // No body, this is a scheduled run
+      // No body - reject request (all requests must have proper authentication)
+      return new Response(
+        JSON.stringify({ error: "Request body required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // AUTHENTICATION CHECK
+    // For scheduled runs, verify the scheduler secret
+    if (isScheduledRun) {
+      const expectedSecret = Deno.env.get("COLD_EMAIL_SCHEDULER_SECRET");
+      
+      if (!expectedSecret) {
+        console.error("COLD_EMAIL_SCHEDULER_SECRET not configured");
+        return new Response(
+          JSON.stringify({ error: "Scheduler not configured" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (schedulerSecret !== expectedSecret) {
+        console.error("Invalid scheduler secret provided");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - invalid scheduler secret" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("Authenticated via scheduler secret");
+    } else {
+      // For manual/test requests, verify user authentication and admin role
+      const authHeader = req.headers.get("Authorization");
+      
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(
+          JSON.stringify({ error: "Authentication required" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Create client with user's auth token
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      // Verify the token
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getUser(token);
+
+      if (claimsError || !claimsData?.user) {
+        console.error("Auth error:", claimsError);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - invalid token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const userId = claimsData.user.id;
+      console.log(`Authenticated user: ${userId}`);
+
+      // Verify admin role using service client
+      const isAdmin = await verifyAdminRole(supabaseService, userId);
+      
+      if (!isAdmin) {
+        console.error(`User ${userId} is not an admin`);
+        return new Response(
+          JSON.stringify({ error: "Forbidden - admin access required" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`Admin access verified for user: ${userId}`);
+
+      // Log the action for audit
+      await supabaseService.from("audit_logs").insert({
+        user_id: userId,
+        action: isTestMode ? "cold_email_test" : "cold_email_manual_trigger",
+        entity_type: "cold_email_campaign",
+        entity_id: campaignId || null,
+        metadata: { test_email: testEmail || null }
+      });
     }
 
     // Test mode: send a single test email
     if (isTestMode && testEmail && campaignId) {
       console.log(`Test mode: sending to ${testEmail} for campaign ${campaignId}`);
       
-      const { data: campaign, error: campaignError } = await supabase
+      const { data: campaign, error: campaignError } = await supabaseService
         .from("cold_email_campaigns")
         .select("*")
         .eq("id", campaignId)
@@ -118,7 +220,7 @@ serve(async (req: Request) => {
     console.log(`Current time: ${currentHour}h, day: ${currentDay}`);
 
     // Fetch active campaigns
-    const { data: campaigns, error: campaignsError } = await supabase
+    const { data: campaigns, error: campaignsError } = await supabaseService
       .from("cold_email_campaigns")
       .select("*")
       .eq("status", "active");
@@ -158,7 +260,7 @@ serve(async (req: Request) => {
       console.log(`Processing campaign: ${campaign.name}`);
 
       // Fetch pending recipients
-      const { data: recipients, error: recipientsError } = await supabase
+      const { data: recipients, error: recipientsError } = await supabaseService
         .from("cold_email_recipients")
         .select("id, email, campaign_id")
         .eq("campaign_id", campaign.id)
@@ -172,7 +274,7 @@ serve(async (req: Request) => {
 
       if (!recipients || recipients.length === 0) {
         console.log(`Campaign ${campaign.name}: no pending recipients, marking as completed`);
-        await supabase
+        await supabaseService
           .from("cold_email_campaigns")
           .update({ status: "completed" })
           .eq("id", campaign.id);
@@ -193,7 +295,7 @@ serve(async (req: Request) => {
 
           if (sendError) {
             console.error(`Error sending to ${recipient.email}:`, sendError);
-            await supabase
+            await supabaseService
               .from("cold_email_recipients")
               .update({ 
                 status: "bounced", 
@@ -204,7 +306,7 @@ serve(async (req: Request) => {
             totalErrors++;
           } else {
             console.log(`Email sent successfully to ${recipient.email}`);
-            await supabase
+            await supabaseService
               .from("cold_email_recipients")
               .update({ 
                 status: "sent", 
@@ -218,7 +320,7 @@ serve(async (req: Request) => {
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (err) {
           console.error(`Exception sending to ${recipient.email}:`, err);
-          await supabase
+          await supabaseService
             .from("cold_email_recipients")
             .update({ 
               status: "bounced", 
