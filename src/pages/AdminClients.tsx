@@ -45,6 +45,8 @@ import {
 import { AgencyFormDialog } from "@/components/admin/clients/AgencyFormDialog";
 import { useToast } from "@/hooks/use-toast";
 
+type AgencyType = "bailleur" | "syndic";
+
 interface Agency {
   id: string;
   name: string;
@@ -52,6 +54,7 @@ interface Agency {
   phone: string | null;
   city: string | null;
   status: string | null;
+  type: AgencyType | null;
   logo_url: string | null;
   owner_id: string | null;
   created_at: string;
@@ -71,6 +74,7 @@ export default function AdminClients() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [agencyToDelete, setAgencyToDelete] = useState<Agency | null>(null);
@@ -140,9 +144,27 @@ export default function AdminClients() {
       agency.owner?.last_name?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || agency.status === statusFilter;
+    const matchesType = typeFilter === "all" || agency.type === typeFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesType;
   });
+
+  const getTypeBadge = (type: AgencyType | null) => {
+    if (type === "syndic") {
+      return (
+        <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
+          <Users className="h-3 w-3 mr-1" />
+          Syndic
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+        <Home className="h-3 w-3 mr-1" />
+        Bailleur
+      </Badge>
+    );
+  };
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
@@ -260,14 +282,34 @@ export default function AdminClients() {
               <SelectItem value="suspended">Suspendu</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les types</SelectItem>
+              <SelectItem value="bailleur">
+                <div className="flex items-center gap-2">
+                  <Home className="h-4 w-4 text-blue-600" />
+                  Bailleurs
+                </div>
+              </SelectItem>
+              <SelectItem value="syndic">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-600" />
+                  Syndics
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Agences
+                Total
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -276,13 +318,27 @@ export default function AdminClients() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Résidences
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <Home className="h-4 w-4 text-blue-500" />
+                Bailleurs
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {agencies.reduce((sum, a) => sum + a.residences_count, 0)}
+                {agencies.filter(a => a.type === "bailleur" || !a.type).length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                <Users className="h-4 w-4 text-purple-500" />
+                Syndics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {agencies.filter(a => a.type === "syndic").length}
               </div>
             </CardContent>
           </Card>
@@ -348,8 +404,9 @@ export default function AdminClients() {
 
                     {/* Agency Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-semibold text-lg truncate">{agency.name}</h3>
+                        {getTypeBadge(agency.type)}
                         {getStatusBadge(agency.status)}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
