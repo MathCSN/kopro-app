@@ -18,11 +18,13 @@ import {
   Home,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  Share2
 } from "lucide-react";
 import { AgencyFormDialog } from "@/components/admin/clients/AgencyFormDialog";
 import { AgencyResidencesTab } from "@/components/admin/clients/AgencyResidencesTab";
 import { BailleurLotsTab } from "@/components/admin/clients/BailleurLotsTab";
+import { SyndicSharedLotsTab } from "@/components/admin/clients/SyndicSharedLotsTab";
 import { AgencyTeamTab } from "@/components/admin/clients/AgencyTeamTab";
 import { AgencySubscriptionTab } from "@/components/admin/clients/AgencySubscriptionTab";
 
@@ -270,13 +272,19 @@ export default function AdminClientDetail() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={`grid w-full ${isSyndic ? "grid-cols-3" : "grid-cols-3"}`}>
+          <TabsList className={`grid w-full ${isSyndic ? "grid-cols-4" : "grid-cols-3"}`}>
             <TabsTrigger value="residences" className="gap-2">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">
                 {isSyndic ? "Résidences" : "Appartements"}
               </span>
             </TabsTrigger>
+            {isSyndic && (
+              <TabsTrigger value="shared" className="gap-2">
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Appts bailleurs</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="team" className="gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Équipe</span>
@@ -294,6 +302,12 @@ export default function AdminClientDetail() {
               <BailleurLotsTab agencyId={agencyId!} />
             )}
           </TabsContent>
+
+          {isSyndic && (
+            <TabsContent value="shared" className="mt-6">
+              <SyndicSharedLotsTab agencyId={agencyId!} />
+            </TabsContent>
+          )}
 
           <TabsContent value="team" className="mt-6">
             <AgencyTeamTab agencyId={agencyId!} ownerId={agency.owner_id} />
