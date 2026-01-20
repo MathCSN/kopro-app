@@ -10,12 +10,10 @@ import {
   Building2, 
   MapPin, 
   Home,
-  Edit,
-  Trash2,
   User,
   Search,
-  ExternalLink,
-  Link2
+  Link2,
+  Share2
 } from "lucide-react";
 import {
   AlertDialog,
@@ -29,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddLotToBailleurDialog } from "./AddLotToBailleurDialog";
+import { LotSharingDialog } from "./LotSharingDialog";
 
 interface BailleurLotsTabProps {
   agencyId: string;
@@ -67,6 +66,7 @@ export function BailleurLotsTab({ agencyId }: BailleurLotsTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [addLotDialogOpen, setAddLotDialogOpen] = useState(false);
   const [deletingLot, setDeletingLot] = useState<LotWithResidence | null>(null);
+  const [sharingLot, setSharingLot] = useState<LotWithResidence | null>(null);
 
   const { data: lots = [], isLoading, refetch } = useQuery({
     queryKey: ["bailleur-lots", agencyId],
@@ -319,6 +319,15 @@ export function BailleurLotsTab({ agencyId }: BailleurLotsTabProps) {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setSharingLot(lot)}
+                          title="Paramètres de partage"
+                        >
+                          <Share2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => setDeletingLot(lot)}
                           title="Retirer de ma gestion"
@@ -364,6 +373,16 @@ export function BailleurLotsTab({ agencyId }: BailleurLotsTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Sharing Dialog */}
+      {sharingLot && (
+        <LotSharingDialog
+          open={!!sharingLot}
+          onOpenChange={(open) => !open && setSharingLot(null)}
+          lot={sharingLot}
+          bailleurAgencyId={agencyId}
+        />
+      )}
     </div>
   );
 }
