@@ -24,9 +24,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Copy, Trash2, Clock, CheckCircle, XCircle, UserPlus, ExternalLink } from "lucide-react";
+import { Plus, Copy, Trash2, Clock, CheckCircle, XCircle, UserPlus, ExternalLink, Home, Users } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type AccountType = "bailleur" | "syndic";
 
 interface TrialAccount {
   id: string;
@@ -42,6 +51,7 @@ interface TrialAccount {
   expires_at: string | null;
   converted_at: string | null;
   created_at: string;
+  account_type: AccountType | null;
   user?: {
     first_name: string | null;
     last_name: string | null;
@@ -57,6 +67,7 @@ export function TrialAccountsTab() {
     email: "",
     agency_name: "",
     duration_days: 30,
+    account_type: "bailleur" as AccountType,
   });
 
   const { data: trials = [], isLoading } = useQuery({
@@ -99,6 +110,7 @@ export function TrialAccountsTab() {
         agency_name: data.agency_name || null,
         duration_days: data.duration_days,
         created_by: user.id,
+        account_type: data.account_type,
       });
 
       if (error) throw error;
@@ -106,7 +118,7 @@ export function TrialAccountsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-trial-accounts"] });
       setIsCreateOpen(false);
-      setFormData({ email: "", agency_name: "", duration_days: 30 });
+      setFormData({ email: "", agency_name: "", duration_days: 30, account_type: "bailleur" });
       toast({ title: "Compte essai créé", description: "Le lien d'inscription a été généré." });
     },
     onError: (error: any) => {
@@ -152,8 +164,26 @@ export function TrialAccountsTab() {
     },
   });
 
-  const getTrialUrl = (token: string) => {
-    return `${window.location.origin}/auth/register-manager?trial=${token}`;
+  const getTrialUrl = (token: string, accountType: AccountType | null) => {
+    const type = accountType || "bailleur";
+    return `${window.location.origin}/auth/register-manager?trial=${token}&type=${type}`;
+  };
+
+  const getAccountTypeBadge = (accountType: AccountType | null) => {
+    if (accountType === "syndic") {
+      return (
+        <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30">
+          <Users className="h-3 w-3 mr-1" />
+          Syndic
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+        <Home className="h-3 w-3 mr-1" />
+        Bailleur
+      </Badge>
+    );
   };
 
   const copyToClipboard = (text: string) => {
@@ -216,6 +246,36 @@ export function TrialAccountsTab() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
+                  <Label htmlFor="account_type">Type de compte *</Label>
+                  <Select
+                    value={formData.account_type}
+                    onValueChange={(value: AccountType) => setFormData({ ...formData, account_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir le type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bailleur">
+                        <div className="flex items-center gap-2">
+                          <Home className="h-4 w-4 text-blue-600" />
+                          Bailleur
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="syndic">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-purple-600" />
+                          Syndic
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.account_type === "bailleur" 
+                      ? "Gère des appartements dans différentes résidences" 
+                      : "Gère des résidences entières (parties communes)"}
+                  </p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="email">Email du gestionnaire *</Label>
                   <Input
                     id="email"
@@ -226,10 +286,12 @@ export function TrialAccountsTab() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="agency_name">Nom de l'agence (optionnel)</Label>
+                  <Label htmlFor="agency_name">
+                    {formData.account_type === "bailleur" ? "Nom du bailleur" : "Nom du syndic"} (optionnel)
+                  </Label>
                   <Input
                     id="agency_name"
-                    placeholder="Agence Immobilière XYZ"
+                    placeholder={formData.account_type === "bailleur" ? "Bailleur Martin" : "Syndic ABC"}
                     value={formData.agency_name}
                     onChange={(e) => setFormData({ ...formData, agency_name: e.target.value })}
                   />
@@ -302,6 +364,7 @@ export function TrialAccountsTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Email / Agence</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Durée</TableHead>
                   <TableHead>Jours restants</TableHead>
@@ -325,6 +388,7 @@ export function TrialAccountsTab() {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>{getAccountTypeBadge(trial.account_type)}</TableCell>
                     <TableCell>{getStatusBadge(trial)}</TableCell>
                     <TableCell>
                       <Input
@@ -363,7 +427,7 @@ export function TrialAccountsTab() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => copyToClipboard(getTrialUrl(trial.token))}
+                              onClick={() => copyToClipboard(getTrialUrl(trial.token, trial.account_type))}
                               className="gap-1"
                             >
                               <Copy className="h-3 w-3" />
@@ -372,7 +436,7 @@ export function TrialAccountsTab() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(getTrialUrl(trial.token), "_blank")}
+                              onClick={() => window.open(getTrialUrl(trial.token, trial.account_type), "_blank")}
                               aria-label="Ouvrir le lien d'inscription"
                             >
                               <ExternalLink className="h-3 w-3" />

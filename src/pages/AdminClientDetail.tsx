@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { AgencyFormDialog } from "@/components/admin/clients/AgencyFormDialog";
 import { AgencyResidencesTab } from "@/components/admin/clients/AgencyResidencesTab";
+import { BailleurLotsTab } from "@/components/admin/clients/BailleurLotsTab";
 import { AgencyTeamTab } from "@/components/admin/clients/AgencyTeamTab";
 import { AgencySubscriptionTab } from "@/components/admin/clients/AgencySubscriptionTab";
 
@@ -109,6 +110,25 @@ export default function AdminClientDetail() {
     }
   };
 
+  const getTypeBadge = (type: string | null) => {
+    if (type === "syndic") {
+      return (
+        <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
+          <Users className="h-3 w-3 mr-1" />
+          Syndic
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+        <Home className="h-3 w-3 mr-1" />
+        Bailleur
+      </Badge>
+    );
+  };
+
+  const isSyndic = agency?.type === "syndic";
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -163,8 +183,9 @@ export default function AdminClientDetail() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h1 className="text-2xl font-bold truncate">{agency.name}</h1>
+                    {getTypeBadge(agency.type)}
                     {getStatusBadge(agency.status)}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
@@ -249,10 +270,12 @@ export default function AdminClientDetail() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${isSyndic ? "grid-cols-3" : "grid-cols-3"}`}>
             <TabsTrigger value="residences" className="gap-2">
               <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">Résidences</span>
+              <span className="hidden sm:inline">
+                {isSyndic ? "Résidences" : "Appartements"}
+              </span>
             </TabsTrigger>
             <TabsTrigger value="team" className="gap-2">
               <Users className="h-4 w-4" />
@@ -265,7 +288,11 @@ export default function AdminClientDetail() {
           </TabsList>
 
           <TabsContent value="residences" className="mt-6">
-            <AgencyResidencesTab agencyId={agencyId!} />
+            {isSyndic ? (
+              <AgencyResidencesTab agencyId={agencyId!} />
+            ) : (
+              <BailleurLotsTab agencyId={agencyId!} />
+            )}
           </TabsContent>
 
           <TabsContent value="team" className="mt-6">

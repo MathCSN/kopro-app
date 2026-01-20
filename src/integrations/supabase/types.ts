@@ -2122,10 +2122,69 @@ export type Database = {
           },
         ]
       }
+      lot_syndic_sharing: {
+        Row: {
+          bailleur_agency_id: string
+          created_at: string | null
+          id: string
+          lot_id: string
+          share_contact_info: boolean | null
+          share_lease_info: boolean | null
+          share_tenant_info: boolean | null
+          syndic_agency_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          bailleur_agency_id: string
+          created_at?: string | null
+          id?: string
+          lot_id: string
+          share_contact_info?: boolean | null
+          share_lease_info?: boolean | null
+          share_tenant_info?: boolean | null
+          syndic_agency_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          bailleur_agency_id?: string
+          created_at?: string | null
+          id?: string
+          lot_id?: string
+          share_contact_info?: boolean | null
+          share_lease_info?: boolean | null
+          share_tenant_info?: boolean | null
+          syndic_agency_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lot_syndic_sharing_bailleur_agency_id_fkey"
+            columns: ["bailleur_agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lot_syndic_sharing_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lot_syndic_sharing_syndic_agency_id_fkey"
+            columns: ["syndic_agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lots: {
         Row: {
           acquisition_date: string | null
           acquisition_price: number | null
+          bailleur_agency_id: string | null
           building_id: string | null
           cadastral_reference: string | null
           created_at: string | null
@@ -2147,6 +2206,7 @@ export type Database = {
         Insert: {
           acquisition_date?: string | null
           acquisition_price?: number | null
+          bailleur_agency_id?: string | null
           building_id?: string | null
           cadastral_reference?: string | null
           created_at?: string | null
@@ -2168,6 +2228,7 @@ export type Database = {
         Update: {
           acquisition_date?: string | null
           acquisition_price?: number | null
+          bailleur_agency_id?: string | null
           building_id?: string | null
           cadastral_reference?: string | null
           created_at?: string | null
@@ -2187,6 +2248,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lots_bailleur_agency_id_fkey"
+            columns: ["bailleur_agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lots_building_id_fkey"
             columns: ["building_id"]
@@ -3972,6 +4040,7 @@ export type Database = {
       }
       trial_accounts: {
         Row: {
+          account_type: string | null
           agency_id: string | null
           agency_name: string | null
           converted_at: string | null
@@ -3988,6 +4057,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          account_type?: string | null
           agency_id?: string | null
           agency_name?: string | null
           converted_at?: string | null
@@ -4004,6 +4074,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          account_type?: string | null
           agency_id?: string | null
           agency_name?: string | null
           converted_at?: string | null

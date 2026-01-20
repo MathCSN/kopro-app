@@ -27,6 +27,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Home, Users } from "lucide-react";
+
+type AgencyType = "bailleur" | "syndic";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
@@ -37,6 +40,7 @@ const formSchema = z.object({
   city: z.string().optional(),
   postal_code: z.string().optional(),
   status: z.string().default("active"),
+  type: z.enum(["bailleur", "syndic"]).default("bailleur"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -54,6 +58,7 @@ interface AgencyFormDialogProps {
     city: string | null;
     postal_code: string | null;
     status: string | null;
+    type: string | null;
   };
   onSuccess: () => void;
 }
@@ -79,6 +84,7 @@ export function AgencyFormDialog({
       city: "",
       postal_code: "",
       status: "active",
+      type: "bailleur" as AgencyType,
     },
   });
 
@@ -93,6 +99,7 @@ export function AgencyFormDialog({
         city: agency.city || "",
         postal_code: agency.postal_code || "",
         status: agency.status || "active",
+        type: (agency.type === "syndic" ? "syndic" : "bailleur") as AgencyType,
       });
     } else {
       form.reset({
@@ -104,6 +111,7 @@ export function AgencyFormDialog({
         city: "",
         postal_code: "",
         status: "active",
+        type: "bailleur",
       });
     }
   }, [agency, form]);
@@ -120,6 +128,7 @@ export function AgencyFormDialog({
         city: values.city || null,
         postal_code: values.postal_code || null,
         status: values.status,
+        type: values.type,
       };
 
       if (isEditing) {
@@ -172,12 +181,54 @@ export function AgencyFormDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Type de compte *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir le type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="bailleur">
+                        <div className="flex items-center gap-2">
+                          <Home className="h-4 w-4 text-blue-600" />
+                          Bailleur
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="syndic">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-purple-600" />
+                          Syndic
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {field.value === "bailleur" 
+                      ? "Gère des appartements dans différentes résidences" 
+                      : "Gère des résidences entières (parties communes)"}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nom de l'agence *</FormLabel>
+                  <FormLabel>
+                    {form.watch("type") === "syndic" ? "Nom du syndic" : "Nom du bailleur"} *
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Immobilier Martin" {...field} />
+                    <Input 
+                      placeholder={form.watch("type") === "syndic" ? "Ex: Syndic ABC" : "Ex: Bailleur Martin"} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
