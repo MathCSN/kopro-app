@@ -5,24 +5,68 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Users, Crown, Mail, Phone, Plus } from "lucide-react";
+import { Users, Crown, Mail, Phone, Plus, MoreVertical, Trash2 } from "lucide-react";
 import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface AgencyTeamTabProps {
   agencyId: string;
   ownerId: string | null;
 }
 
+interface CustomRole {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
+
+  // Fetch custom roles for this agency
+  const { data: customRolesMap = {} } = useQuery({
+    queryKey: ["agency-custom-roles-map", agencyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agency_custom_roles")
+        .select("id, name, color")
+        .eq("agency_id", agencyId);
+
+      if (error) throw error;
+
+      const map: Record<string, CustomRole> = {};
+      (data || []).forEach((r) => {
+        map[r.id] = r as CustomRole;
+      });
+      return map;
+    },
+  });
+
   const { data: teamMembers = [], isLoading } = useQuery({
     queryKey: ["agency-team", agencyId],
     queryFn: async () => {
       // Get all user_ids with roles linked to this agency
       const { data: roles, error } = await supabase
         .from("user_roles")
-        .select("id, role, user_id")
+        .select("id, role, user_id, custom_role_id")
         .eq("agency_id", agencyId);
 
       if (error) throw error;
@@ -54,6 +98,7 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
         id: r.id,
         role: r.role,
         user_id: r.user_id,
+        custom_role_id: r.custom_role_id,
         profile: profilesMap.get(r.user_id),
         isOwner: r.user_id === ownerId,
       }));
@@ -66,6 +111,7 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
             id: "owner",
             role: "owner",
             user_id: ownerId,
+            custom_role_id: null,
             profile: ownerProfile,
             isOwner: true,
           });
@@ -76,7 +122,27 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
     },
   });
 
-  const getRoleBadge = (role: string, isOwner: boolean) => {
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("id", memberToRemove.id);
+
+      if (error) throw error;
+
+      toast.success("Membre retiré de l'équipe");
+      queryClient.invalidateQueries({ queryKey: ["agency-team", agencyId] });
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la suppression");
+    } finally {
+      setMemberToRemove(null);
+    }
+  };
+
+  const getRoleBadge = (role: string, isOwner: boolean, customRoleId: string | null) => {
     if (isOwner) {
       return (
         <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30 gap-1">
@@ -85,6 +151,25 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
         </Badge>
       );
     }
+
+    // Check for custom role
+    if (customRoleId && customRolesMap[customRoleId]) {
+      const customRole = customRolesMap[customRoleId];
+      return (
+        <Badge 
+          style={{ 
+            backgroundColor: `${customRole.color}20`, 
+            color: customRole.color,
+            borderColor: `${customRole.color}50`
+          }}
+          className="border"
+        >
+          {customRole.name}
+        </Badge>
+      );
+    }
+
+    // System roles
     switch (role) {
       case "manager":
         return <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30">Gestionnaire</Badge>;
@@ -145,7 +230,7 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
                       <h4 className="font-semibold">
                         {member.profile?.first_name} {member.profile?.last_name}
                       </h4>
-                      {getRoleBadge(member.role, member.isOwner)}
+                      {getRoleBadge(member.role, member.isOwner, member.custom_role_id)}
                     </div>
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       {member.profile?.email && (
@@ -162,12 +247,54 @@ export function AgencyTeamTab({ agencyId, ownerId }: AgencyTeamTabProps) {
                       )}
                     </div>
                   </div>
+
+                  {!member.isOwner && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setMemberToRemove({ 
+                            id: member.id, 
+                            name: `${member.profile?.first_name || ''} ${member.profile?.last_name || ''}`.trim() || member.profile?.email || 'ce membre'
+                          })}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Retirer de l'équipe
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retirer ce membre ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberToRemove?.name} sera retiré de l'équipe et perdra ses accès à l'agence.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Retirer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

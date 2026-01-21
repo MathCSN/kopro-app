@@ -373,6 +373,47 @@ export type Database = {
           },
         ]
       }
+      agency_custom_roles: {
+        Row: {
+          agency_id: string
+          color: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id: string
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_custom_roles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_subscriptions: {
         Row: {
           activation_price_paid: number
@@ -1669,6 +1710,38 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "agency_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_role_permissions: {
+        Row: {
+          created_at: string | null
+          custom_role_id: string
+          enabled: boolean | null
+          id: string
+          permission_key: string
+        }
+        Insert: {
+          created_at?: string | null
+          custom_role_id: string
+          enabled?: boolean | null
+          id?: string
+          permission_key: string
+        }
+        Update: {
+          created_at?: string | null
+          custom_role_id?: string
+          enabled?: boolean | null
+          id?: string
+          permission_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_role_permissions_custom_role_id_fkey"
+            columns: ["custom_role_id"]
+            isOneToOne: false
+            referencedRelation: "agency_custom_roles"
             referencedColumns: ["id"]
           },
         ]
@@ -4197,6 +4270,7 @@ export type Database = {
         Row: {
           agency_id: string | null
           created_at: string | null
+          custom_role_id: string | null
           id: string
           job_title: string | null
           residence_id: string | null
@@ -4206,6 +4280,7 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           created_at?: string | null
+          custom_role_id?: string | null
           id?: string
           job_title?: string | null
           residence_id?: string | null
@@ -4215,6 +4290,7 @@ export type Database = {
         Update: {
           agency_id?: string | null
           created_at?: string | null
+          custom_role_id?: string | null
           id?: string
           job_title?: string | null
           residence_id?: string | null
@@ -4227,6 +4303,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_custom_role_id_fkey"
+            columns: ["custom_role_id"]
+            isOneToOne: false
+            referencedRelation: "agency_custom_roles"
             referencedColumns: ["id"]
           },
           {
@@ -4556,6 +4639,10 @@ export type Database = {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
       }
+      has_custom_permission: {
+        Args: { _permission_key: string; _user_id: string }
+        Returns: boolean
+      }
       has_residence_access: {
         Args: { _residence_id: string; _user_id: string }
         Returns: boolean
@@ -4576,6 +4663,10 @@ export type Database = {
       }
       is_syndic_subscription_active: {
         Args: { p_residence_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      user_belongs_to_agency: {
+        Args: { _agency_id: string; _user_id: string }
         Returns: boolean
       }
     }

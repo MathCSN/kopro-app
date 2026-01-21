@@ -62,6 +62,7 @@ type AppRole = Database["public"]["Enums"]["app_role"];
 type Agency = {
   id: string;
   name: string;
+  type: string | null;
 };
 
 type Residence = {
@@ -75,6 +76,7 @@ type UserRole = {
   role: AppRole;
   residence_id: string | null;
   residence_name?: string;
+  agency_id?: string | null;
 };
 
 type UserWithRole = {
@@ -84,10 +86,14 @@ type UserWithRole = {
   last_name: string | null;
   created_at: string | null;
   roles: UserRole[];
+  agencyType?: string | null;
+  agencyName?: string | null;
 };
 
 // Rôles: admin = KOPRO (admin global), autres = par résidence
 const ALL_ROLES: AppRole[] = ['admin', 'manager', 'cs', 'resident'];
+
+type AgencyTypeFilter = 'all' | 'bailleur' | 'syndic' | 'none';
 
 export default function OwnerUsers() {
   const { user, logout } = useAuth();
@@ -101,6 +107,7 @@ export default function OwnerUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>("all");
   const [selectedResidenceId, setSelectedResidenceId] = useState<string>("all");
+  const [agencyTypeFilter, setAgencyTypeFilter] = useState<AgencyTypeFilter>("all");
   const [residenceSearchOpen, setResidenceSearchOpen] = useState(false);
   const [residenceSearchQuery, setResidenceSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
@@ -124,10 +131,10 @@ export default function OwnerUsers() {
       setIsLoading(true);
       
       const [agenciesRes, residencesRes, profilesRes, rolesRes] = await Promise.all([
-        supabase.from('agencies').select('id, name').order('name'),
+        supabase.from('agencies').select('id, name, type').order('name'),
         supabase.from('residences').select('id, name, agency_id').order('name'),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase.from('user_roles').select('id, user_id, role, residence_id'),
+        supabase.from('user_roles').select('id, user_id, role, residence_id, agency_id'),
       ]);
 
       if (agenciesRes.error) throw agenciesRes.error;
@@ -139,6 +146,10 @@ export default function OwnerUsers() {
       setResidences(residencesRes.data || []);
 
       const residenceMap = new Map((residencesRes.data || []).map(r => [r.id, r.name]));
+      const agencyMap = new Map((agenciesRes.data || []).map(a => [a.id, a]));
+
+      // Build residence->agency mapping
+      const residenceToAgency = new Map((residencesRes.data || []).map(r => [r.id, r.agency_id]));
 
       const usersWithRoles: UserWithRole[] = (profilesRes.data || []).map(profile => {
         const userRoles: UserRole[] = (rolesRes.data || [])
@@ -148,8 +159,13 @@ export default function OwnerUsers() {
             role: r.role,
             residence_id: r.residence_id,
             residence_name: r.residence_id ? residenceMap.get(r.residence_id) : undefined,
+            agency_id: r.agency_id || (r.residence_id ? residenceToAgency.get(r.residence_id) : null),
           }));
         
+        // Determine user's agency type from their roles
+        const userAgencyId = userRoles.find(r => r.agency_id)?.agency_id;
+        const userAgency = userAgencyId ? agencyMap.get(userAgencyId) : null;
+
         return {
           id: profile.id,
           email: profile.email || '',
@@ -157,6 +173,8 @@ export default function OwnerUsers() {
           last_name: profile.last_name,
           created_at: profile.created_at,
           roles: userRoles,
+          agencyType: userAgency?.type || null,
+          agencyName: userAgency?.name || null,
         };
       });
 
@@ -314,7 +332,17 @@ export default function OwnerUsers() {
     return result;
   })();
 
-  const filteredUsers = filteredByResidence.filter(u => 
+  // Filter by agency type
+  const filteredByAgencyType = agencyTypeFilter === 'all' 
+    ? filteredByResidence
+    : agencyTypeFilter === 'none'
+      ? filteredByResidence.filter(u => !u.agencyType)
+      : filteredByResidence.filter(u => u.agencyType === agencyTypeFilter);
+
+  // Exclude current admin user from the list
+  const usersWithoutSelf = filteredByAgencyType.filter(u => u.id !== user?.id);
+
+  const filteredUsers = usersWithoutSelf.filter(u => 
     u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.first_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (u.last_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
@@ -325,11 +353,11 @@ export default function OwnerUsers() {
   );
 
   const stats = {
-    total: filteredByResidence.length,
-    admins: filteredByResidence.filter(u => u.roles.some(r => r.role === 'admin')).length,
-    managers: filteredByResidence.filter(u => u.roles.some(r => r.role === 'manager')).length,
-    support: filteredByResidence.filter(u => u.roles.some(r => r.role === 'cs')).length,
-    residents: filteredByResidence.filter(u => u.roles.some(r => r.role === 'resident')).length,
+    total: usersWithoutSelf.length,
+    admins: usersWithoutSelf.filter(u => u.roles.some(r => r.role === 'admin')).length,
+    bailleurs: usersWithoutSelf.filter(u => u.agencyType === 'bailleur').length,
+    syndics: usersWithoutSelf.filter(u => u.agencyType === 'syndic').length,
+    residents: usersWithoutSelf.filter(u => u.roles.some(r => r.role === 'resident')).length,
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -475,8 +503,30 @@ export default function OwnerUsers() {
           </div>
         </div>
 
+        {/* Agency Type Filter */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Type:</span>
+          <div className="flex gap-1">
+            {[
+              { value: 'all', label: 'Tous' },
+              { value: 'bailleur', label: 'Bailleurs' },
+              { value: 'syndic', label: 'Syndics' },
+              { value: 'none', label: 'Sans agence' },
+            ].map((opt) => (
+              <Button
+                key={opt.value}
+                variant={agencyTypeFilter === opt.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAgencyTypeFilter(opt.value as AgencyTypeFilter)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="shadow-soft">
             <CardContent className="p-4">
               <p className="text-2xl font-bold">{stats.total}</p>
@@ -491,20 +541,14 @@ export default function OwnerUsers() {
           </Card>
           <Card className="shadow-soft">
             <CardContent className="p-4">
-              <p className="text-2xl font-bold">{stats.managers}</p>
-              <p className="text-sm text-muted-foreground">Gestionnaires</p>
+              <p className="text-2xl font-bold text-blue-500">{stats.bailleurs}</p>
+              <p className="text-sm text-muted-foreground">Bailleurs</p>
             </CardContent>
           </Card>
           <Card className="shadow-soft">
             <CardContent className="p-4">
-              <p className="text-2xl font-bold">{stats.support}</p>
-              <p className="text-sm text-muted-foreground">Support</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-soft">
-            <CardContent className="p-4">
-              <p className="text-2xl font-bold">{stats.residents}</p>
-              <p className="text-sm text-muted-foreground">Résidents</p>
+              <p className="text-2xl font-bold text-purple-500">{stats.syndics}</p>
+              <p className="text-sm text-muted-foreground">Syndics</p>
             </CardContent>
           </Card>
         </div>
@@ -563,13 +607,30 @@ export default function OwnerUsers() {
                               ? `${u.first_name} ${u.last_name}`
                               : u.email.split('@')[0]}
                           </p>
+                          {u.agencyName && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  u.agencyType === 'syndic' 
+                                    ? 'bg-purple-500/10 text-purple-500 border-purple-500/30' 
+                                    : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                                }`}
+                              >
+                                {u.agencyType === 'syndic' ? 'Syndic' : 'Bailleur'}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                                {u.agencyName}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
                     <TableCell>
                       <Popover 
-                        open={editingUserId === u.id} 
+                        open={editingUserId === u.id}
                         onOpenChange={(open) => {
                           setEditingUserId(open ? u.id : null);
                           if (open) setRoleResidenceSelection("");
