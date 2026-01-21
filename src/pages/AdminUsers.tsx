@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Users, Loader2, MoreVertical, Eye, Mail, Building2, Plus, Trash2 } from "lucide-react";
+import { Search, Users, Loader2, MoreVertical, Eye, Mail, Building2, Plus, Trash2, Shield, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -30,7 +31,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Popover,
@@ -55,7 +55,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AdminCreateRoleForAgencyDialog } from "@/components/admin/users/AdminCreateRoleForAgencyDialog";
+import { AVAILABLE_PERMISSIONS } from "@/components/admin/clients/AgencyRolesManagement";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, Edit, Settings } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { Switch } from "@/components/ui/switch";
+import { toast as sonnerToast } from "sonner";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -77,6 +83,17 @@ type UserRole = {
   residence_id: string | null;
   residence_name?: string;
   agency_id?: string | null;
+  custom_role_id?: string | null;
+};
+
+type CustomRole = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  agency_id: string;
+  agency_name?: string;
+  agency_type?: string | null;
 };
 
 type UserWithRole = {
@@ -90,9 +107,6 @@ type UserWithRole = {
   agencyName?: string | null;
 };
 
-// Rôles: admin = KOPRO (admin global), autres = par résidence
-const ALL_ROLES: AppRole[] = ['admin', 'manager', 'cs', 'resident'];
-
 type AgencyTypeFilter = 'all' | 'bailleur' | 'syndic' | 'none';
 
 export default function OwnerUsers() {
@@ -103,19 +117,21 @@ export default function OwnerUsers() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [residences, setResidences] = useState<Residence[]>([]);
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<Record<string, Record<string, boolean>>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedAgencyId, setSelectedAgencyId] = useState<string>("all");
-  const [selectedResidenceId, setSelectedResidenceId] = useState<string>("all");
   const [agencyTypeFilter, setAgencyTypeFilter] = useState<AgencyTypeFilter>("all");
-  const [residenceSearchOpen, setResidenceSearchOpen] = useState(false);
-  const [residenceSearchQuery, setResidenceSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [savingRoles, setSavingRoles] = useState(false);
-  const [roleResidenceSelection, setRoleResidenceSelection] = useState<string>("");
-  const [roleResidenceSearchOpen, setRoleResidenceSearchOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("users");
+  
+  // Role creation
+  const [createRoleDialogOpen, setCreateRoleDialogOpen] = useState(false);
+  const [selectedAgencyForRole, setSelectedAgencyForRole] = useState<Agency | null>(null);
+  const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
+  const [roleSearchQuery, setRoleSearchQuery] = useState("");
+  const [roleAgencyFilter, setRoleAgencyFilter] = useState<string>("all");
   
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -130,26 +146,53 @@ export default function OwnerUsers() {
     try {
       setIsLoading(true);
       
-      const [agenciesRes, residencesRes, profilesRes, rolesRes] = await Promise.all([
+      const [agenciesRes, residencesRes, profilesRes, rolesRes, customRolesRes] = await Promise.all([
         supabase.from('agencies').select('id, name, type').order('name'),
         supabase.from('residences').select('id, name, agency_id').order('name'),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase.from('user_roles').select('id, user_id, role, residence_id, agency_id'),
+        supabase.from('user_roles').select('id, user_id, role, residence_id, agency_id, custom_role_id'),
+        supabase.from('agency_custom_roles').select('*').order('name'),
       ]);
 
       if (agenciesRes.error) throw agenciesRes.error;
       if (residencesRes.error) throw residencesRes.error;
       if (profilesRes.error) throw profilesRes.error;
       if (rolesRes.error) throw rolesRes.error;
+      if (customRolesRes.error) throw customRolesRes.error;
 
       setAgencies(agenciesRes.data || []);
       setResidences(residencesRes.data || []);
 
-      const residenceMap = new Map((residencesRes.data || []).map(r => [r.id, r.name]));
       const agencyMap = new Map((agenciesRes.data || []).map(a => [a.id, a]));
-
-      // Build residence->agency mapping
+      const residenceMap = new Map((residencesRes.data || []).map(r => [r.id, r.name]));
       const residenceToAgency = new Map((residencesRes.data || []).map(r => [r.id, r.agency_id]));
+
+      // Build custom roles with agency info
+      const rolesWithAgency = (customRolesRes.data || []).map(role => {
+        const agency = agencyMap.get(role.agency_id);
+        return {
+          ...role,
+          agency_name: agency?.name,
+          agency_type: agency?.type,
+        };
+      });
+      setCustomRoles(rolesWithAgency);
+
+      // Fetch permissions for all custom roles
+      const roleIds = rolesWithAgency.map(r => r.id);
+      if (roleIds.length > 0) {
+        const { data: permsData } = await supabase
+          .from("custom_role_permissions")
+          .select("*")
+          .in("custom_role_id", roleIds);
+
+        const grouped: Record<string, Record<string, boolean>> = {};
+        (permsData || []).forEach(p => {
+          if (!grouped[p.custom_role_id]) grouped[p.custom_role_id] = {};
+          grouped[p.custom_role_id][p.permission_key] = p.enabled ?? false;
+        });
+        setRolePermissions(grouped);
+      }
 
       const usersWithRoles: UserWithRole[] = (profilesRes.data || []).map(profile => {
         const userRoles: UserRole[] = (rolesRes.data || [])
@@ -160,9 +203,9 @@ export default function OwnerUsers() {
             residence_id: r.residence_id,
             residence_name: r.residence_id ? residenceMap.get(r.residence_id) : undefined,
             agency_id: r.agency_id || (r.residence_id ? residenceToAgency.get(r.residence_id) : null),
+            custom_role_id: r.custom_role_id,
           }));
         
-        // Determine user's agency type from their roles
         const userAgencyId = userRoles.find(r => r.agency_id)?.agency_id;
         const userAgency = userAgencyId ? agencyMap.get(userAgencyId) : null;
 
@@ -182,7 +225,7 @@ export default function OwnerUsers() {
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Impossible de charger les utilisateurs.",
+        description: "Impossible de charger les données.",
         variant: "destructive",
       });
     } finally {
@@ -195,93 +238,23 @@ export default function OwnerUsers() {
     navigate("/");
   };
 
-  const addRole = async (userId: string, role: AppRole, residenceId: string | null) => {
-    setSavingRoles(true);
-    try {
-      const insertData: any = {
-        user_id: userId,
-        role: role,
-      };
-      
-      if (role !== 'owner' && residenceId) {
-        insertData.residence_id = residenceId;
-      }
-
-      const { error } = await supabase
-        .from('user_roles')
-        .insert(insertData);
-      
-      if (error) throw error;
-      
-      const residenceName = residenceId ? residences.find(r => r.id === residenceId)?.name : null;
-      toast({
-        title: "Rôle ajouté",
-        description: `Le rôle ${getRoleLabel(role)}${residenceName ? ` pour ${residenceName}` : ''} a été ajouté.`,
-      });
-      
-      await fetchData();
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'ajouter le rôle.",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingRoles(false);
-    }
-  };
-
-  const removeRole = async (roleId: string, role: AppRole) => {
-    setSavingRoles(true);
-    try {
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('id', roleId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Rôle retiré",
-        description: `Le rôle ${getRoleLabel(role)} a été retiré.`,
-      });
-      
-      await fetchData();
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de retirer le rôle.",
-        variant: "destructive",
-      });
-    } finally {
-      setSavingRoles(false);
-    }
-  };
-
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     
     setIsDeleting(true);
     try {
-      // Call edge function for complete deletion (including auth)
       const { data, error } = await supabase.functions.invoke('delete-user', {
         body: { userId: userToDelete.id }
       });
       
-      if (error) {
-        throw new Error(error.message || 'Erreur lors de la suppression');
-      }
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Utilisateur supprimé",
         description: `${userToDelete.email} a été supprimé définitivement.`,
       });
       
-      // Remove user from local state immediately
       setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
     } catch (error: any) {
       toast({
@@ -296,68 +269,83 @@ export default function OwnerUsers() {
     }
   };
 
-  if (!user) return null;
-
-  // Get residences filtered by selected agency
-  const filteredResidencesByAgency = selectedAgencyId === 'all'
-    ? residences
-    : residences.filter(r => r.agency_id === selectedAgencyId);
-
-  // Reset residence selection when agency changes
-  const handleAgencyChange = (agencyId: string) => {
-    setSelectedAgencyId(agencyId);
-    setSelectedResidenceId("all");
+  const handleDeleteRole = async (roleId: string) => {
+    try {
+      const { error } = await supabase
+        .from("agency_custom_roles")
+        .delete()
+        .eq("id", roleId);
+      if (error) throw error;
+      sonnerToast.success("Rôle supprimé");
+      fetchData();
+    } catch (error: any) {
+      sonnerToast.error(`Erreur: ${error.message}`);
+    }
   };
 
-  const filteredByResidence = (() => {
-    let result = users;
-    
-    // Filter by agency first
-    if (selectedAgencyId !== 'all') {
-      const agencyResidenceIds = residences
-        .filter(r => r.agency_id === selectedAgencyId)
-        .map(r => r.id);
-      result = result.filter(u => 
-        u.roles.some(r => r.role === 'admin' || (r.residence_id && agencyResidenceIds.includes(r.residence_id)))
-      );
-    }
-    
-    // Then filter by residence
-    if (selectedResidenceId !== 'all') {
-      result = result.filter(u => 
-        u.roles.some(r => r.role === 'admin' || r.residence_id === selectedResidenceId)
-      );
-    }
-    
-    return result;
-  })();
+  const updatePermission = async (roleId: string, permissionKey: string, enabled: boolean) => {
+    try {
+      const { data: existing } = await supabase
+        .from("custom_role_permissions")
+        .select("id")
+        .eq("custom_role_id", roleId)
+        .eq("permission_key", permissionKey)
+        .maybeSingle();
 
-  // Filter by agency type
+      if (existing) {
+        await supabase
+          .from("custom_role_permissions")
+          .update({ enabled })
+          .eq("id", existing.id);
+      } else {
+        await supabase
+          .from("custom_role_permissions")
+          .insert({
+            custom_role_id: roleId,
+            permission_key: permissionKey,
+            enabled,
+          });
+      }
+
+      setRolePermissions(prev => ({
+        ...prev,
+        [roleId]: { ...prev[roleId], [permissionKey]: enabled },
+      }));
+    } catch (error: any) {
+      sonnerToast.error(`Erreur: ${error.message}`);
+    }
+  };
+
+  if (!user) return null;
+
+  // Filter users
+  const usersWithoutSelf = users.filter(u => u.id !== user?.id);
+  
   const filteredByAgencyType = agencyTypeFilter === 'all' 
-    ? filteredByResidence
+    ? usersWithoutSelf
     : agencyTypeFilter === 'none'
-      ? filteredByResidence.filter(u => !u.agencyType)
-      : filteredByResidence.filter(u => u.agencyType === agencyTypeFilter);
+      ? usersWithoutSelf.filter(u => !u.agencyType)
+      : usersWithoutSelf.filter(u => u.agencyType === agencyTypeFilter);
 
-  // Exclude current admin user from the list
-  const usersWithoutSelf = filteredByAgencyType.filter(u => u.id !== user?.id);
-
-  const filteredUsers = usersWithoutSelf.filter(u => 
+  const filteredUsers = filteredByAgencyType.filter(u => 
     u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.first_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (u.last_name?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
-  const filteredResidences = filteredResidencesByAgency.filter(r =>
-    r.name.toLowerCase().includes(residenceSearchQuery.toLowerCase())
-  );
+  // Filter custom roles
+  const filteredRoles = customRoles.filter(role => {
+    const matchesSearch = role.name.toLowerCase().includes(roleSearchQuery.toLowerCase()) ||
+      (role.agency_name?.toLowerCase() || '').includes(roleSearchQuery.toLowerCase());
+    const matchesAgency = roleAgencyFilter === 'all' || role.agency_id === roleAgencyFilter;
+    return matchesSearch && matchesAgency;
+  });
 
   const stats = {
     total: usersWithoutSelf.length,
     admins: usersWithoutSelf.filter(u => u.roles.some(r => r.role === 'admin')).length,
     bailleurs: usersWithoutSelf.filter(u => u.agencyType === 'bailleur').length,
     syndics: usersWithoutSelf.filter(u => u.agencyType === 'syndic').length,
-    residents: usersWithoutSelf.filter(u => u.roles.some(r => r.role === 'resident')).length,
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -378,27 +366,22 @@ export default function OwnerUsers() {
     }
   };
 
-  const getUserRolesForDisplay = (userRoles: UserRole[]) => {
-    if (selectedResidenceId === 'all' && selectedAgencyId === 'all') {
-      return userRoles;
-    }
-    if (selectedResidenceId !== 'all') {
-      return userRoles.filter(r => r.role === 'admin' || r.residence_id === selectedResidenceId);
-    }
-    // Filter by agency residences
-    const agencyResidenceIds = residences
-      .filter(r => r.agency_id === selectedAgencyId)
-      .map(r => r.id);
-    return userRoles.filter(r => r.role === 'admin' || (r.residence_id && agencyResidenceIds.includes(r.residence_id)));
+  const getCustomRoleName = (customRoleId: string | null | undefined) => {
+    if (!customRoleId) return null;
+    return customRoles.find(r => r.id === customRoleId);
   };
 
-  const selectedAgencyName = selectedAgencyId === 'all' 
-    ? 'Toutes les agences' 
-    : agencies.find(a => a.id === selectedAgencyId)?.name || 'Agence';
-
-  const selectedResidenceName = selectedResidenceId === 'all' 
-    ? (selectedAgencyId === 'all' ? 'Toutes les résidences' : 'Toutes les résidences de l\'agence')
-    : residences.find(r => r.id === selectedResidenceId)?.name || 'Résidence';
+  const toggleRoleExpanded = (roleId: string) => {
+    setExpandedRoles(prev => {
+      const next = new Set(prev);
+      if (next.has(roleId)) {
+        next.delete(roleId);
+      } else {
+        next.add(roleId);
+      }
+      return next;
+    });
+  };
 
   if (isLoading) {
     return (
@@ -416,112 +399,7 @@ export default function OwnerUsers() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold">Utilisateurs globaux</h1>
-            <p className="text-muted-foreground mt-1">Gérez les utilisateurs de la plateforme</p>
-          </div>
-        </div>
-
-        {/* Agency and Residence selectors */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {/* Agency selector */}
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[240px] justify-between">
-                  {selectedAgencyName}
-                  <Search className="h-4 w-4 ml-2 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[240px] p-0 bg-popover" align="start">
-                <Command>
-                  <CommandInput placeholder="Rechercher une agence..." />
-                  <CommandList>
-                    <CommandEmpty>Aucune agence trouvée.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem value="all" onSelect={() => handleAgencyChange("all")}>
-                        Toutes les agences
-                      </CommandItem>
-                      {agencies.map(agency => (
-                        <CommandItem key={agency.id} value={agency.name} onSelect={() => handleAgencyChange(agency.id)}>
-                          {agency.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Residence selector */}
-          <div className="flex items-center gap-2">
-          <Popover open={residenceSearchOpen} onOpenChange={setResidenceSearchOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[280px] justify-between">
-                {selectedResidenceName}
-                <Search className="h-4 w-4 ml-2 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[280px] p-0 bg-popover" align="start">
-              <Command>
-                <CommandInput 
-                  placeholder="Rechercher une résidence..." 
-                  value={residenceSearchQuery}
-                  onValueChange={setResidenceSearchQuery}
-                />
-                <CommandList>
-                  <CommandEmpty>Aucune résidence trouvée.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem 
-                      value="all"
-                      onSelect={() => {
-                        setSelectedResidenceId("all");
-                        setResidenceSearchOpen(false);
-                        setResidenceSearchQuery("");
-                      }}
-                    >
-                      Toutes les résidences
-                    </CommandItem>
-                    {filteredResidences.map(residence => (
-                      <CommandItem 
-                        key={residence.id} 
-                        value={residence.name}
-                        onSelect={() => {
-                          setSelectedResidenceId(residence.id);
-                          setResidenceSearchOpen(false);
-                          setResidenceSearchQuery("");
-                        }}
-                      >
-                        {residence.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          </div>
-        </div>
-
-        {/* Agency Type Filter */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Type:</span>
-          <div className="flex gap-1">
-            {[
-              { value: 'all', label: 'Tous' },
-              { value: 'bailleur', label: 'Bailleurs' },
-              { value: 'syndic', label: 'Syndics' },
-              { value: 'none', label: 'Sans agence' },
-            ].map((opt) => (
-              <Button
-                key={opt.value}
-                variant={agencyTypeFilter === opt.value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setAgencyTypeFilter(opt.value as AgencyTypeFilter)}
-              >
-                {opt.label}
-              </Button>
-            ))}
+            <p className="text-muted-foreground mt-1">Gérez les utilisateurs et rôles personnalisés</p>
           </div>
         </div>
 
@@ -553,261 +431,392 @@ export default function OwnerUsers() {
           </Card>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Rechercher un utilisateur..." 
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              Utilisateurs
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="gap-2">
+              <Shield className="h-4 w-4" />
+              Rôles personnalisés
+              <Badge variant="secondary" className="ml-1">{customRoles.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Users list or empty state */}
-        {filteredUsers.length === 0 ? (
-          <Card className="shadow-soft">
-            <CardContent className="p-12 text-center">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-semibold text-lg mb-2">
-                {users.length === 0 ? "Aucun utilisateur" : "Aucun résultat"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {users.length === 0 
-                  ? "Les utilisateurs apparaîtront ici une fois inscrits sur la plateforme."
-                  : "Aucun utilisateur ne correspond à votre recherche."}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="shadow-soft">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôles et Résidence</TableHead>
-                  <TableHead>Inscrit le</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-medium text-primary">
-                            {(u.first_name?.[0] || u.email[0]).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">
-                            {u.first_name && u.last_name 
-                              ? `${u.first_name} ${u.last_name}`
-                              : u.email.split('@')[0]}
-                          </p>
-                          {u.agencyName && (
-                            <div className="flex items-center gap-1 mt-0.5">
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Rechercher un utilisateur..." 
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-1">
+                {[
+                  { value: 'all', label: 'Tous' },
+                  { value: 'bailleur', label: 'Bailleurs' },
+                  { value: 'syndic', label: 'Syndics' },
+                  { value: 'none', label: 'Sans agence' },
+                ].map((opt) => (
+                  <Button
+                    key={opt.value}
+                    variant={agencyTypeFilter === opt.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setAgencyTypeFilter(opt.value as AgencyTypeFilter)}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Users list */}
+            {filteredUsers.length === 0 ? (
+              <Card className="shadow-soft">
+                <CardContent className="p-12 text-center">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg mb-2">Aucun utilisateur</h3>
+                  <p className="text-muted-foreground">
+                    Aucun utilisateur ne correspond à votre recherche.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="shadow-soft">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Utilisateur</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Rôles</TableHead>
+                      <TableHead>Inscrit le</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-medium text-primary">
+                                {(u.first_name?.[0] || u.email[0]).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium">
+                                {u.first_name && u.last_name 
+                                  ? `${u.first_name} ${u.last_name}`
+                                  : u.email.split('@')[0]}
+                              </p>
+                              {u.agencyName && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      u.agencyType === 'syndic' 
+                                        ? 'bg-purple-500/10 text-purple-500 border-purple-500/30' 
+                                        : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                                    }`}
+                                  >
+                                    {u.agencyType === 'syndic' ? 'Syndic' : 'Bailleur'}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                                    {u.agencyName}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            {u.roles.map((role, idx) => {
+                              const customRole = getCustomRoleName(role.custom_role_id);
+                              if (customRole) {
+                                return (
+                                  <Badge 
+                                    key={`custom-${idx}`}
+                                    style={{ backgroundColor: customRole.color, color: 'white' }}
+                                  >
+                                    {customRole.name}
+                                  </Badge>
+                                );
+                              }
+                              return (
+                                <Badge key={`${role.role}-${idx}`} variant={getRoleBadgeVariant(role.role)}>
+                                  {getRoleLabel(role.role)}
+                                  {role.residence_name && (
+                                    <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
+                                  )}
+                                </Badge>
+                              );
+                            })}
+                            {u.roles.length === 0 && (
+                              <Badge variant="outline" className="text-muted-foreground">Aucun rôle</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {u.created_at 
+                            ? new Date(u.created_at).toLocaleDateString('fr-FR')
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedUser(u);
+                                setIsViewDialogOpen(true);
+                              }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Voir détails
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                toast({
+                                  title: "Email",
+                                  description: `Envoyer un email à ${u.email}`,
+                                });
+                              }}>
+                                <Mail className="h-4 w-4 mr-2" />
+                                Envoyer email
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setUserToDelete(u);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Roles Tab */}
+          <TabsContent value="roles" className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Rechercher un rôle..." 
+                    className="pl-10"
+                    value={roleSearchQuery}
+                    onChange={(e) => setRoleSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[200px] justify-between">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      {roleAgencyFilter === 'all' 
+                        ? 'Toutes les agences' 
+                        : agencies.find(a => a.id === roleAgencyFilter)?.name || 'Agence'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 bg-popover" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher..." />
+                      <CommandList>
+                        <CommandEmpty>Aucune agence.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem value="all" onSelect={() => setRoleAgencyFilter("all")}>
+                            Toutes les agences
+                          </CommandItem>
+                          {agencies.map(agency => (
+                            <CommandItem 
+                              key={agency.id} 
+                              value={agency.name}
+                              onSelect={() => setRoleAgencyFilter(agency.id)}
+                            >
                               <Badge 
                                 variant="outline" 
-                                className={`text-xs ${
-                                  u.agencyType === 'syndic' 
+                                className={`mr-2 text-xs ${
+                                  agency.type === 'syndic' 
                                     ? 'bg-purple-500/10 text-purple-500 border-purple-500/30' 
                                     : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
                                 }`}
                               >
-                                {u.agencyType === 'syndic' ? 'Syndic' : 'Bailleur'}
+                                {agency.type === 'syndic' ? 'S' : 'B'}
                               </Badge>
-                              <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                                {u.agencyName}
-                              </span>
+                              {agency.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Créer un rôle
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0 bg-popover" align="end">
+                  <Command>
+                    <CommandInput placeholder="Sélectionner une agence..." />
+                    <CommandList>
+                      <CommandEmpty>Aucune agence.</CommandEmpty>
+                      <CommandGroup heading="Choisir l'agence pour ce rôle">
+                        {agencies.map(agency => (
+                          <CommandItem 
+                            key={agency.id} 
+                            value={agency.name}
+                            onSelect={() => {
+                              setSelectedAgencyForRole(agency);
+                              setCreateRoleDialogOpen(true);
+                            }}
+                          >
+                            <Badge 
+                              variant="outline" 
+                              className={`mr-2 text-xs ${
+                                agency.type === 'syndic' 
+                                  ? 'bg-purple-500/10 text-purple-500 border-purple-500/30' 
+                                  : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                              }`}
+                            >
+                              {agency.type === 'syndic' ? 'Syndic' : 'Bailleur'}
+                            </Badge>
+                            {agency.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Roles list */}
+            {filteredRoles.length === 0 ? (
+              <Card className="shadow-soft">
+                <CardContent className="p-12 text-center">
+                  <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg mb-2">Aucun rôle personnalisé</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Créez des rôles pour définir les permissions des collaborateurs de vos clients
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {filteredRoles.map((role) => (
+                  <Collapsible
+                    key={role.id}
+                    open={expandedRoles.has(role.id)}
+                    onOpenChange={() => toggleRoleExpanded(role.id)}
+                  >
+                    <Card className="shadow-soft">
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <CollapsibleTrigger className="flex items-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity">
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: role.color }}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold">{role.name}</h4>
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-xs ${
+                                    role.agency_type === 'syndic' 
+                                      ? 'bg-purple-500/10 text-purple-500 border-purple-500/30' 
+                                      : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                                  }`}
+                                >
+                                  {role.agency_type === 'syndic' ? 'Syndic' : 'Bailleur'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {role.agency_name}
+                                {role.description && ` • ${role.description}`}
+                              </p>
                             </div>
-                          )}
+                            <Badge variant="outline">
+                              {Object.values(rolePermissions[role.id] || {}).filter(Boolean).length} / {AVAILABLE_PERMISSIONS.length} permissions
+                            </Badge>
+                            <ChevronDown className={`h-4 w-4 transition-transform ${expandedRoles.has(role.id) ? "rotate-180" : ""}`} />
+                          </CollapsibleTrigger>
+                          <div className="flex items-center gap-2 ml-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteRole(role.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                    <TableCell>
-                      <Popover 
-                        open={editingUserId === u.id}
-                        onOpenChange={(open) => {
-                          setEditingUserId(open ? u.id : null);
-                          if (open) setRoleResidenceSelection("");
-                        }}
-                      >
-                        <PopoverTrigger asChild>
-                          <button className="flex gap-1 flex-wrap items-center cursor-pointer hover:opacity-80 transition-opacity">
-                            {getUserRolesForDisplay(u.roles).length > 0 ? (
-                              getUserRolesForDisplay(u.roles).map((role, idx) => (
-                                <Badge key={`${role.role}-${role.residence_id || 'global'}-${idx}`} variant={getRoleBadgeVariant(role.role)}>
-                                  {getRoleLabel(role.role)}
-                                  {role.residence_name && selectedResidenceId === 'all' && (
-                                    <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
-                                  )}
-                                </Badge>
-                              ))
-                            ) : (
-                              <Badge variant="outline" className="text-muted-foreground">
-                                <Plus className="h-3 w-3 mr-1" />
-                                Ajouter rôle
-                              </Badge>
-                            )}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 bg-popover" align="start">
-                          <div className="space-y-4">
-                            <div className="font-medium text-sm">Gérer les rôles</div>
-                            
-                            {/* Current roles */}
-                            {u.roles.length > 0 && (
-                              <div className="space-y-2">
-                                <p className="text-xs text-muted-foreground">Rôles actuels</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {u.roles.map((role, idx) => (
-                                    <Badge 
-                                      key={`current-${role.role}-${role.residence_id || 'global'}-${idx}`} 
-                                      variant={getRoleBadgeVariant(role.role)}
-                                      className="cursor-pointer hover:opacity-70"
-                                      onClick={() => !savingRoles && removeRole(role.id, role.role)}
-                                    >
-                                      {getRoleLabel(role.role)}
-                                      {role.residence_name && (
-                                        <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
-                                      )}
-                                      <span className="ml-1">×</span>
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
 
-                            {/* Add new role */}
-                            <div className="space-y-3 pt-2 border-t">
-                              <p className="text-xs text-muted-foreground">Ajouter un rôle</p>
-                              
-                              {/* Residence selector for new role with search */}
-                              <div className="space-y-1">
-                                <label className="text-xs font-medium">Résidence</label>
-                                <Popover open={roleResidenceSearchOpen} onOpenChange={setRoleResidenceSearchOpen}>
-                                  <PopoverTrigger asChild>
-                                    <Button variant="outline" className="w-full h-8 text-xs justify-between">
-                                      {roleResidenceSelection 
-                                        ? residences.find(r => r.id === roleResidenceSelection)?.name 
-                                        : "Sélectionner une résidence..."}
-                                      <Search className="h-3 w-3 ml-2 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0 bg-popover" align="start">
-                                    <Command>
-                                      <CommandInput placeholder="Rechercher..." />
-                                      <CommandList>
-                                        <CommandEmpty>Aucune résidence.</CommandEmpty>
-                                        <CommandGroup>
-                                          {residences.map(residence => (
-                                            <CommandItem 
-                                              key={residence.id} 
-                                              value={residence.name}
-                                              onSelect={() => {
-                                                setRoleResidenceSelection(residence.id);
-                                                setRoleResidenceSearchOpen(false);
-                                              }}
-                                            >
-                                              {residence.name}
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                              </div>
-                              
-                              {/* Role buttons */}
-                              <div className="flex flex-wrap gap-1">
-                                {ALL_ROLES.map(role => {
-                                  const isOwnerRole = role === 'owner';
-                                  const needsResidence = !isOwnerRole && !roleResidenceSelection;
-                                  const alreadyHasRole = isOwnerRole 
-                                    ? u.roles.some(r => r.role === 'owner')
-                                    : u.roles.some(r => r.role === role && r.residence_id === roleResidenceSelection);
-                                  
-                                  return (
-                                    <Button
-                                      key={role}
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs"
-                                      disabled={savingRoles || (needsResidence && !isOwnerRole) || alreadyHasRole}
-                                      onClick={() => addRole(u.id, role, isOwnerRole ? null : roleResidenceSelection)}
-                                    >
-                                      <Plus className="h-3 w-3 mr-1" />
-                                      {getRoleLabel(role)}
-                                      {isOwnerRole && <span className="ml-1 opacity-50">(global)</span>}
-                                    </Button>
-                                  );
-                                })}
-                              </div>
-                              
-                              {!roleResidenceSelection && (
-                                <p className="text-xs text-muted-foreground italic">
-                                  Sélectionnez une résidence pour ajouter un rôle (sauf KOPRO qui est global)
-                                </p>
-                              )}
-                            </div>
+                      <CollapsibleContent>
+                        <div className="px-4 pb-4 border-t pt-4">
+                          <p className="text-sm font-medium mb-4">Permissions</p>
+                          <div className="grid gap-2">
+                            {AVAILABLE_PERMISSIONS.map((perm) => {
+                              const isEnabled = rolePermissions[role.id]?.[perm.key] ?? false;
+                              return (
+                                <div
+                                  key={perm.key}
+                                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center">
+                                      <perm.icon className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium">{perm.label}</p>
+                                      <p className="text-xs text-muted-foreground">{perm.description}</p>
+                                    </div>
+                                  </div>
+                                  <Switch
+                                    checked={isEnabled}
+                                    onCheckedChange={(checked) => updatePermission(role.id, perm.key, checked)}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
-                        </PopoverContent>
-                      </Popover>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {u.created_at 
-                        ? new Date(u.created_at).toLocaleDateString('fr-FR')
-                        : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-popover">
-                          <DropdownMenuItem onClick={() => {
-                            setSelectedUser(u);
-                            setIsViewDialogOpen(true);
-                          }}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Voir détails
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {
-                            toast({
-                              title: "Email",
-                              description: `Envoyer un email à ${u.email}`,
-                            });
-                          }}>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Envoyer email
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              setUserToDelete(u);
-                              setDeleteDialogOpen(true);
-                            }}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                        </div>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
                 ))}
-              </TableBody>
-            </Table>
-          </Card>
-        )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* View User Dialog */}
@@ -834,21 +843,49 @@ export default function OwnerUsers() {
                       : selectedUser.email.split('@')[0]}
                   </h3>
                   <p className="text-muted-foreground">{selectedUser.email}</p>
+                  {selectedUser.agencyName && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${
+                          selectedUser.agencyType === 'syndic' 
+                            ? 'bg-purple-500/10 text-purple-500 border-purple-500/30' 
+                            : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                        }`}
+                      >
+                        {selectedUser.agencyType === 'syndic' ? 'Syndic' : 'Bailleur'}
+                      </Badge>
+                      <span className="text-sm">{selectedUser.agencyName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="grid gap-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">Tous les rôles</p>
+                  <p className="text-sm text-muted-foreground">Rôles</p>
                   <div className="flex gap-1 mt-1 flex-wrap">
                     {selectedUser.roles.length > 0 ? (
-                      selectedUser.roles.map((role, idx) => (
-                        <Badge key={`${role.role}-${role.residence_id || 'global'}-${idx}`} variant={getRoleBadgeVariant(role.role)}>
-                          {getRoleLabel(role.role)}
-                          {role.residence_name && (
-                            <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
-                          )}
-                        </Badge>
-                      ))
+                      selectedUser.roles.map((role, idx) => {
+                        const customRole = getCustomRoleName(role.custom_role_id);
+                        if (customRole) {
+                          return (
+                            <Badge 
+                              key={`custom-${idx}`}
+                              style={{ backgroundColor: customRole.color, color: 'white' }}
+                            >
+                              {customRole.name}
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge key={`${role.role}-${idx}`} variant={getRoleBadgeVariant(role.role)}>
+                            {getRoleLabel(role.role)}
+                            {role.residence_name && (
+                              <span className="ml-1 opacity-70 text-xs">({role.residence_name})</span>
+                            )}
+                          </Badge>
+                        );
+                      })
                     ) : (
                       <Badge variant="outline">Aucun rôle</Badge>
                     )}
@@ -895,6 +932,17 @@ export default function OwnerUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Role Dialog */}
+      <AdminCreateRoleForAgencyDialog
+        open={createRoleDialogOpen}
+        onOpenChange={setCreateRoleDialogOpen}
+        agency={selectedAgencyForRole}
+        onSuccess={() => {
+          setCreateRoleDialogOpen(false);
+          fetchData();
+        }}
+      />
     </AdminLayout>
   );
 }
