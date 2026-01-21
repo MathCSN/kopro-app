@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -13,13 +13,13 @@ import {
   Building2, 
   Users, 
   CreditCard, 
-  Settings,
   Edit,
   Home,
   MapPin,
   Phone,
   Mail,
-  Share2
+  Share2,
+  Shield
 } from "lucide-react";
 import { AgencyFormDialog } from "@/components/admin/clients/AgencyFormDialog";
 import { AgencyResidencesTab } from "@/components/admin/clients/AgencyResidencesTab";
@@ -27,6 +27,7 @@ import { BailleurLotsTab } from "@/components/admin/clients/BailleurLotsTab";
 import { SyndicSharedLotsTab } from "@/components/admin/clients/SyndicSharedLotsTab";
 import { AgencyTeamTab } from "@/components/admin/clients/AgencyTeamTab";
 import { AgencySubscriptionTab } from "@/components/admin/clients/AgencySubscriptionTab";
+import { AgencyRolesManagement } from "@/components/admin/clients/AgencyRolesManagement";
 
 export default function AdminClientDetail() {
   const { agencyId } = useParams<{ agencyId: string }>();
@@ -90,10 +91,17 @@ export default function AdminClientDetail() {
         .select("*", { count: "exact", head: true })
         .eq("agency_id", agencyId);
 
+      // Get custom roles count
+      const { count: rolesCount } = await supabase
+        .from("agency_custom_roles")
+        .select("*", { count: "exact", head: true })
+        .eq("agency_id", agencyId);
+
       return {
         residences: residenceIds.length,
         lots: lotsCount,
         team: teamCount || 0,
+        customRoles: rolesCount || 0,
       };
     },
     enabled: !!agencyId,
@@ -244,7 +252,7 @@ export default function AdminClientDetail() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t">
+            <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Home className="h-5 w-5 text-muted-foreground" />
@@ -266,13 +274,20 @@ export default function AdminClientDetail() {
                 </div>
                 <p className="text-sm text-muted-foreground">Équipe</p>
               </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Shield className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-2xl font-bold">{stats?.customRoles || 0}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Rôles</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={`grid w-full ${isSyndic ? "grid-cols-4" : "grid-cols-3"}`}>
+          <TabsList className={`grid w-full ${isSyndic ? "grid-cols-5" : "grid-cols-4"}`}>
             <TabsTrigger value="residences" className="gap-2">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">
@@ -288,6 +303,10 @@ export default function AdminClientDetail() {
             <TabsTrigger value="team" className="gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Équipe</span>
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="gap-2">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Rôles</span>
             </TabsTrigger>
             <TabsTrigger value="subscription" className="gap-2">
               <CreditCard className="h-4 w-4" />
@@ -311,6 +330,10 @@ export default function AdminClientDetail() {
 
           <TabsContent value="team" className="mt-6">
             <AgencyTeamTab agencyId={agencyId!} ownerId={agency.owner_id} />
+          </TabsContent>
+
+          <TabsContent value="roles" className="mt-6">
+            <AgencyRolesManagement agencyId={agencyId!} />
           </TabsContent>
 
           <TabsContent value="subscription" className="mt-6">
