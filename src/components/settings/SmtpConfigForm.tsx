@@ -146,12 +146,37 @@ export function SmtpConfigForm({ residenceId }: SmtpConfigFormProps) {
   };
 
   const handleTest = async () => {
+    if (!config.from_email) {
+      toast.error("Veuillez configurer l'email d'expéditeur");
+      return;
+    }
+    
     setTesting(true);
-    // TODO: Implement test email via edge function
-    setTimeout(() => {
-      toast.info("Fonctionnalité de test en cours de développement");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email", {
+        body: {
+          to: config.from_email,
+          subject: "Test de configuration SMTP - KOPRO",
+          body: `<h2>Configuration SMTP validée !</h2>
+                 <p>Votre configuration SMTP fonctionne correctement.</p>
+                 <p><strong>Serveur:</strong> ${config.host}:${config.port}</p>
+                 <p><strong>Expéditeur:</strong> ${config.from_name || 'Non défini'} &lt;${config.from_email}&gt;</p>
+                 <p>Ce message a été envoyé depuis KOPRO pour tester votre configuration.</p>`,
+          fromName: config.from_name || "KOPRO Test",
+          fromEmail: config.from_email,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`Email de test envoyé à ${config.from_email}`);
+    } catch (error: any) {
+      console.error("SMTP test error:", error);
+      toast.error(error.message || "Échec de l'envoi de l'email de test");
+    } finally {
       setTesting(false);
-    }, 1000);
+    }
   };
 
   if (loading) {

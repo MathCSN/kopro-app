@@ -106,13 +106,25 @@ export default function OwnerReports() {
         usersByMonth.push({ month: monthName, count });
       }
 
-      // Process residence activity
+      // Process residence activity - get actual user counts from user_roles
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('residence_id')
+        .not('residence_id', 'is', null);
+      
+      const userCountByResidence: Record<string, number> = {};
+      (userRoles || []).forEach(ur => {
+        if (ur.residence_id) {
+          userCountByResidence[ur.residence_id] = (userCountByResidence[ur.residence_id] || 0) + 1;
+        }
+      });
+
       const residenceActivity = (residences || []).slice(0, 5).map(r => {
         const resTickets = (tickets || []).filter(t => t.residence_id === r.id).length;
         return {
           name: r.name.length > 15 ? r.name.substring(0, 15) + '...' : r.name,
           tickets: resTickets,
-          users: Math.floor(Math.random() * 20) + 5, // TODO: Get actual user count per residence
+          users: userCountByResidence[r.id] || 0,
         };
       });
 
