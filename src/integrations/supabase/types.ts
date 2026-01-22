@@ -582,6 +582,71 @@ export type Database = {
           },
         ]
       }
+      apartment_attachment_requests: {
+        Row: {
+          apartment_id: string
+          id: string
+          landlord_id: string
+          requested_at: string | null
+          residence_id: string
+          reviewed_at: string | null
+          reviewer_notes: string | null
+          status: string | null
+          syndic_id: string
+        }
+        Insert: {
+          apartment_id: string
+          id?: string
+          landlord_id: string
+          requested_at?: string | null
+          residence_id: string
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+          syndic_id: string
+        }
+        Update: {
+          apartment_id?: string
+          id?: string
+          landlord_id?: string
+          requested_at?: string | null
+          residence_id?: string
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+          syndic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apartment_attachment_requests_apartment_id_fkey"
+            columns: ["apartment_id"]
+            isOneToOne: false
+            referencedRelation: "landlord_apartments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apartment_attachment_requests_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apartment_attachment_requests_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apartment_attachment_requests_syndic_id_fkey"
+            columns: ["syndic_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       apartment_requests: {
         Row: {
           assigned_lot_id: string | null
@@ -2050,6 +2115,88 @@ export type Database = {
           },
         ]
       }
+      landlord_apartments: {
+        Row: {
+          building_id: string | null
+          charges_target: number | null
+          created_at: string | null
+          door: string
+          floor: number | null
+          id: string
+          is_approved_by_syndic: boolean | null
+          join_code: string | null
+          landlord_id: string
+          notes: string | null
+          rent_target: number | null
+          residence_id: string | null
+          rooms: number | null
+          status: string | null
+          surface: number | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          building_id?: string | null
+          charges_target?: number | null
+          created_at?: string | null
+          door: string
+          floor?: number | null
+          id?: string
+          is_approved_by_syndic?: boolean | null
+          join_code?: string | null
+          landlord_id: string
+          notes?: string | null
+          rent_target?: number | null
+          residence_id?: string | null
+          rooms?: number | null
+          status?: string | null
+          surface?: number | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          building_id?: string | null
+          charges_target?: number | null
+          created_at?: string | null
+          door?: string
+          floor?: number | null
+          id?: string
+          is_approved_by_syndic?: boolean | null
+          join_code?: string | null
+          landlord_id?: string
+          notes?: string | null
+          rent_target?: number | null
+          residence_id?: string | null
+          rooms?: number | null
+          status?: string | null
+          surface?: number | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landlord_apartments_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landlord_apartments_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landlord_apartments_residence_id_fkey"
+            columns: ["residence_id"]
+            isOneToOne: false
+            referencedRelation: "residences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leases: {
         Row: {
           charges_amount: number | null
@@ -3470,36 +3617,45 @@ export type Database = {
         Row: {
           address: string | null
           agency_id: string | null
+          allow_landlord_join: boolean | null
           city: string | null
           country: string | null
           created_at: string | null
+          created_by_syndic_id: string | null
           id: string
           name: string
           postal_code: string | null
+          requires_syndic_approval: boolean | null
           settings: Json | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
           agency_id?: string | null
+          allow_landlord_join?: boolean | null
           city?: string | null
           country?: string | null
           created_at?: string | null
+          created_by_syndic_id?: string | null
           id?: string
           name: string
           postal_code?: string | null
+          requires_syndic_approval?: boolean | null
           settings?: Json | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
           agency_id?: string | null
+          allow_landlord_join?: boolean | null
           city?: string | null
           country?: string | null
           created_at?: string | null
+          created_by_syndic_id?: string | null
           id?: string
           name?: string
           postal_code?: string | null
+          requires_syndic_approval?: boolean | null
           settings?: Json | null
           updated_at?: string | null
         }
@@ -3509,6 +3665,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "residences_created_by_syndic_id_fkey"
+            columns: ["created_by_syndic_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4014,6 +4177,124 @@ export type Database = {
           },
         ]
       }
+      tenant_leases: {
+        Row: {
+          apartment_id: string
+          charges: number | null
+          contract_file_url: string | null
+          created_at: string | null
+          deposit: number | null
+          end_date: string | null
+          id: string
+          landlord_id: string
+          lease_type: string | null
+          notice_given_at: string | null
+          payment_day: number | null
+          rent: number
+          signature_date: string | null
+          start_date: string
+          status: string | null
+          tenant_id: string
+          termination_reason: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          apartment_id: string
+          charges?: number | null
+          contract_file_url?: string | null
+          created_at?: string | null
+          deposit?: number | null
+          end_date?: string | null
+          id?: string
+          landlord_id: string
+          lease_type?: string | null
+          notice_given_at?: string | null
+          payment_day?: number | null
+          rent: number
+          signature_date?: string | null
+          start_date: string
+          status?: string | null
+          tenant_id: string
+          termination_reason?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          apartment_id?: string
+          charges?: number | null
+          contract_file_url?: string | null
+          created_at?: string | null
+          deposit?: number | null
+          end_date?: string | null
+          id?: string
+          landlord_id?: string
+          lease_type?: string | null
+          notice_given_at?: string | null
+          payment_day?: number | null
+          rent?: number
+          signature_date?: string | null
+          start_date?: string
+          status?: string | null
+          tenant_id?: string
+          termination_reason?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_leases_apartment_id_fkey"
+            columns: ["apartment_id"]
+            isOneToOne: false
+            referencedRelation: "landlord_apartments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_leases_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_leases_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_categories: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          name_fr: string
+          scope: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          name_fr: string
+          scope: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          name_fr?: string
+          scope?: string
+        }
+        Relationships: []
+      }
       ticket_comments: {
         Row: {
           content: string
@@ -4051,16 +4332,20 @@ export type Database = {
       }
       tickets: {
         Row: {
+          assigned_to_role: string | null
           assignee_id: string | null
           category: string | null
+          category_id: string | null
           created_at: string
           created_by: string | null
           description: string | null
           id: string
+          landlord_apartment_id: string | null
           location: string | null
           manager_intervention_enabled: boolean | null
           priority: string | null
           residence_id: string
+          scope: string | null
           status: string | null
           syndic_notified_at: string | null
           ticket_type: string | null
@@ -4068,16 +4353,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to_role?: string | null
           assignee_id?: string | null
           category?: string | null
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
+          landlord_apartment_id?: string | null
           location?: string | null
           manager_intervention_enabled?: boolean | null
           priority?: string | null
           residence_id: string
+          scope?: string | null
           status?: string | null
           syndic_notified_at?: string | null
           ticket_type?: string | null
@@ -4085,16 +4374,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to_role?: string | null
           assignee_id?: string | null
           category?: string | null
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
+          landlord_apartment_id?: string | null
           location?: string | null
           manager_intervention_enabled?: boolean | null
           priority?: string | null
           residence_id?: string
+          scope?: string | null
           status?: string | null
           syndic_notified_at?: string | null
           ticket_type?: string | null
@@ -4102,6 +4395,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_landlord_apartment_id_fkey"
+            columns: ["landlord_apartment_id"]
+            isOneToOne: false
+            referencedRelation: "landlord_apartments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_residence_id_fkey"
             columns: ["residence_id"]
@@ -4269,6 +4576,7 @@ export type Database = {
       user_roles: {
         Row: {
           agency_id: string | null
+          apartment_id: string | null
           created_at: string | null
           custom_role_id: string | null
           id: string
@@ -4279,6 +4587,7 @@ export type Database = {
         }
         Insert: {
           agency_id?: string | null
+          apartment_id?: string | null
           created_at?: string | null
           custom_role_id?: string | null
           id?: string
@@ -4289,6 +4598,7 @@ export type Database = {
         }
         Update: {
           agency_id?: string | null
+          apartment_id?: string | null
           created_at?: string | null
           custom_role_id?: string | null
           id?: string
@@ -4303,6 +4613,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_apartment_id_fkey"
+            columns: ["apartment_id"]
+            isOneToOne: false
+            referencedRelation: "landlord_apartments"
             referencedColumns: ["id"]
           },
           {
