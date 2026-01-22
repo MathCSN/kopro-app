@@ -185,16 +185,34 @@ export default function RegisterManager() {
         type: effectiveType,
       }]).select().single();
 
-      if (agencyError) throw agencyError;
+      if (agencyError) {
+        console.error("Failed to create agency:", agencyError);
+        throw new Error("Erreur lors de la création de l'agence. Veuillez réessayer.");
+      }
 
-      // Create manager role
-      const { error: roleError } = await supabase.from("user_roles").insert([{
-        user_id: userId,
-        role: "manager",
-        agency_id: agencyData.id,
-      }]);
+      // Create manager role - this is critical, retry once if it fails
+      let roleError = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { error } = await supabase.from("user_roles").insert([{
+          user_id: userId,
+          role: "manager",
+          agency_id: agencyData.id,
+        }]);
+        
+        if (!error) {
+          roleError = null;
+          break;
+        }
+        roleError = error;
+        console.error(`Role insertion attempt ${attempt + 1} failed:`, error);
+        // Small delay before retry
+        if (attempt === 0) await new Promise(r => setTimeout(r, 500));
+      }
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error("Failed to create manager role after retries:", roleError);
+        throw new Error("Erreur lors de l'attribution du rôle. Veuillez contacter le support.");
+      }
 
       // If trial, update trial_accounts
       if (trialInfo) {
