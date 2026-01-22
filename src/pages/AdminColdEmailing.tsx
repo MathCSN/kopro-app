@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import DOMPurify from "dompurify";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { 
@@ -727,7 +728,7 @@ export default function AdminColdEmailing() {
                     <Label>Contenu</Label>
                     <div 
                       className="p-4 bg-white border rounded-lg prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: selectedCampaign.html_content }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCampaign.html_content) }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
