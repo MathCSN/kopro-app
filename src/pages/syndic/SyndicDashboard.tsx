@@ -18,11 +18,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { ResidenceSelector } from "@/components/layout/ResidenceSelector";
 
 export default function SyndicDashboard() {
   const { user, profile, logout } = useAuth();
@@ -186,34 +184,26 @@ export default function SyndicDashboard() {
 
   const displayName = profile.first_name || profile.email?.split("@")[0] || "Utilisateur";
 
-  return (
-    <AppLayout userRole={profile.role || 'manager'} onLogout={handleLogout}>
-      <div className="space-y-6 lg:space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">
-              Bonjour, {displayName} 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Gérez vos copropriétés
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <NotificationBell />
-            <Badge variant="secondary" className="bg-kopro-purple/10 text-kopro-purple border-kopro-purple/20">
-              Syndic
-            </Badge>
-          </div>
+return (
+    <div className="p-6 space-y-6 lg:space-y-8 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">
+            Bonjour, {displayName} 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Gérez vos copropriétés
+          </p>
         </div>
 
-        {/* Residence Selector */}
-        <Card className="shadow-soft">
-          <CardContent className="p-4">
-            <ResidenceSelector collapsed={false} />
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <Badge variant="secondary" className="bg-kopro-teal/10 text-kopro-teal border-kopro-teal/20">
+            Syndic
+          </Badge>
+        </div>
+      </div>
 
         {/* Pending Requests Alert */}
         {stats.pendingAttachmentRequests > 0 && (
@@ -467,6 +457,5 @@ export default function SyndicDashboard() {
           </div>
         </div>
       </div>
-    </AppLayout>
   );
 }

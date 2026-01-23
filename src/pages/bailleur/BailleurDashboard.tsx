@@ -16,7 +16,6 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -130,9 +129,8 @@ export default function BailleurDashboard() {
 
   const displayName = profile.first_name || profile.email?.split("@")[0] || "Utilisateur";
 
-  return (
-    <AppLayout userRole={profile.role || 'manager'} onLogout={handleLogout}>
-      <div className="space-y-6 lg:space-y-8 animate-fade-in">
+return (
+    <div className="p-6 space-y-6 lg:space-y-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -381,6 +379,5 @@ export default function BailleurDashboard() {
           </div>
         </div>
       </div>
-    </AppLayout>
   );
 }
