@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -129,9 +128,8 @@ export default function SyndicResidences() {
 
   if (!user || !profile) return null;
 
-  return (
-    <AppLayout userRole={profile.role || 'manager'} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in">
+return (
+    <div className="p-6 space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -274,6 +272,5 @@ export default function SyndicResidences() {
           </div>
         )}
       </div>
-    </AppLayout>
   );
 }

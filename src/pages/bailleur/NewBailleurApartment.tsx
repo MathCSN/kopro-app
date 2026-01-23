@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -180,9 +179,8 @@ export default function NewBailleurApartment() {
 
   const joinResidence = form.watch("joinResidence");
 
-  return (
-    <AppLayout userRole={profile.role || 'manager'} onLogout={handleLogout}>
-      <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+return (
+    <div className="p-6 max-w-2xl mx-auto space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/bailleur/apartments")}>
@@ -456,6 +454,5 @@ export default function NewBailleurApartment() {
           </form>
         </Form>
       </div>
-    </AppLayout>
   );
 }
