@@ -8,6 +8,8 @@ import { ResidenceProvider } from "@/contexts/ResidenceContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { BailleurLayout } from "@/components/layout/BailleurLayout";
+import { SyndicLayout } from "@/components/layout/SyndicLayout";
 
 // Pages
 import ResetPassword from "./pages/ResetPassword";
@@ -212,38 +214,47 @@ const App = () => (
             <Route path="/providers" element={<ProtectedRoute><ServiceProviders /></ProtectedRoute>} />
             <Route path="/settings" element={<Navigate to="/admin" replace />} />
             
-            {/* Bailleur Routes */}
-            <Route path="/bailleur/dashboard" element={<ProtectedRoute requiredRole="manager"><BailleurDashboard /></ProtectedRoute>} />
-            <Route path="/bailleur/apartments" element={<ProtectedRoute requiredRole="manager"><BailleurApartments /></ProtectedRoute>} />
-            <Route path="/bailleur/apartments/new" element={<ProtectedRoute requiredRole="manager"><NewBailleurApartment /></ProtectedRoute>} />
-            <Route path="/bailleur/apartments/:id" element={<ProtectedRoute requiredRole="manager"><BailleurApartments /></ProtectedRoute>} />
-            <Route path="/bailleur/apartments/:id/edit" element={<ProtectedRoute requiredRole="manager"><BailleurApartments /></ProtectedRoute>} />
-            <Route path="/bailleur/tenants" element={<ProtectedRoute requiredRole="manager"><Tenants /></ProtectedRoute>} />
-            <Route path="/bailleur/tenants/new" element={<ProtectedRoute requiredRole="manager"><Tenants /></ProtectedRoute>} />
-            <Route path="/bailleur/tickets" element={<ProtectedRoute requiredRole="manager"><Tickets /></ProtectedRoute>} />
-            <Route path="/bailleur/tickets/:id" element={<ProtectedRoute requiredRole="manager"><TicketDetail /></ProtectedRoute>} />
-            <Route path="/bailleur/payments" element={<ProtectedRoute requiredRole="manager"><Payments /></ProtectedRoute>} />
-            <Route path="/bailleur/documents" element={<ProtectedRoute requiredRole="manager"><Documents /></ProtectedRoute>} />
-            <Route path="/bailleur/analytics" element={<ProtectedRoute requiredRole="manager"><Analytics /></ProtectedRoute>} />
+{/* Bailleur Routes */}
+            <Route path="/bailleur/dashboard" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><BailleurDashboard /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/apartments" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><BailleurApartments /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/apartments/new" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><NewBailleurApartment /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/apartments/:id" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><BailleurApartments /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/apartments/:id/edit" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><BailleurApartments /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/tenants" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Tenants /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/tenants/new" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Tenants /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/tickets" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Tickets /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/tickets/:id" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><TicketDetail /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/payments" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Payments /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/documents" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Documents /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/accounting" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Accounting /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/inspections" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><PropertyInspections /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/analytics" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Analytics /></BailleurLayout></ProtectedRoute>} />
+            <Route path="/bailleur/settings" element={<ProtectedRoute requiredRole="manager"><BailleurLayout><Admin /></BailleurLayout></ProtectedRoute>} />
             
             {/* Syndic Routes */}
-            <Route path="/syndic/dashboard" element={<ProtectedRoute requiredRole="manager"><SyndicDashboard /></ProtectedRoute>} />
-            <Route path="/syndic/residences" element={<ProtectedRoute requiredRole="manager"><SyndicResidences /></ProtectedRoute>} />
-            <Route path="/syndic/residences/new" element={<ProtectedRoute requiredRole="manager"><SyndicResidences /></ProtectedRoute>} />
-            <Route path="/syndic/residences/:id" element={<ProtectedRoute requiredRole="manager"><SyndicResidences /></ProtectedRoute>} />
-            <Route path="/syndic/residences/:id/buildings" element={<ProtectedRoute requiredRole="manager"><SyndicResidences /></ProtectedRoute>} />
-            <Route path="/syndic/tickets" element={<ProtectedRoute requiredRole="manager"><Tickets /></ProtectedRoute>} />
-            <Route path="/syndic/tickets/:id" element={<ProtectedRoute requiredRole="manager"><TicketDetail /></ProtectedRoute>} />
-            <Route path="/syndic/work-orders" element={<ProtectedRoute requiredRole="manager"><WorkOrders /></ProtectedRoute>} />
-            <Route path="/syndic/ag" element={<ProtectedRoute requiredRole="manager"><AG /></ProtectedRoute>} />
-            <Route path="/syndic/ag/new" element={<ProtectedRoute requiredRole="manager"><AG /></ProtectedRoute>} />
-            <Route path="/syndic/ag/:id" element={<ProtectedRoute requiredRole="manager"><AG /></ProtectedRoute>} />
-            <Route path="/syndic/calls" element={<ProtectedRoute requiredRole="manager"><Syndic /></ProtectedRoute>} />
-            <Route path="/syndic/budget" element={<ProtectedRoute requiredRole="manager"><Syndic /></ProtectedRoute>} />
-            <Route path="/syndic/accounting" element={<ProtectedRoute requiredRole="manager"><Accounting /></ProtectedRoute>} />
-            <Route path="/syndic/documents" element={<ProtectedRoute requiredRole="manager"><Documents /></ProtectedRoute>} />
-            <Route path="/syndic/residents" element={<ProtectedRoute requiredRole="manager"><Directory /></ProtectedRoute>} />
-            <Route path="/syndic/apartments-requests" element={<ProtectedRoute requiredRole="manager"><SyndicResidences /></ProtectedRoute>} />
+            <Route path="/syndic/dashboard" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><SyndicDashboard /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/residences" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><SyndicResidences /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/residences/new" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><SyndicResidences /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/residences/:id" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><SyndicResidences /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/residences/:id/buildings" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><SyndicResidences /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/tickets" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Tickets /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/tickets/:id" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><TicketDetail /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/work-orders" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><WorkOrders /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/ag" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><AG /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/ag/new" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><AG /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/ag/:id" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><AG /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/calls" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Syndic /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/budget" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Syndic /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/owners" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Directory /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/providers" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><ServiceProviders /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/reservations" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Dashboard /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/accounting" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Accounting /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/analytics" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Analytics /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/chat" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Chat /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/documents" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Documents /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/residents" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Directory /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/apartments-requests" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><SyndicResidences /></SyndicLayout></ProtectedRoute>} />
+            <Route path="/syndic/settings" element={<ProtectedRoute requiredRole="manager"><SyndicLayout><Admin /></SyndicLayout></ProtectedRoute>} />
             
             {/* Professional modules - Manager/Admin only */}
             <Route path="/accounting" element={<ProtectedRoute requiredRole="manager"><Accounting /></ProtectedRoute>} />
