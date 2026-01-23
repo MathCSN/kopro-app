@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { useAgencyType } from "@/hooks/useAgencyType";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
@@ -73,7 +74,22 @@ const roleBadges: Record<string, string> = {
 
 export default function Dashboard() {
   const { user, profile, logout, isManager, isAdmin, canAccessRental } = useAuth();
+  const { agencyType, isLoading: agencyLoading } = useAgencyType();
   const navigate = useNavigate();
+
+  // Redirect managers to their specific dashboard based on agency type
+  useEffect(() => {
+    if (agencyLoading) return;
+    if (profile?.role === 'manager' || profile?.role === 'cs') {
+      if (agencyType === 'bailleur') {
+        navigate('/bailleur/dashboard', { replace: true });
+        return;
+      } else if (agencyType === 'syndic') {
+        navigate('/syndic/dashboard', { replace: true });
+        return;
+      }
+    }
+  }, [profile, agencyType, agencyLoading, navigate]);
   
   const [stats, setStats] = useState({
     openTickets: 0,
