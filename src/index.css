@@ -65,14 +65,14 @@
     --radius: 0.75rem;
 
     /* === SIDEBAR === */
-    --sidebar-background: 241 50% 36%;
+    --sidebar-background: 220 35% 20%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 234 44% 60%;
+    --sidebar-primary: 220 35% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 241 45% 42%;
+    --sidebar-accent: 220 30% 28%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 241 40% 45%;
-    --sidebar-ring: 234 44% 60%;
+    --sidebar-border: 220 28% 30%;
+    --sidebar-ring: 220 50% 50%;
 
     /* === TOKENS KOPRO === */
     --kopro-primary: 241 50% 36%;
