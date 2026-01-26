@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Home } from "lucide-react";
+import { Home, ChevronLeft, ChevronRight } from "lucide-react";
+import { SignaturePad } from "./SignaturePad";
 
 interface Lot {
   id: string;
@@ -25,12 +26,15 @@ export interface NewInspectionDialogProps {
 
 export function NewInspectionDialog({ open, onOpenChange, residenceIds, lots = [] }: NewInspectionDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<"info" | "signature">("info");
   const [formData, setFormData] = useState({
     lot_id: "",
     type: "entry",
     scheduled_date: "",
     scheduled_time: "10:00",
   });
+  const [tenantSignature, setTenantSignature] = useState<string | null>(null);
+  const [managerSignature, setManagerSignature] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,18 +48,22 @@ export function NewInspectionDialog({ open, onOpenChange, residenceIds, lots = [
       return;
     }
 
+    // Move to signature step
+    setStep("signature");
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!tenantSignature || !managerSignature) {
+      toast.error("Les deux signatures sont requises");
+      return;
+    }
+
     setIsLoading(true);
     try {
       // For now, we'll just show a success message since there's no inspections table
-      // In a real implementation, you would insert into an inspections table
-      toast.success("État des lieux programmé avec succès");
-      onOpenChange(false);
-      setFormData({
-        lot_id: "",
-        type: "entry",
-        scheduled_date: "",
-        scheduled_time: "10:00",
-      });
+      // In a real implementation, you would insert into an inspections table with signatures
+      toast.success("État des lieux signé et enregistré avec succès");
+      handleClose();
     } catch (error: any) {
       toast.error("Erreur lors de la création: " + error.message);
     } finally {
@@ -63,15 +71,33 @@ export function NewInspectionDialog({ open, onOpenChange, residenceIds, lots = [
     }
   };
 
+  const handleClose = () => {
+    onOpenChange(false);
+    setStep("info");
+    setFormData({
+      lot_id: "",
+      type: "entry",
+      scheduled_date: "",
+      scheduled_time: "10:00",
+    });
+    setTenantSignature(null);
+    setManagerSignature(null);
+  };
+
   const hasLots = lots && lots.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvel état des lieux</DialogTitle>
+          <DialogTitle>
+            {step === "info" ? "Nouvel état des lieux" : "Signatures"}
+          </DialogTitle>
           <DialogDescription>
-            Programmez un nouvel état des lieux d'entrée ou de sortie
+            {step === "info" 
+              ? "Programmez un nouvel état des lieux d'entrée ou de sortie"
+              : "Signez directement sur l'écran pour valider l'état des lieux"
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -84,11 +110,11 @@ export function NewInspectionDialog({ open, onOpenChange, residenceIds, lots = [
             <p className="text-sm text-muted-foreground max-w-[300px]">
               Vous devez d'abord créer des lots/appartements dans la résidence avant de pouvoir programmer un état des lieux.
             </p>
-            <Button variant="outline" className="mt-4" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" className="mt-4" onClick={handleClose}>
               Fermer
             </Button>
           </div>
-        ) : (
+        ) : step === "info" ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="lot_id">Appartement</Label>
@@ -149,14 +175,54 @@ export function NewInspectionDialog({ open, onOpenChange, residenceIds, lots = [
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Annuler
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Création..." : "Programmer"}
+              <Button type="submit">
+                Continuer vers signatures
+                <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             </DialogFooter>
           </form>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <SignaturePad
+                label="Signature du locataire"
+                onSave={(signature) => setTenantSignature(signature)}
+                onClear={() => setTenantSignature(null)}
+                width={250}
+                height={150}
+              />
+              <SignaturePad
+                label="Signature du gestionnaire"
+                onSave={(signature) => setManagerSignature(signature)}
+                onClear={() => setManagerSignature(null)}
+                width={250}
+                height={150}
+              />
+            </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setStep("info")}
+                className="w-full sm:w-auto"
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleFinalSubmit}
+                disabled={isLoading || !tenantSignature || !managerSignature}
+                className="w-full sm:w-auto"
+              >
+                {isLoading ? "Enregistrement..." : "Valider l'état des lieux"}
+              </Button>
+            </DialogFooter>
+          </div>
         )}
       </DialogContent>
     </Dialog>
