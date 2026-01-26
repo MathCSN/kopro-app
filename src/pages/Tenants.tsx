@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Users, Search, Plus, Building2, UserPlus, Share2, QrCode } from "lucide-react";
+import { Users, Search, Building2, UserPlus, Share2, QrCode } from "lucide-react";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { TenantCard } from "@/components/tenants/TenantCard";
@@ -13,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
 import { ResidenceShareDialog } from "@/components/residence/ResidenceShareDialog";
 import { InviteUserDialog } from "@/components/admin/users/InviteUserDialog";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 
 interface Tenant {
   id: string;
@@ -324,11 +324,9 @@ function TenantsContent() {
 }
 
 export default function Tenants() {
-  const { profile, logout } = useAuth();
-  
   return (
-    <AppLayout userRole={profile?.role || "resident"} onLogout={logout}>
+    <ConditionalLayout>
       <TenantsContent />
-    </AppLayout>
+    </ConditionalLayout>
   );
 }

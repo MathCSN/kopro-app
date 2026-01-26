@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { NewConversationDialog } from "@/components/chat/NewConversationDialog";
 import {
   Select,
@@ -41,8 +41,8 @@ const messageTypeConfig: Record<string, { icon: typeof Send; color: string; bg: 
   info: { icon: Info, color: "text-green-500", bg: "bg-green-500/10 border-green-500/20" },
 };
 
-export default function Chat() {
-  const { user, profile, logout } = useAuth();
+function ChatContent() {
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -142,7 +142,6 @@ export default function Chat() {
 
   const fetchConversations = async () => {
     try {
-      // Get user's conversation participations
       const { data: participations, error: partError } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
@@ -211,11 +210,6 @@ export default function Chat() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
   if (!user || !profile) {
     navigate("/auth");
     return null;
@@ -224,117 +218,121 @@ export default function Chat() {
   if (id) {
     const conversation = conversations.find(c => c.id === id);
     return (
-      <AppLayout userRole={profile.role} onLogout={handleLogout}>
-        <div className="flex flex-col h-[calc(100vh-12rem)]">
-          <div className="flex items-center gap-3 pb-4 border-b">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/chat')}>←</Button>
-            <Avatar><AvatarFallback>{conversation?.name?.charAt(0) || '?'}</AvatarFallback></Avatar>
-            <h2 className="font-semibold">{conversation?.name || 'Conversation'}</h2>
-          </div>
-          <div className="flex-1 py-4 overflow-auto space-y-3">
-            {loading ? (
-              <p className="text-center text-muted-foreground">Chargement...</p>
-            ) : messages.length === 0 ? (
-              <p className="text-center text-muted-foreground text-sm">Début de la conversation</p>
-            ) : (
-              messages.map((msg) => {
-                const typeConfig = messageTypeConfig[msg.message_type || 'normal'] || messageTypeConfig.normal;
-                const TypeIcon = typeConfig.icon;
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[70%] rounded-lg px-4 py-2 border",
-                        msg.message_type && msg.message_type !== 'normal'
-                          ? typeConfig.bg
-                          : msg.sender_id === user.id
-                            ? 'bg-primary text-primary-foreground border-transparent'
-                            : 'bg-secondary text-secondary-foreground border-transparent'
-                      )}
-                    >
-                      {msg.message_type && msg.message_type !== 'normal' && (
-                        <div className={`flex items-center gap-1 text-xs mb-1 ${typeConfig.color}`}>
-                          <TypeIcon className="h-3 w-3" />
-                          <span className="capitalize">{msg.message_type}</span>
-                        </div>
-                      )}
-                      <p className="text-sm">{msg.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-          <div className="flex gap-2 pt-4 border-t">
-            <Select value={messageType} onValueChange={setMessageType}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="announcement">Annonce</SelectItem>
-                <SelectItem value="important">Important</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input 
-              className="flex-1"
-              placeholder="Votre message..." 
-              value={message} 
-              onChange={e => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            />
-            <Button onClick={sendMessage}><Send className="h-4 w-4" /></Button>
-          </div>
+      <div className="p-6 flex flex-col h-[calc(100vh-12rem)]">
+        <div className="flex items-center gap-3 pb-4 border-b">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/chat')}>←</Button>
+          <Avatar><AvatarFallback>{conversation?.name?.charAt(0) || '?'}</AvatarFallback></Avatar>
+          <h2 className="font-semibold">{conversation?.name || 'Conversation'}</h2>
         </div>
-      </AppLayout>
+        <div className="flex-1 py-4 overflow-auto space-y-3">
+          {loading ? (
+            <p className="text-center text-muted-foreground">Chargement...</p>
+          ) : messages.length === 0 ? (
+            <p className="text-center text-muted-foreground text-sm">Début de la conversation</p>
+          ) : (
+            messages.map((msg) => {
+              const typeConfig = messageTypeConfig[msg.message_type || 'normal'] || messageTypeConfig.normal;
+              const TypeIcon = typeConfig.icon;
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender_id === user.id ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[70%] rounded-lg px-4 py-2 border",
+                      msg.message_type && msg.message_type !== 'normal'
+                        ? typeConfig.bg
+                        : msg.sender_id === user.id
+                          ? 'bg-primary text-primary-foreground border-transparent'
+                          : 'bg-secondary text-secondary-foreground border-transparent'
+                    )}
+                  >
+                    {msg.message_type && msg.message_type !== 'normal' && (
+                      <div className={`flex items-center gap-1 text-xs mb-1 ${typeConfig.color}`}>
+                        <TypeIcon className="h-3 w-3" />
+                        <span className="capitalize">{msg.message_type}</span>
+                      </div>
+                    )}
+                    <p className="text-sm">{msg.content}</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+        <div className="flex gap-2 pt-4 border-t">
+          <Select value={messageType} onValueChange={setMessageType}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="normal">Normal</SelectItem>
+              <SelectItem value="announcement">Annonce</SelectItem>
+              <SelectItem value="important">Important</SelectItem>
+              <SelectItem value="info">Info</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input 
+            className="flex-1"
+            placeholder="Votre message..." 
+            value={message} 
+            onChange={e => setMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+          />
+          <Button onClick={sendMessage}><Send className="h-4 w-4" /></Button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-2xl font-bold">Messages</h1>
-          <NewConversationDialog onCreated={(id) => navigate(`/chat/${id}`)} />
-        </div>
-
-        {loading ? (
-          <p className="text-center text-muted-foreground py-8">Chargement...</p>
-        ) : conversations.length === 0 ? (
-          <Card className="shadow-soft">
-            <CardContent className="p-8 text-center">
-              <MessageCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">Aucune conversation</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {conversations.map(chat => (
-              <Card key={chat.id} className="cursor-pointer hover:shadow-medium" onClick={() => navigate(`/chat/${chat.id}`)}>
-                <CardContent className="p-4 flex items-center gap-3">
-                  <Avatar><AvatarFallback>{chat.name?.charAt(0) || '?'}</AvatarFallback></Avatar>
-                  <div className="flex-1">
-                    <p className="font-medium">{chat.name || 'Conversation'}</p>
-                    <p className="text-sm text-muted-foreground truncate">{chat.type === 'group' ? 'Groupe' : 'Direct'}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(chat.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+    <div className="p-6 space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-2xl font-bold">Messages</h1>
+        <NewConversationDialog onCreated={(id) => navigate(`/chat/${id}`)} />
       </div>
-    </AppLayout>
+
+      {loading ? (
+        <p className="text-center text-muted-foreground py-8">Chargement...</p>
+      ) : conversations.length === 0 ? (
+        <Card className="shadow-soft">
+          <CardContent className="p-8 text-center">
+            <MessageCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground">Aucune conversation</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {conversations.map(chat => (
+            <Card key={chat.id} className="cursor-pointer hover:shadow-medium" onClick={() => navigate(`/chat/${chat.id}`)}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <Avatar><AvatarFallback>{chat.name?.charAt(0) || '?'}</AvatarFallback></Avatar>
+                <div className="flex-1">
+                  <p className="font-medium">{chat.name || 'Conversation'}</p>
+                  <p className="text-sm text-muted-foreground truncate">{chat.type === 'group' ? 'Groupe' : 'Direct'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(chat.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Chat() {
+  return (
+    <ConditionalLayout>
+      <ChatContent />
+    </ConditionalLayout>
   );
 }
