@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Search,
@@ -15,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { ImportDocumentDialog } from "@/components/documents/ImportDocumentDialog";
 import { UserDocumentUploadDialog } from "@/components/documents/UserDocumentUploadDialog";
 import { DocumentRequestsSection } from "@/components/documents/DocumentRequestsSection";
@@ -118,8 +117,6 @@ function DocumentsContent() {
   };
 
   const canDeleteDocument = (doc: Document) => {
-    // Users can only delete documents they uploaded
-    // Managers can delete any document
     if (isManager()) return true;
     return doc.uploaded_by === user?.id;
   };
@@ -154,7 +151,7 @@ function DocumentsContent() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="p-6 space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -368,19 +365,9 @@ function DocumentsContent() {
 }
 
 export default function Documents() {
-  const { user, profile, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
-  if (!user || !profile) return null;
-
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
+    <ConditionalLayout>
       <DocumentsContent />
-    </AppLayout>
+    </ConditionalLayout>
   );
 }

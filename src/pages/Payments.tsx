@@ -4,7 +4,7 @@ import { CreditCard, Download, Clock, CheckCircle2, AlertCircle, ArrowLeft, Euro
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -125,33 +125,33 @@ function PaymentDetail({ id }: { id: string }) {
 
   if (loading) {
     return (
-      <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
-        <div className="text-center py-12">
+      <ConditionalLayout>
+        <div className="p-6 text-center py-12">
           <p className="text-muted-foreground">Chargement...</p>
         </div>
-      </AppLayout>
+      </ConditionalLayout>
     );
   }
 
   if (!payment) {
     return (
-      <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
-        <div className="text-center py-12">
+      <ConditionalLayout>
+        <div className="p-6 text-center py-12">
           <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">Paiement non trouvé</p>
           <Button variant="link" onClick={() => navigate('/payments')}>
             Retour aux paiements
           </Button>
         </div>
-      </AppLayout>
+      </ConditionalLayout>
     );
   }
 
   const dueDate = new Date(payment.due_date);
 
   return (
-    <AppLayout userRole={profile?.role || 'resident'} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in max-w-2xl">
+    <ConditionalLayout>
+      <div className="p-6 space-y-6 animate-fade-in max-w-2xl">
         <Button variant="ghost" onClick={() => navigate('/payments')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour aux paiements
@@ -221,7 +221,7 @@ function PaymentDetail({ id }: { id: string }) {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </ConditionalLayout>
   );
 }
 
@@ -345,7 +345,7 @@ function PaymentsContent() {
   const totalPending = lotFinances.reduce((sum, l) => sum + l.total_pending, 0);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="p-6 space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Paiements & Charges</h1>
@@ -590,14 +590,9 @@ function PaymentsContent() {
 }
 
 export default function Payments() {
-  const { user, profile, logout } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
 
   if (!user || !profile) {
     navigate("/auth");
@@ -609,8 +604,8 @@ export default function Payments() {
   }
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
+    <ConditionalLayout>
       <PaymentsContent />
-    </AppLayout>
+    </ConditionalLayout>
   );
 }
