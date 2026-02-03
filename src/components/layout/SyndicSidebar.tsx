@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ResidenceSelector } from "./ResidenceSelector";
+import { DarkModeToggleSimple } from "@/components/theme/DarkModeToggle";
 import koproLogo from "@/assets/kopro-logo.svg";
 
 const SIDEBAR_COLLAPSED_KEY = "kopro_syndic_sidebar_collapsed";
@@ -217,6 +218,8 @@ export function SyndicSidebar({ agencyName, onLogout }: SyndicSidebarProps) {
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
+
+          <DarkModeToggleSimple />
 
           <NavLink to="/syndic/settings">
             <Button

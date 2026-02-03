@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { DarkModeToggleSimple } from "@/components/theme/DarkModeToggle";
 import koproLogo from "@/assets/kopro-logo.svg";
 
 interface NavItem {
@@ -202,18 +203,21 @@ function AdminSidebarContent({ collapsed, setCollapsed, onLogout, isMobile = fal
 
       {/* Footer */}
       <div className="p-3 border-t border-slate-800 space-y-2">
-        {!isMobile && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-full justify-center text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            {!collapsed && <span className="ml-2">Réduire</span>}
-          </Button>
-        )}
-        
+        <div className="flex items-center gap-2">
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCollapsed(!collapsed)}
+              className="text-slate-400 hover:text-white hover:bg-slate-800"
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          )}
+
+          <DarkModeToggleSimple />
+        </div>
+
         {onLogout && (
           <Button
             variant="ghost"

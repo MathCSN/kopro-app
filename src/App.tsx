@@ -11,6 +11,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { BailleurLayout } from "@/components/layout/BailleurLayout";
 import { SyndicLayout } from "@/components/layout/SyndicLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 // Pages
 import ResetPassword from "./pages/ResetPassword";
@@ -93,12 +94,19 @@ const queryClient = new QueryClient();
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <ResidenceProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange={false}
+        storageKey="kopro-theme"
+      >
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <ResidenceProvider>
               <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
@@ -280,10 +288,11 @@ const App = () => (
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
             </Routes>
-            </ResidenceProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+              </ResidenceProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );

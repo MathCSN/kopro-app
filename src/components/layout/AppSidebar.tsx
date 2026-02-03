@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { ResidenceSelector } from "./ResidenceSelector";
 import { useNavSettings } from "@/hooks/useNavSettings";
 import { NavSettingsDialog } from "@/components/admin/NavSettingsDialog";
+import { DarkModeToggleSimple } from "@/components/theme/DarkModeToggle";
 import koproLogo from "@/assets/kopro-logo.svg";
 
 // Icon mapping for dynamic rendering
@@ -252,6 +253,8 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
 
+          <DarkModeToggleSimple />
+
           {canCustomizeNav && (
             <Button
               variant="ghost"
@@ -262,7 +265,7 @@ export function AppSidebar({ userRole = "resident", onLogout }: AppSidebarProps)
               <Cog className="h-4 w-4" />
             </Button>
           )}
-          
+
           {onLogout && (
             <Button
               variant="ghost"

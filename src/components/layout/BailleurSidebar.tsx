@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { DarkModeToggleSimple } from "@/components/theme/DarkModeToggle";
 import koproLogo from "@/assets/kopro-logo.svg";
 
 const SIDEBAR_COLLAPSED_KEY = "kopro_bailleur_sidebar_collapsed";
@@ -165,6 +166,8 @@ export function BailleurSidebar({ agencyName, onLogout }: BailleurSidebarProps) 
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
+
+          <DarkModeToggleSimple />
 
           <NavLink to="/bailleur/settings">
             <Button
