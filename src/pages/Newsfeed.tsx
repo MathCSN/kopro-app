@@ -403,21 +403,6 @@ function NewsfeedContent() {
     }
   };
 
-  const sendPushNotifications = async (residenceId: string, title: string, body: string) => {
-    try {
-      await supabase.functions.invoke('send-push-notification', {
-        body: {
-          title,
-          body,
-          residenceId,
-          url: '/newsfeed',
-          tag: 'announcement',
-        },
-      });
-    } catch (error) {
-      console.error('Error sending push notifications:', error);
-    }
-  };
 
   const handleCreatePost = async () => {
     if (!newPost.content.trim()) return;
@@ -467,7 +452,7 @@ function NewsfeedContent() {
         if (error) throw error;
 
         for (const residence of allResidences) {
-          sendPushNotifications(residence.id, notificationTitle, notificationBody);
+          (residence.id, notificationTitle, notificationBody);
         }
 
         toast.success(`Publication envoyée à ${allResidences.length} résidence(s)`);
@@ -480,7 +465,7 @@ function NewsfeedContent() {
           });
 
         if (error) throw error;
-        sendPushNotifications(effectiveResidence!.id, notificationTitle, notificationBody);
+        (effectiveResidence!.id, notificationTitle, notificationBody);
         toast.success(newPost.replyToId ? 'Réponse envoyée' : 'Message envoyé');
       }
 

@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmailTemplatesEditor } from "@/components/admin/EmailTemplatesEditor";
 
 export default function OwnerSettings() {
   const { user, logout } = useAuth();
@@ -253,10 +254,7 @@ export default function OwnerSettings() {
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        Pour utiliser un domaine personnalisé, vous devez d'abord le valider sur{" "}
-                        <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="underline font-medium">
-                          resend.com/domains
-                        </a>
+                        Configurez votre serveur SMTP dans les paramètres de résidence pour envoyer des emails depuis votre propre domaine.
                       </AlertDescription>
                     </Alert>
 
@@ -315,6 +313,8 @@ export default function OwnerSettings() {
                 )}
               </CardContent>
             </Card>
+
+            <EmailTemplatesEditor />
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6">

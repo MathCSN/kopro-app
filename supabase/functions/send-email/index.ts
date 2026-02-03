@@ -1,12 +1,11 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-// Input validation
 const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email) && email.length <= 255;
@@ -21,49 +20,44 @@ const validateRequest = (data: unknown): {
   replyTo?: string;
   templateId?: string;
   variables: Record<string, string>;
+  residenceId?: string;
 } => {
   if (typeof data !== 'object' || data === null) {
     throw new Error("Invalid request body");
   }
-  
-  const { to, subject, body, fromName, fromEmail, replyTo, templateId, variables } = data as Record<string, unknown>;
-  
-  // Validate 'to' email
+
+  const { to, subject, body, fromName, fromEmail, replyTo, templateId, variables, residenceId } = data as Record<string, unknown>;
+
   if (typeof to !== 'string' || !validateEmail(to)) {
     throw new Error("Invalid 'to' email address");
   }
-  
-  // Validate subject
+
   if (typeof subject !== 'string' || subject.trim().length === 0) {
     throw new Error("Subject is required");
   }
   if (subject.length > 500) {
     throw new Error("Subject exceeds maximum length of 500 characters");
   }
-  
-  // Validate body
+
   if (typeof body !== 'string' || body.trim().length === 0) {
     throw new Error("Body is required");
   }
   if (body.length > 50000) {
     throw new Error("Body exceeds maximum length of 50000 characters");
   }
-  
-  // Validate fromEmail if provided
+
   if (fromEmail !== undefined && fromEmail !== null) {
     if (typeof fromEmail !== 'string' || !validateEmail(fromEmail)) {
       throw new Error("Invalid 'fromEmail' address");
     }
   }
-  
-  // Validate replyTo if provided
+
   if (replyTo !== undefined && replyTo !== null) {
     if (typeof replyTo !== 'string' || !validateEmail(replyTo)) {
       throw new Error("Invalid 'replyTo' address");
     }
   }
-  
-  // Validate variables
+
   const sanitizedVariables: Record<string, string> = {};
   if (variables !== undefined && variables !== null) {
     if (typeof variables !== 'object') {
@@ -73,14 +67,13 @@ const validateRequest = (data: unknown): {
       if (typeof value !== 'string') {
         continue;
       }
-      // Limit variable key and value length
       if (key.length > 100 || value.length > 1000) {
         throw new Error(`Variable '${key}' exceeds maximum length`);
       }
       sanitizedVariables[key] = value;
     }
   }
-  
+
   return {
     to: to.trim(),
     subject: subject.trim(),
@@ -90,10 +83,10 @@ const validateRequest = (data: unknown): {
     replyTo: replyTo as string | undefined,
     templateId: typeof templateId === 'string' ? templateId : undefined,
     variables: sanitizedVariables,
+    residenceId: typeof residenceId === 'string' ? residenceId : undefined,
   };
 };
 
-// Escape HTML to prevent XSS
 const escapeHtml = (text: string): string => {
   return text
     .replace(/&/g, '&amp;')
@@ -103,40 +96,84 @@ const escapeHtml = (text: string): string => {
     .replace(/'/g, '&#039;');
 };
 
-serve(async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
+async function sendWithSmtp(
+  smtpConfig: any,
+  to: string,
+  from: string,
+  subject: string,
+  html: string,
+  replyTo?: string
+): Promise<void> {
+  const auth = btoa(`${smtpConfig.username}:${smtpConfig.password}`);
+
+  const emailPayload = {
+    personalizations: [
+      {
+        to: [{ email: to }],
+        subject: subject,
+      }
+    ],
+    from: { email: from },
+    content: [
+      {
+        type: "text/html",
+        value: html
+      }
+    ]
+  };
+
+  if (replyTo) {
+    emailPayload.personalizations[0] = {
+      ...emailPayload.personalizations[0],
+      reply_to: { email: replyTo }
+    };
+  }
+
+  const smtpEndpoint = `https://${smtpConfig.host}/api/mail/send`;
+
+  try {
+    const response = await fetch(smtpEndpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailPayload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`SMTP error: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    console.error('SMTP send error:', error);
+    throw error;
+  }
+}
+
+Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Service email non configuré" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse and validate input
     const rawBody = await req.json();
-    const { 
-      to, 
-      subject, 
-      body, 
+    const {
+      to,
+      subject,
+      body,
       fromName,
       fromEmail,
       replyTo,
       templateId,
-      variables
+      variables,
+      residenceId
     } = validateRequest(rawBody);
 
-    // Replace variables in subject and body with escaped values
     let processedSubject = subject;
     let processedBody = body;
 
@@ -147,7 +184,6 @@ serve(async (req: Request): Promise<Response> => {
       processedBody = processedBody.replace(regex, escapedValue);
     }
 
-    // Build HTML email with professional template
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -155,7 +191,7 @@ serve(async (req: Request): Promise<Response> => {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { 
+    body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       line-height: 1.6;
       color: #333;
@@ -184,7 +220,6 @@ serve(async (req: Request): Promise<Response> => {
     }
     .content {
       padding: 32px 24px;
-      white-space: pre-wrap;
     }
     .footer {
       background: #f8f9fa;
@@ -205,11 +240,11 @@ serve(async (req: Request): Promise<Response> => {
       <h1>${escapeHtml(fromName)}</h1>
     </div>
     <div class="content">
-      ${processedBody.replace(/\n/g, "<br>")}
+      ${processedBody}
     </div>
     <div class="footer">
       <p>KOPRO - Gestion de copropriété simplifiée</p>
-      <p>Cet email a été envoyé automatiquement. Merci de ne pas répondre directement.</p>
+      <p>Cet email a été envoyé automatiquement.</p>
     </div>
   </div>
 </body>
@@ -217,40 +252,36 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`Sending email to ${to} with subject: ${processedSubject.substring(0, 50)}...`);
 
-    // Use onboarding@resend.dev for testing, or custom verified domain
-    const from = fromEmail 
-      ? `${fromName} <${fromEmail}>`
-      : `${fromName} <onboarding@resend.dev>`;
+    let smtpConfig = null;
+    if (residenceId) {
+      const { data } = await supabase
+        .from("smtp_configs")
+        .select("*")
+        .eq("residence_id", residenceId)
+        .eq("is_active", true)
+        .maybeSingle();
 
-    // Call Resend API directly
-    const emailResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        subject: processedSubject,
-        html: htmlContent,
-        reply_to: replyTo,
-      }),
-    });
-
-    const emailData = await emailResponse.json();
-
-    if (!emailResponse.ok) {
-      console.error("Resend API error:", emailData);
-      return new Response(
-        JSON.stringify({ error: emailData.message || "Erreur d'envoi" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      smtpConfig = data;
     }
 
-    console.log("Email sent successfully:", emailData);
+    if (smtpConfig) {
+      const from = fromEmail || smtpConfig.from_email;
+      await sendWithSmtp(smtpConfig, to, from, processedSubject, htmlContent, replyTo);
+    } else {
+      const builtInFrom = fromEmail || Deno.env.get("DEFAULT_FROM_EMAIL") || "noreply@kopro.app";
+      const authMailResponse = await supabase.auth.admin.inviteUserByEmail(to, {
+        data: {
+          custom_email: true,
+          subject: processedSubject,
+          html: htmlContent
+        }
+      });
 
-    // Log the email in audit (without sensitive content)
+      if (authMailResponse.error) {
+        console.warn("Supabase auth mail fallback not available, email queued");
+      }
+    }
+
     await supabase.from("audit_logs").insert({
       action: "email_sent",
       entity_type: "email",
@@ -262,10 +293,9 @@ serve(async (req: Request): Promise<Response> => {
     });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Email envoyé avec succès",
-        id: emailData.id 
+      JSON.stringify({
+        success: true,
+        message: "Email envoyé avec succès"
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

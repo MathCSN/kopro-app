@@ -87,7 +87,6 @@ import AdminTrials from "./pages/AdminTrials";
 import AdminTickets from "./pages/AdminTickets";
 import AdminPaymentPage from "./pages/AdminPaymentPage";
 import AdminBugReports from "./pages/AdminBugReports";
-import AdminColdEmailing from "./pages/AdminColdEmailing";
 
 const queryClient = new QueryClient();
 
@@ -147,7 +146,6 @@ const App = () => (
             <Route path="/admin/global-settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
             <Route path="/admin/integrations" element={<AdminRoute><AdminIntegrations /></AdminRoute>} />
             <Route path="/admin/emails" element={<AdminRoute><AdminEmails /></AdminRoute>} />
-            <Route path="/admin/cold-emailing" element={<AdminRoute><AdminColdEmailing /></AdminRoute>} />
             <Route path="/admin/bug-reports" element={<AdminRoute><AdminBugReports /></AdminRoute>} />
             <Route path="/admin/storage" element={<AdminRoute><AdminStorage /></AdminRoute>} />
             <Route path="/admin/audit" element={<AdminRoute><AdminAudit /></AdminRoute>} />
