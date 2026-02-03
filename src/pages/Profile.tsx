@@ -326,17 +326,12 @@ export default function Profile() {
                   <div className="space-y-0.5">
                     <Label>Notifications push</Label>
                     <p className="text-sm text-muted-foreground">
-                      {!pushSupported 
-                        ? "Non supporté sur cet appareil"
-                        : permission === "denied"
-                        ? "Bloquées dans les paramètres du navigateur"
-                        : "Recevez des alertes sur votre appareil"}
+                      Fonctionnalité désactivée temporairement
                     </p>
                   </div>
                   <Switch
-                    checked={pushSubscribed}
-                    onCheckedChange={togglePush}
-                    disabled={!pushSupported || pushLoading || permission === "denied"}
+                    checked={false}
+                    disabled={true}
                   />
                 </div>
 

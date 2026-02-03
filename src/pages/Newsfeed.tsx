@@ -451,10 +451,6 @@ function NewsfeedContent() {
 
         if (error) throw error;
 
-        for (const residence of allResidences) {
-          (residence.id, notificationTitle, notificationBody);
-        }
-
         toast.success(`Publication envoyée à ${allResidences.length} résidence(s)`);
       } else {
         const { error } = await supabase
@@ -465,7 +461,6 @@ function NewsfeedContent() {
           });
 
         if (error) throw error;
-        (effectiveResidence!.id, notificationTitle, notificationBody);
         toast.success(newPost.replyToId ? 'Réponse envoyée' : 'Message envoyé');
       }
 

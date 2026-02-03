@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useResidence } from "@/contexts/ResidenceContext";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { useSendEmail } from "@/hooks/useSendEmail";
 
 interface Payment {
   id: string;
@@ -123,6 +124,36 @@ function PaymentDetail({ id }: { id: string }) {
     });
   };
 
+  const handleDownloadReceipt = () => {
+    if (!payment) return;
+
+    const receiptText = `
+REÇU DE PAIEMENT
+
+Date: ${payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('fr-FR') : 'N/A'}
+Montant: ${payment.amount}€
+Type: ${payment.type || 'Paiement'}
+Description: ${payment.description || '-'}
+Référence: ${payment.id}
+
+Status: PAYÉ
+
+Merci pour votre paiement.
+KOPRO - Gestion de copropriété
+    `.trim();
+
+    const blob = new Blob([receiptText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `recu-${payment.id}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Reçu téléchargé");
+  };
+
   if (loading) {
     return (
       <ConditionalLayout>
@@ -212,7 +243,12 @@ function PaymentDetail({ id }: { id: string }) {
                     </p>
                   )}
                 </div>
-                <Button variant="outline" size="sm" className="ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={handleDownloadReceipt}
+                >
                   <Download className="h-4 w-4 mr-1" />
                   Reçu
                 </Button>
@@ -233,6 +269,7 @@ function PaymentsContent() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [lotFinances, setLotFinances] = useState<LotFinance[]>([]);
   const [loading, setLoading] = useState(true);
+  const { sendEmail, isSending } = useSendEmail();
 
   useEffect(() => {
     if (user && !id) {
@@ -321,6 +358,41 @@ function PaymentsContent() {
     } catch (error) {
       console.error('Error fetching lot finances:', error);
     }
+  };
+
+  const handleReminder = async (userId: string) => {
+    const userPayments = payments.filter(p => p.user_id === userId && p.status === 'pending');
+    const totalAmount = userPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+    const { data: userData } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email')
+      .eq('id', userId)
+      .single();
+
+    if (!userData?.email) {
+      toast.error("Email de l'utilisateur introuvable");
+      return;
+    }
+
+    const paymentsList = userPayments
+      .map(p => `- ${p.description || p.type}: ${p.amount}€ (échéance: ${new Date(p.due_date).toLocaleDateString('fr-FR')})`)
+      .join('<br/>');
+
+    await sendEmail({
+      to: userData.email,
+      subject: 'Rappel de paiement',
+      body: `
+        <h2>Bonjour ${userData.first_name || ''} ${userData.last_name || ''},</h2>
+        <p>Nous vous rappelons que ${userPayments.length} paiement(s) sont en attente pour un total de <strong>${totalAmount}€</strong>.</p>
+        <br/>
+        <p><strong>Détails des paiements:</strong></p>
+        ${paymentsList}
+        <br/>
+        <p>Merci de régulariser votre situation dans les plus brefs délais.</p>
+      `,
+      residenceId: selectedResidence?.id,
+    });
   };
 
   if (!user || !profile) return null;
@@ -573,7 +645,15 @@ function PaymentsContent() {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-destructive">{totalArrears} €</p>
-                              <Button size="sm" variant="outline" className="mt-1">Relancer</Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="mt-1"
+                                onClick={() => handleReminder(userId)}
+                                disabled={isSending}
+                              >
+                                {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Relancer'}
+                              </Button>
                             </div>
                           </div>
                         );

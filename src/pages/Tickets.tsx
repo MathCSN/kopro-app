@@ -61,6 +61,7 @@ function TicketsContent() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,8 +91,11 @@ function TicketsContent() {
     if (status !== "all") {
       filtered = tickets.filter(t => t.status === status);
     }
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(t => t.category === categoryFilter);
+    }
     if (searchQuery) {
-      filtered = filtered.filter(t => 
+      filtered = filtered.filter(t =>
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.id.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -176,7 +180,7 @@ function TicketsContent() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select defaultValue="all">
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Catégorie" />
           </SelectTrigger>
