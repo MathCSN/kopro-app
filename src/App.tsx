@@ -10,6 +10,7 @@ import { AdminRoute } from "@/components/auth/AdminRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { BailleurLayout } from "@/components/layout/BailleurLayout";
 import { SyndicLayout } from "@/components/layout/SyndicLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Pages
 import ResetPassword from "./pages/ResetPassword";
@@ -91,14 +92,15 @@ import AdminColdEmailing from "./pages/AdminColdEmailing";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ResidenceProvider>
-            <Routes>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <ResidenceProvider>
+              <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/auth/login" element={<Login />} />
@@ -279,12 +281,13 @@ const App = () => (
             
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-          </ResidenceProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+            </Routes>
+            </ResidenceProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

@@ -1,10 +1,11 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useParams } from "react-router-dom";
-import { Vote, Calendar, FileText, ArrowLeft } from "lucide-react";
+import { Vote, Calendar, FileText, ArrowLeft, Video } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateAGDialog } from "@/components/ag/CreateAGDialog";
+import { EditAGDialog } from "@/components/ag/EditAGDialog";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +18,7 @@ interface AGEvent {
   status: string | null;
   agenda: any;
   minutes_url: string | null;
+  video_link: string | null;
 }
 
 function AGDetail({ id }: { id: string }) {
@@ -68,12 +70,41 @@ function AGDetail({ id }: { id: string }) {
 
   const scheduledDate = new Date(ag.scheduled_at);
 
+  const isVideoAvailable = () => {
+    if (!ag.video_link) return false;
+    const now = new Date();
+    const fifteenMinutesBefore = new Date(scheduledDate.getTime() - 15 * 60 * 1000);
+    const twoHoursAfter = new Date(scheduledDate.getTime() + 2 * 60 * 60 * 1000);
+    return now >= fifteenMinutesBefore && now <= twoHoursAfter;
+  };
+
+  const handleJoinVideo = () => {
+    if (ag.video_link) {
+      window.open(ag.video_link, '_blank');
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <Button variant="ghost" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Retour
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
+        {profile?.role === 'manager' && (
+          <EditAGDialog
+            agId={ag.id}
+            currentData={{
+              title: ag.title,
+              description: ag.description,
+              scheduled_at: ag.scheduled_at,
+              location: ag.location,
+              video_link: ag.video_link,
+            }}
+            onUpdated={fetchAGDetail}
+          />
+        )}
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
@@ -81,10 +112,10 @@ function AGDetail({ id }: { id: string }) {
           <div className="flex items-center gap-4 mt-2 text-muted-foreground">
             <span className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
-              {scheduledDate.toLocaleDateString('fr-FR', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
+              {scheduledDate.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
               })} à {scheduledDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </span>
             {ag.location && <span>{ag.location}</span>}
@@ -99,6 +130,32 @@ function AGDetail({ id }: { id: string }) {
         <Card className="shadow-soft">
           <CardContent className="p-4">
             <p className="text-muted-foreground">{ag.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {ag.video_link && (
+        <Card className={`shadow-soft ${isVideoAvailable() ? 'border-primary/50 bg-primary/5' : ''}`}>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Video className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-semibold">Réunion en visioconférence</p>
+                {isVideoAvailable() ? (
+                  <p className="text-sm text-primary font-medium">Accès disponible maintenant</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Disponible 15 min avant la réunion</p>
+                )}
+              </div>
+            </div>
+            <Button
+              onClick={handleJoinVideo}
+              disabled={!isVideoAvailable()}
+              className="gap-2"
+            >
+              <Video className="h-4 w-4" />
+              Rejoindre
+            </Button>
           </CardContent>
         </Card>
       )}
