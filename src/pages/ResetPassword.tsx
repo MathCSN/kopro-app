@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import koproLogo from "@/assets/kopro-logo.svg";
 
@@ -32,43 +31,31 @@ export default function ResetPassword() {
   const [isCheckingToken, setIsCheckingToken] = useState(true);
 
   useEffect(() => {
-    // Check if we have a valid session from the reset link
-    const checkSession = async () => {
+    const checkToken = async () => {
       setIsCheckingToken(true);
-      
-      // The Supabase auth will automatically handle the token from the URL
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
+
+      const token = searchParams.get('token');
+
+      if (token) {
         setIsValidToken(true);
       } else {
-        // Check if there's a reset token in the URL hash
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const type = hashParams.get('type');
-        
-        if (accessToken && type === 'recovery') {
-          setIsValidToken(true);
-        } else {
-          toast({
-            title: "Lien invalide",
-            description: "Ce lien de réinitialisation est invalide ou a expiré.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Lien invalide",
+          description: "Ce lien de réinitialisation est invalide ou a expiré.",
+          variant: "destructive",
+        });
       }
-      
+
       setIsCheckingToken(false);
     };
 
-    checkSession();
-  }, [toast]);
+    checkToken();
+  }, [searchParams, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationErrors({});
 
-    // Validate input
     const result = passwordSchema.safeParse({ password, confirmPassword });
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -84,14 +71,28 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
+      const token = searchParams.get('token');
 
-      if (error) {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password-with-token`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: token,
+            newPassword: password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
         toast({
           title: "Erreur",
-          description: error.message,
+          description: data.error || "Impossible de réinitialiser le mot de passe",
           variant: "destructive",
         });
       } else {
@@ -100,8 +101,7 @@ export default function ResetPassword() {
           title: "Mot de passe mis à jour",
           description: "Votre mot de passe a été modifié avec succès.",
         });
-        
-        // Redirect to login after a short delay
+
         setTimeout(() => {
           navigate("/auth/login");
         }, 3000);
