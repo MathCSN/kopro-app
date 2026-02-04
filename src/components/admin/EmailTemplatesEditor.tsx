@@ -18,11 +18,15 @@ interface EmailTemplate {
   id: string;
   residence_id: string | null;
   name: string;
-  slug: string;
   subject: string;
-  html_content: string;
-  variables: string[];
-  is_active: boolean;
+  body: string;
+  variables: unknown;
+  type: string;
+  logo_url: string | null;
+  footer_text: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
 }
 
 export function EmailTemplatesEditor() {
@@ -34,8 +38,7 @@ export function EmailTemplatesEditor() {
   const [formData, setFormData] = useState({
     name: "",
     subject: "",
-    html_content: "",
-    is_active: true,
+    body: "",
   });
 
   useEffect(() => {
@@ -70,8 +73,7 @@ export function EmailTemplatesEditor() {
     setFormData({
       name: template.name,
       subject: template.subject,
-      html_content: template.html_content,
-      is_active: template.is_active,
+      body: template.body,
     });
   };
 
@@ -84,8 +86,7 @@ export function EmailTemplatesEditor() {
         .update({
           name: formData.name,
           subject: formData.subject,
-          html_content: formData.html_content,
-          is_active: formData.is_active,
+          body: formData.body,
           updated_at: new Date().toISOString(),
         })
         .eq("id", editingTemplate.id);
@@ -135,7 +136,7 @@ export function EmailTemplatesEditor() {
       reference: "REF-2024-001",
     };
 
-    let html = formData.html_content;
+    let html = formData.body;
     Object.entries(variables).forEach(([key, value]) => {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
       html = html.replace(regex, value);
@@ -230,9 +231,6 @@ export function EmailTemplatesEditor() {
                   <CardTitle className="flex items-center gap-2">
                     <Mail className="h-5 w-5" />
                     {template.name}
-                    {!template.is_active && (
-                      <Badge variant="secondary">Inactif</Badge>
-                    )}
                     {!template.residence_id && (
                       <Badge variant="outline">Global</Badge>
                     )}
@@ -240,9 +238,9 @@ export function EmailTemplatesEditor() {
                   <CardDescription className="mt-1">
                     <strong>Sujet :</strong> {template.subject}
                   </CardDescription>
-                  {template.variables && template.variables.length > 0 && (
+                  {template.variables && Array.isArray(template.variables) && (template.variables as string[]).length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
-                      {template.variables.map((variable) => (
+                      {(template.variables as string[]).map((variable) => (
                         <Badge key={variable} variant="secondary" className="text-xs">
                           {`{{${variable}}}`}
                         </Badge>
@@ -301,28 +299,17 @@ export function EmailTemplatesEditor() {
                           </div>
 
                           <div>
-                            <Label htmlFor="html_content">Contenu HTML</Label>
+                            <Label htmlFor="body">Contenu HTML</Label>
                             <Textarea
-                              id="html_content"
-                              value={formData.html_content}
+                              id="body"
+                              value={formData.body}
                               onChange={(e) =>
-                                setFormData({ ...formData, html_content: e.target.value })
+                                setFormData({ ...formData, body: e.target.value })
                               }
                               rows={15}
                               className="font-mono text-sm"
                               placeholder="<h1>Bonjour {{name}}</h1>..."
                             />
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="is_active"
-                              checked={formData.is_active}
-                              onCheckedChange={(checked) =>
-                                setFormData({ ...formData, is_active: checked })
-                              }
-                            />
-                            <Label htmlFor="is_active">Template actif</Label>
                           </div>
 
                           <div className="flex justify-end gap-2">

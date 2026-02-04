@@ -58,14 +58,14 @@ export function useSendEmail() {
 
         const { data: agencyData } = await supabase
           .from("agencies")
-          .select("name, contact_email")
+          .select("name, email")
           .eq("id", roleData.agency_id)
           .maybeSingle();
 
         setEmailConfig({
           agencyName: agencyData?.name || "KOPRO",
           noreplyEmail,
-          agencyContactEmail: agencyData?.contact_email || "",
+          agencyContactEmail: agencyData?.email || "",
         });
       } catch (error) {
         console.error("Error loading email config:", error);
