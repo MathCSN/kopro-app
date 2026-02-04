@@ -8,17 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { publicSupabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { NoApartmentAvailable } from "@/components/residence/NoApartmentAvailable";
 import { AUTH_MESSAGES } from "@/lib/messages";
-import { createClient } from "@supabase/supabase-js";
-
-// Public client for fetching residence data without auth restrictions
-const publicSupabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-  { auth: { persistSession: false } }
-);
 
 type Lot = {
   id: string;
