@@ -107,6 +107,14 @@ Deno.serve(async (req: Request) => {
 
     const resetLink = `${new URL(req.url).origin}/reset-password?token=${token}`;
 
+    const { data: noreplyConfig } = await supabase
+      .from("app_config")
+      .select("value")
+      .eq("key", "noreply_email")
+      .maybeSingle();
+
+    const noreplyEmail = noreplyConfig?.value || "noreply@kopro.app";
+
     const emailBody = `
       <div style="font-family: Arial, sans-serif;">
         <h2>Réinitialisation de votre mot de passe</h2>
@@ -131,9 +139,10 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         to: email,
-        subject: "Réinitialisation de votre mot de passe Kopro",
+        subject: "Réinitialisation de votre mot de passe KOPRO",
         body: emailBody,
-        fromName: "Kopro",
+        fromName: "KOPRO",
+        fromEmail: noreplyEmail,
         variables: {},
       }),
     });
