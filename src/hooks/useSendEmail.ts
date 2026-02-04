@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SendEmailParams {
   to: string;
@@ -11,47 +12,73 @@ interface SendEmailParams {
   replyTo?: string;
   templateId?: string;
   variables?: Record<string, string>;
+  residenceId?: string;
 }
 
 interface EmailConfig {
-  senderName: string;
-  senderEmail: string;
-  replyToEmail: string;
+  agencyName: string;
+  noreplyEmail: string;
+  agencyContactEmail: string;
 }
 
 export function useSendEmail() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSending, setIsSending] = useState(false);
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
 
-  // Load email config on mount
   useEffect(() => {
     const loadEmailConfig = async () => {
+      if (!user) return;
+
       try {
-        const { data, error } = await supabase
+        const { data: noreplyData } = await supabase
           .from("app_config")
-          .select("key, value")
-          .in("key", ["email_sender_name", "email_sender_email", "email_reply_to"]);
+          .select("value")
+          .eq("key", "noreply_email")
+          .maybeSingle();
 
-        if (error) throw error;
+        const noreplyEmail = noreplyData?.value || "noreply@kopro.app";
 
-        const config: Record<string, string> = {};
-        data?.forEach(item => {
-          config[item.key] = item.value || "";
-        });
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("agency_id, role")
+          .eq("user_id", user.id)
+          .not("agency_id", "is", null)
+          .maybeSingle();
+
+        if (!roleData?.agency_id) {
+          setEmailConfig({
+            agencyName: "KOPRO",
+            noreplyEmail,
+            agencyContactEmail: "",
+          });
+          return;
+        }
+
+        const { data: agencyData } = await supabase
+          .from("agencies")
+          .select("name, contact_email")
+          .eq("id", roleData.agency_id)
+          .maybeSingle();
 
         setEmailConfig({
-          senderName: config.email_sender_name || "KOPRO",
-          senderEmail: config.email_sender_email || "",
-          replyToEmail: config.email_reply_to || "",
+          agencyName: agencyData?.name || "KOPRO",
+          noreplyEmail,
+          agencyContactEmail: agencyData?.contact_email || "",
         });
       } catch (error) {
         console.error("Error loading email config:", error);
+        setEmailConfig({
+          agencyName: "KOPRO",
+          noreplyEmail: "noreply@kopro.app",
+          agencyContactEmail: "",
+        });
       }
     };
 
     loadEmailConfig();
-  }, []);
+  }, [user]);
 
   const sendEmail = async (params: SendEmailParams): Promise<boolean> => {
     if (!params.to || !params.subject || !params.body) {
@@ -66,17 +93,21 @@ export function useSendEmail() {
     setIsSending(true);
 
     try {
-      // Use configured email settings or defaults
-      const fromName = params.fromName || emailConfig?.senderName || "KOPRO";
-      const fromEmail = params.fromEmail || emailConfig?.senderEmail || undefined;
-      const replyTo = params.replyTo || emailConfig?.replyToEmail || undefined;
+      const fromName = params.fromName || emailConfig?.agencyName || "KOPRO";
+      const fromEmail = params.fromEmail || emailConfig?.noreplyEmail || undefined;
+      const replyTo = params.replyTo || emailConfig?.agencyContactEmail || undefined;
 
       const { data, error } = await supabase.functions.invoke("send-email", {
         body: {
-          ...params,
+          to: params.to,
+          subject: params.subject,
+          body: params.body,
           fromName,
           fromEmail,
           replyTo,
+          templateId: params.templateId,
+          variables: params.variables,
+          residenceId: params.residenceId,
         },
       });
 

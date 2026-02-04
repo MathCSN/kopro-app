@@ -100,20 +100,24 @@ async function sendWithSmtp(
   smtpConfig: any,
   to: string,
   from: string,
+  fromName: string,
   subject: string,
   html: string,
   replyTo?: string
 ): Promise<void> {
   const auth = btoa(`${smtpConfig.username}:${smtpConfig.password}`);
 
-  const emailPayload = {
+  const emailPayload: any = {
     personalizations: [
       {
         to: [{ email: to }],
         subject: subject,
       }
     ],
-    from: { email: from },
+    from: {
+      email: from,
+      name: fromName
+    },
     content: [
       {
         type: "text/html",
@@ -123,9 +127,8 @@ async function sendWithSmtp(
   };
 
   if (replyTo) {
-    emailPayload.personalizations[0] = {
-      ...emailPayload.personalizations[0],
-      reply_to: { email: replyTo }
+    emailPayload.reply_to = {
+      email: replyTo
     };
   }
 
@@ -266,7 +269,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (smtpConfig) {
       const from = fromEmail || smtpConfig.from_email;
-      await sendWithSmtp(smtpConfig, to, from, processedSubject, htmlContent, replyTo);
+      const smtpFromName = smtpConfig.from_name || fromName;
+      await sendWithSmtp(smtpConfig, to, from, smtpFromName, processedSubject, htmlContent, replyTo);
     } else {
       const builtInFrom = fromEmail || Deno.env.get("DEFAULT_FROM_EMAIL") || "noreply@kopro.app";
       const authMailResponse = await supabase.auth.admin.inviteUserByEmail(to, {

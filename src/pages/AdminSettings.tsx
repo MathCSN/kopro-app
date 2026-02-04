@@ -38,11 +38,7 @@ export default function OwnerSettings() {
   const [codeSent, setCodeSent] = useState(false);
 
   // Email sender config state
-  const [emailConfig, setEmailConfig] = useState({
-    senderName: "KOPRO",
-    senderEmail: "",
-    replyToEmail: "",
-  });
+  const [noreplyEmail, setNoreplyEmail] = useState("noreply@kopro.app");
   const [isLoadingEmailConfig, setIsLoadingEmailConfig] = useState(true);
   const [isSavingEmailConfig, setIsSavingEmailConfig] = useState(false);
 
@@ -52,21 +48,15 @@ export default function OwnerSettings() {
       try {
         const { data, error } = await supabase
           .from("app_config")
-          .select("key, value")
-          .in("key", ["email_sender_name", "email_sender_email", "email_reply_to"]);
+          .select("value")
+          .eq("key", "noreply_email")
+          .maybeSingle();
 
         if (error) throw error;
 
-        const config: Record<string, string> = {};
-        data?.forEach(item => {
-          config[item.key] = item.value || "";
-        });
-
-        setEmailConfig({
-          senderName: config.email_sender_name || "KOPRO",
-          senderEmail: config.email_sender_email || "",
-          replyToEmail: config.email_reply_to || "",
-        });
+        if (data) {
+          setNoreplyEmail(data.value || "noreply@kopro.app");
+        }
       } catch (error) {
         console.error("Error loading email config:", error);
       } finally {
@@ -80,23 +70,18 @@ export default function OwnerSettings() {
   const handleSaveEmailConfig = async () => {
     setIsSavingEmailConfig(true);
     try {
-      const configs = [
-        { key: "email_sender_name", value: emailConfig.senderName },
-        { key: "email_sender_email", value: emailConfig.senderEmail },
-        { key: "email_reply_to", value: emailConfig.replyToEmail },
-      ];
+      const { error } = await supabase
+        .from("app_config")
+        .upsert(
+          { key: "noreply_email", value: noreplyEmail, is_encrypted: false },
+          { onConflict: "key" }
+        );
 
-      for (const config of configs) {
-        const { error } = await supabase
-          .from("app_config")
-          .upsert({ key: config.key, value: config.value }, { onConflict: "key" });
-        
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Configuration enregistrée",
-        description: "Les paramètres d'envoi d'email ont été mis à jour.",
+        description: "L'adresse noreply a été mise à jour.",
       });
     } catch (error) {
       console.error("Error saving email config:", error);
@@ -238,10 +223,10 @@ export default function OwnerSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="h-5 w-5" />
-                  Configuration de l'expéditeur
+                  Configuration globale des emails
                 </CardTitle>
                 <CardDescription>
-                  Personnalisez l'adresse email utilisée pour envoyer les emails
+                  Configurez l'adresse email noreply utilisée comme expéditeur pour tous les emails de la plateforme
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -252,58 +237,42 @@ export default function OwnerSettings() {
                 ) : (
                   <>
                     <Alert>
-                      <AlertCircle className="h-4 w-4" />
+                      <CheckCircle className="h-4 w-4" />
                       <AlertDescription>
-                        Configurez votre serveur SMTP dans les paramètres de résidence pour envoyer des emails depuis votre propre domaine.
+                        <strong>Configuration automatique par agence :</strong> Le nom de l'expéditeur sera automatiquement celui de l'agence (Bailleur/Syndic) et l'adresse de réponse sera l'email de contact configuré dans les paramètres de chaque agence.
                       </AlertDescription>
                     </Alert>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Nom de l'expéditeur</Label>
-                        <Input
-                          value={emailConfig.senderName}
-                          onChange={(e) => setEmailConfig({ ...emailConfig, senderName: e.target.value })}
-                          placeholder="KOPRO"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Affiché comme nom de l'expéditeur dans les emails
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Email de l'expéditeur</Label>
-                        <Input
-                          type="email"
-                          value={emailConfig.senderEmail}
-                          onChange={(e) => setEmailConfig({ ...emailConfig, senderEmail: e.target.value })}
-                          placeholder="noreply@votre-domaine.com"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Laissez vide pour utiliser l'adresse par défaut
-                        </p>
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <Label>Email de réponse (Reply-To)</Label>
-                        <Input
-                          type="email"
-                          value={emailConfig.replyToEmail}
-                          onChange={(e) => setEmailConfig({ ...emailConfig, replyToEmail: e.target.value })}
-                          placeholder="contact@votre-domaine.com"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Les réponses des destinataires seront envoyées à cette adresse
-                        </p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label>Adresse email noreply (FROM) *</Label>
+                      <Input
+                        type="email"
+                        value={noreplyEmail}
+                        onChange={(e) => setNoreplyEmail(e.target.value)}
+                        placeholder="noreply@votre-domaine.com"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Cette adresse sera utilisée comme expéditeur (FROM) pour tous les emails envoyés par la plateforme. Configurez votre domaine pour que cette adresse puisse envoyer des emails.
+                      </p>
                     </div>
 
-                    {emailConfig.senderEmail && (
-                      <div className="p-4 rounded-lg bg-muted/50 border">
-                        <p className="text-sm font-medium mb-2">Aperçu de l'expéditeur</p>
-                        <p className="text-sm text-muted-foreground">
-                          {emailConfig.senderName} &lt;{emailConfig.senderEmail}&gt;
-                        </p>
+                    <div className="p-4 rounded-lg bg-muted/50 border space-y-3">
+                      <p className="text-sm font-medium">Exemple d'email envoyé par un Syndic nommé "Sérénity"</p>
+                      <div className="space-y-1 text-sm">
+                        <p><strong>De :</strong> Sérénity &lt;{noreplyEmail}&gt;</p>
+                        <p><strong>Répondre à :</strong> contact@serenity-syndic.fr</p>
                       </div>
-                    )}
+                      <p className="text-xs text-muted-foreground">
+                        Le destinataire verra "Sérénity" comme expéditeur, et s'il clique sur répondre, sa réponse sera envoyée à l'email de contact du Syndic.
+                      </p>
+                    </div>
+
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Pour configurer le nom et l'email de contact de chaque agence, rendez-vous dans <strong>Admin → Clients</strong> et modifiez les informations de l'agence.
+                      </AlertDescription>
+                    </Alert>
 
                     <Button onClick={handleSaveEmailConfig} disabled={isSavingEmailConfig}>
                       {isSavingEmailConfig && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

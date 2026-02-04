@@ -34,6 +34,7 @@ type AgencyType = "bailleur" | "syndic";
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   email: z.string().email("Email invalide").optional().or(z.literal("")),
+  contact_email: z.string().email("Email invalide").optional().or(z.literal("")),
   phone: z.string().optional(),
   siret: z.string().optional(),
   address: z.string().optional(),
@@ -52,6 +53,7 @@ interface AgencyFormDialogProps {
     id: string;
     name: string;
     email: string | null;
+    contact_email: string | null;
     phone: string | null;
     siret: string | null;
     address: string | null;
@@ -78,6 +80,7 @@ export function AgencyFormDialog({
     defaultValues: {
       name: "",
       email: "",
+      contact_email: "",
       phone: "",
       siret: "",
       address: "",
@@ -93,6 +96,7 @@ export function AgencyFormDialog({
       form.reset({
         name: agency.name,
         email: agency.email || "",
+        contact_email: agency.contact_email || "",
         phone: agency.phone || "",
         siret: agency.siret || "",
         address: agency.address || "",
@@ -105,6 +109,7 @@ export function AgencyFormDialog({
       form.reset({
         name: "",
         email: "",
+        contact_email: "",
         phone: "",
         siret: "",
         address: "",
@@ -122,6 +127,7 @@ export function AgencyFormDialog({
       const data = {
         name: values.name,
         email: values.email || null,
+        contact_email: values.contact_email || null,
         phone: values.phone || null,
         siret: values.siret || null,
         address: values.address || null,
@@ -264,6 +270,23 @@ export function AgencyFormDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="contact_email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email de contact (Reply-To)</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="reponse@agence.fr" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Cet email sera utilisé comme adresse de réponse dans tous les emails envoyés par l'agence
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
