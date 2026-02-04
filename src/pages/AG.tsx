@@ -40,7 +40,12 @@ function AGDetail({ id }: { id: string }) {
         .maybeSingle();
 
       if (error) throw error;
-      setAG(data);
+      if (data) {
+        setAG({
+          ...data,
+          video_link: (data as any).video_link || null,
+        });
+      }
     } catch (error) {
       console.error('Error fetching AG:', error);
     } finally {
@@ -208,7 +213,11 @@ export default function AG() {
         .order('scheduled_at', { ascending: false });
 
       if (error) throw error;
-      setAssemblies(data || []);
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        video_link: (item as any).video_link || null,
+      }));
+      setAssemblies(mappedData);
     } catch (error) {
       console.error('Error fetching assemblies:', error);
     } finally {

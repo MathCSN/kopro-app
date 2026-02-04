@@ -345,7 +345,10 @@ export default function AdminClientDetail() {
       <AgencyFormDialog 
         open={isEditOpen} 
         onOpenChange={setIsEditOpen}
-        agency={agency}
+        agency={{
+          ...agency,
+          contact_email: null,
+        }}
         onSuccess={() => {
           refetch();
           setIsEditOpen(false);

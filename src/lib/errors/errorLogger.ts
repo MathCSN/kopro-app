@@ -71,14 +71,16 @@ class ErrorLogger {
     this.queue = [];
 
     try {
-      const { error } = await supabase
-        .from('error_logs')
-        .insert(entries);
-
-      if (error) {
-        console.error('Failed to log errors to database:', error);
-        this.queue.push(...entries);
-      }
+      // Log to console instead of database since error_logs table doesn't exist
+      entries.forEach(entry => {
+        console.error('[ErrorLogger]', {
+          type: entry.error_type,
+          message: entry.error_message,
+          severity: entry.severity,
+          url: entry.url,
+          timestamp: entry.timestamp,
+        });
+      });
     } catch (err) {
       console.error('Error logging failed:', err);
       this.queue.push(...entries);
@@ -88,17 +90,9 @@ class ErrorLogger {
   }
 
   async clearOldLogs(daysToKeep: number = 30): Promise<void> {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
-    try {
-      await supabase
-        .from('error_logs')
-        .delete()
-        .lt('created_at', cutoffDate.toISOString());
-    } catch (err) {
-      console.error('Failed to clear old error logs:', err);
-    }
+    // No-op since error_logs table doesn't exist
+    // Logs are stored in console only
+    console.log(`[ErrorLogger] clearOldLogs called with daysToKeep: ${daysToKeep}`);
   }
 }
 
