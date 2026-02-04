@@ -73,8 +73,9 @@ export default function ResetPassword() {
     try {
       const token = searchParams.get('token');
 
+      const { getFunctionUrl } = await import("@/lib/backendPublic");
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password-with-token`,
+        getFunctionUrl("reset-password-with-token"),
         {
           method: 'POST',
           headers: {

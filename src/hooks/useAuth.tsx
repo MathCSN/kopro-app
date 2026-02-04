@@ -251,8 +251,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string): Promise<{ error: Error | null }> => {
     try {
+      const { getFunctionUrl } = await import("@/lib/backendPublic");
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/request-password-reset`,
+        getFunctionUrl("request-password-reset"),
         {
           method: 'POST',
           headers: {

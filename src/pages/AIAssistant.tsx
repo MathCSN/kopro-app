@@ -77,7 +77,8 @@ function AIAssistantContent() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/residence-assistant`, {
+      const { getFunctionUrl } = await import("@/lib/backendPublic");
+      const response = await fetch(getFunctionUrl("residence-assistant"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
