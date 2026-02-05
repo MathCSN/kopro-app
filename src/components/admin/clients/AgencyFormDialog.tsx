@@ -176,15 +176,17 @@ export function AgencyFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Modifier l'agence" : "Nouvelle agence"}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-lg h-auto max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 border-b shrink-0">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? "Modifier l'agence" : "Nouvelle agence"}
+            </DialogTitle>
+          </DialogHeader>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="agency-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-4">
             <FormField
               control={form.control}
               name="type"
@@ -369,25 +371,28 @@ export function AgencyFormDialog({
               )}
             />
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting 
-                  ? "Enregistrement..." 
-                  : isEditing 
-                    ? "Enregistrer" 
-                    : "Créer l'agence"
-                }
-              </Button>
-            </div>
           </form>
         </Form>
+        
+        <div className="p-4 border-t bg-muted/30 shrink-0">
+          <div className="flex justify-end gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="submit" form="agency-form" disabled={isSubmitting}>
+              {isSubmitting 
+                ? "Enregistrement..." 
+                : isEditing 
+                  ? "Enregistrer" 
+                  : "Créer l'agence"
+              }
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -192,15 +192,17 @@ export function ResidenceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Modifier la résidence" : "Nouvelle résidence"}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-lg h-auto max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 border-b shrink-0">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? "Modifier la résidence" : "Nouvelle résidence"}
+            </DialogTitle>
+          </DialogHeader>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="residence-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -332,25 +334,28 @@ export function ResidenceFormDialog({
               </>
             )}
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting 
-                  ? "Enregistrement..." 
-                  : isEditing 
-                    ? "Enregistrer" 
-                    : "Créer la résidence"
-                }
-              </Button>
-            </div>
           </form>
         </Form>
+        
+        <div className="p-4 border-t bg-muted/30 shrink-0">
+          <div className="flex justify-end gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="submit" form="residence-form" disabled={isSubmitting}>
+              {isSubmitting 
+                ? "Enregistrement..." 
+                : isEditing 
+                  ? "Enregistrer" 
+                  : "Créer la résidence"
+              }
+            </Button>
+          </div>
+        </div>
       </DialogContent>
 
       {/* Invite Syndic Dialog */}
