@@ -176,13 +176,15 @@ export function LotFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Modifier l'appartement" : "Ajouter un appartement"}</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-lg h-auto max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 border-b shrink-0">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? "Modifier l'appartement" : "Ajouter un appartement"}</DialogTitle>
+          </DialogHeader>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="lot-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -344,16 +346,19 @@ export function LotFormDialog({
               )}
             />
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Enregistrement..." : isEditing ? "Modifier" : "Créer"}
-              </Button>
-            </div>
           </form>
         </Form>
+        
+        <div className="p-4 border-t bg-muted/30 shrink-0">
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Annuler
+            </Button>
+            <Button type="submit" form="lot-form" disabled={mutation.isPending}>
+              {mutation.isPending ? "Enregistrement..." : isEditing ? "Modifier" : "Créer"}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

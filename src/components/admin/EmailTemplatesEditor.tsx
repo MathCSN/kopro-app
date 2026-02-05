@@ -259,83 +259,89 @@ export function EmailTemplatesEditor() {
                         Modifier
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Modifier le template</DialogTitle>
-                        <DialogDescription>
-                          Modifiez le contenu HTML de votre email. Utilisez les variables entre accolades doubles (ex: {`{{name}}`})
-                        </DialogDescription>
-                      </DialogHeader>
+                    <DialogContent className="max-w-4xl h-auto max-h-[85vh] flex flex-col p-0 overflow-hidden">
+                      <div className="p-6 border-b shrink-0">
+                        <DialogHeader>
+                          <DialogTitle>Modifier le template</DialogTitle>
+                          <DialogDescription>
+                            Modifiez le contenu HTML de votre email. Utilisez les variables entre accolades doubles (ex: {`{{name}}`})
+                          </DialogDescription>
+                        </DialogHeader>
+                      </div>
 
-                      <Tabs defaultValue="edit" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="edit">Éditer</TabsTrigger>
-                          <TabsTrigger value="preview" onClick={() => setShowPreview(true)}>
-                            Aperçu
-                          </TabsTrigger>
-                        </TabsList>
+                      <div className="flex-1 overflow-y-auto p-6">
+                        <Tabs defaultValue="edit" className="w-full">
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="edit">Éditer</TabsTrigger>
+                            <TabsTrigger value="preview" onClick={() => setShowPreview(true)}>
+                              Aperçu
+                            </TabsTrigger>
+                          </TabsList>
 
-                        <TabsContent value="edit" className="space-y-4 mt-4">
-                          <div>
-                            <Label htmlFor="name">Nom du template</Label>
-                            <Input
-                              id="name"
-                              value={formData.name}
-                              onChange={(e) =>
-                                setFormData({ ...formData, name: e.target.value })
-                              }
-                            />
-                          </div>
+                          <TabsContent value="edit" className="space-y-4 mt-4">
+                            <div>
+                              <Label htmlFor="name">Nom du template</Label>
+                              <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, name: e.target.value })
+                                }
+                              />
+                            </div>
 
-                          <div>
-                            <Label htmlFor="subject">Sujet de l'email</Label>
-                            <Input
-                              id="subject"
-                              value={formData.subject}
-                              onChange={(e) =>
-                                setFormData({ ...formData, subject: e.target.value })
-                              }
-                            />
-                          </div>
+                            <div>
+                              <Label htmlFor="subject">Sujet de l'email</Label>
+                              <Input
+                                id="subject"
+                                value={formData.subject}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, subject: e.target.value })
+                                }
+                              />
+                            </div>
 
-                          <div>
-                            <Label htmlFor="body">Contenu HTML</Label>
-                            <Textarea
-                              id="body"
-                              value={formData.body}
-                              onChange={(e) =>
-                                setFormData({ ...formData, body: e.target.value })
-                              }
-                              rows={15}
-                              className="font-mono text-sm"
-                              placeholder="<h1>Bonjour {{name}}</h1>..."
-                            />
-                          </div>
+                            <div>
+                              <Label htmlFor="body">Contenu HTML</Label>
+                              <Textarea
+                                id="body"
+                                value={formData.body}
+                                onChange={(e) =>
+                                  setFormData({ ...formData, body: e.target.value })
+                                }
+                                rows={12}
+                                className="font-mono text-sm"
+                                placeholder="<h1>Bonjour {{name}}</h1>..."
+                              />
+                            </div>
+                          </TabsContent>
 
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => setEditingTemplate(null)}
-                            >
-                              Annuler
-                            </Button>
-                            <Button onClick={handleSave}>
-                              <Save className="h-4 w-4 mr-2" />
-                              Sauvegarder
-                            </Button>
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="preview" className="mt-4">
-                          <div className="border rounded-lg p-4 bg-muted/30">
-                            <iframe
-                              srcDoc={showPreview ? getPreviewHtml() : ""}
-                              className="w-full h-[600px] border-0 rounded"
-                              title="Email Preview"
-                            />
-                          </div>
-                        </TabsContent>
-                      </Tabs>
+                          <TabsContent value="preview" className="mt-4">
+                            <div className="border rounded-lg p-4 bg-muted/30">
+                              <iframe
+                                srcDoc={showPreview ? getPreviewHtml() : ""}
+                                className="w-full h-[350px] border-0 rounded"
+                                title="Email Preview"
+                              />
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                      </div>
+                      
+                      <div className="p-4 border-t bg-muted/30 shrink-0">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => setEditingTemplate(null)}
+                          >
+                            Annuler
+                          </Button>
+                          <Button onClick={handleSave}>
+                            <Save className="h-4 w-4 mr-2" />
+                            Sauvegarder
+                          </Button>
+                        </div>
+                      </div>
                     </DialogContent>
                   </Dialog>
 

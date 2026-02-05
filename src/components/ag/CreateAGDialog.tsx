@@ -128,14 +128,16 @@ export function CreateAGDialog({ onCreated }: CreateAGDialogProps) {
           Créer une AG
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">
-            Nouvelle Assemblée Générale
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl h-auto max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        <div className="p-6 border-b shrink-0">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">
+              Nouvelle Assemblée Générale
+            </DialogTitle>
+          </DialogHeader>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+        <form id="ag-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
             <div className="space-y-2">
@@ -265,7 +267,10 @@ export function CreateAGDialog({ onCreated }: CreateAGDialogProps) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+        </form>
+        
+        <div className="p-4 border-t bg-muted/30 shrink-0">
+          <div className="flex justify-end gap-3">
             <Button
               type="button"
               variant="outline"
@@ -273,11 +278,11 @@ export function CreateAGDialog({ onCreated }: CreateAGDialogProps) {
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" form="ag-form" disabled={loading}>
               {loading ? "Création..." : "Créer l'AG"}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

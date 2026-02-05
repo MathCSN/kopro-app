@@ -1,6 +1,5 @@
 // Supabase Edge Function for password reset
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,19 +144,25 @@ Deno.serve(async (req: Request) => {
 </body>
 </html>`;
 
-    // Send email with Resend
+    // Send email with Resend via REST API
     if (resendApiKey) {
-      const resend = new Resend(resendApiKey);
-      // Use Resend test domain for now - replace with verified domain later
-      const { error: emailError } = await resend.emails.send({
-        from: "KOPRO <onboarding@resend.dev>",
-        to: [email],
-        subject: "Réinitialisation de votre mot de passe KOPRO",
-        html: emailHtml,
+      const resendResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "KOPRO <onboarding@resend.dev>",
+          to: [email],
+          subject: "Réinitialisation de votre mot de passe KOPRO",
+          html: emailHtml,
+        }),
       });
 
-      if (emailError) {
-        console.error("Error sending email with Resend:", emailError);
+      if (!resendResponse.ok) {
+        const resendError = await resendResponse.text();
+        console.error("Error sending email with Resend:", resendError);
         throw new Error("Failed to send email");
       }
     } else {
