@@ -11,8 +11,12 @@ interface BailleurLayoutProps {
   children: ReactNode;
 }
 
+/**
+ * @deprecated Use GlobalLayout with nested routes instead.
+ * This component is kept for backwards compatibility.
+ */
 export function BailleurLayout({ children }: BailleurLayoutProps) {
-  const { logout, profile } = useAuth();
+  const { logout } = useAuth();
   const { agencyName } = useAgencyType();
   const { isMobile } = useAppEnvironment();
 
@@ -27,11 +31,11 @@ export function BailleurLayout({ children }: BailleurLayoutProps) {
         )}
         <main className="flex-1 overflow-x-hidden">
           <TrialBanner />
-          <div className={isMobile ? "pb-20" : ""}>
+          <div className={isMobile ? "pb-20 pt-28" : ""}>
             {children}
           </div>
         </main>
-        {isMobile && <MobileNav />}
+        {isMobile && <MobileNav viewMode="bailleur" onLogout={logout} />}
       </div>
     </SidebarProvider>
   );

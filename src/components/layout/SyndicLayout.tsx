@@ -12,6 +12,10 @@ interface SyndicLayoutProps {
   children: ReactNode;
 }
 
+/**
+ * @deprecated Use GlobalLayout with nested routes instead.
+ * This component is kept for backwards compatibility.
+ */
 export function SyndicLayout({ children }: SyndicLayoutProps) {
   const { logout } = useAuth();
   const { agencyName } = useAgencyType();
@@ -29,11 +33,11 @@ export function SyndicLayout({ children }: SyndicLayoutProps) {
           )}
           <main className="flex-1 overflow-x-hidden">
             <TrialBanner />
-            <div className={isMobile ? "pb-20" : ""}>
+            <div className={isMobile ? "pb-20 pt-28" : ""}>
               {children}
             </div>
           </main>
-          {isMobile && <MobileNav />}
+          {isMobile && <MobileNav viewMode="syndic" onLogout={logout} />}
         </div>
       </SidebarProvider>
     </ResidenceProvider>
