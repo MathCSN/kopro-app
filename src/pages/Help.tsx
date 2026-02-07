@@ -2,14 +2,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { HelpCircle, Users, Shield, Book } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 
 export default function Help() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <AppLayout userRole={user?.role || 'resident'} onLogout={logout}>
+    <div className="space-y-6 animate-fade-in max-w-4xl">
       <div className="space-y-6 animate-fade-in max-w-4xl">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Aide & Documentation</h1>
@@ -55,6 +55,6 @@ export default function Help() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 }

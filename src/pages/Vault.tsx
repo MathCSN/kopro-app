@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Lock, FileText, Download, Trash2, FolderOpen, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { VaultUploadDialog } from "@/components/vault/VaultUploadDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -141,7 +141,7 @@ export default function Vault() {
   if (!user) return null;
 
   return (
-    <AppLayout userRole={profile?.role} onLogout={logout}>
+    <>
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -237,6 +237,6 @@ export default function Vault() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AppLayout>
+    </>
   );
 }

@@ -8,7 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { format, addDays, startOfWeek, isSameDay, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
@@ -104,8 +104,7 @@ export default function Reservations() {
   const resources = getUniqueResources();
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -292,8 +291,7 @@ export default function Reservations() {
               </div>
             )}
           </CardContent>
-        </Card>
-      </div>
-    </AppLayout>
+      </Card>
+    </div>
   );
 }

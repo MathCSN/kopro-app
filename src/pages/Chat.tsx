@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
+
 import { NewConversationDialog } from "@/components/chat/NewConversationDialog";
 import {
   Select,
@@ -330,9 +330,5 @@ function ChatContent() {
 }
 
 export default function Chat() {
-  return (
-    <ConditionalLayout>
-      <ChatContent />
-    </ConditionalLayout>
-  );
+  return <ChatContent />;
 }

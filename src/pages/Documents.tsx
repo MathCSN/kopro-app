@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
+
 import { ImportDocumentDialog } from "@/components/documents/ImportDocumentDialog";
 import { UserDocumentUploadDialog } from "@/components/documents/UserDocumentUploadDialog";
 import { DocumentRequestsSection } from "@/components/documents/DocumentRequestsSection";
@@ -365,9 +365,5 @@ function DocumentsContent() {
 }
 
 export default function Documents() {
-  return (
-    <ConditionalLayout>
-      <DocumentsContent />
-    </ConditionalLayout>
-  );
+  return <DocumentsContent />;
 }

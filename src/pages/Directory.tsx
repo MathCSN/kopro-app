@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -465,19 +465,5 @@ function DirectoryContent() {
 }
 
 export default function Directory() {
-  const { user, profile, logout } = useAuth();
-  const navigate = useNavigate();
-
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
-  
-  const userRole = profile?.role || "resident";
-
-  return (
-    <AppLayout userRole={userRole} onLogout={logout}>
-      <DirectoryContent />
-    </AppLayout>
-  );
+  return <DirectoryContent />;
 }

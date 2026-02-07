@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
+
 import {
   Select,
   SelectContent,
@@ -285,9 +285,5 @@ function TicketsContent() {
 }
 
 export default function Tickets() {
-  return (
-    <ConditionalLayout>
-      <TicketsContent />
-    </ConditionalLayout>
-  );
+  return <TicketsContent />;
 }

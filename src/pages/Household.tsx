@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -249,7 +249,7 @@ export default function Household() {
   const userRole = profile?.role || "resident";
 
   return (
-    <AppLayout userRole={userRole} onLogout={logout}>
+    <>
       <div className="space-y-6 animate-fade-in">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Mon Foyer</h1>
@@ -474,6 +474,6 @@ export default function Household() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AppLayout>
+    </>
   );
 }
