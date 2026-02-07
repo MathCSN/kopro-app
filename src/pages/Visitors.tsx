@@ -4,7 +4,7 @@ import { Users, Plus, QrCode, Clock, CheckCircle2, XCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,9 +107,8 @@ export default function Visitors() {
   const visitorsWithLogs = visitors.filter(v => v.arrived_at || v.left_at);
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl font-bold text-foreground">Visiteurs & Accès</h1>
             <p className="text-muted-foreground mt-1">Gérez les invitations et codes d'accès</p>
@@ -210,7 +209,6 @@ export default function Visitors() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </AppLayout>
+    </div>
   );
 }

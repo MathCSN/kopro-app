@@ -4,7 +4,7 @@ import { CreditCard, Download, Clock, CheckCircle2, AlertCircle, ArrowLeft, Euro
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -156,108 +156,102 @@ KOPRO - Gestion de copropriété
 
   if (loading) {
     return (
-      <ConditionalLayout>
-        <div className="p-6 text-center py-12">
-          <p className="text-muted-foreground">Chargement...</p>
-        </div>
-      </ConditionalLayout>
+      <div className="p-6 text-center py-12">
+        <p className="text-muted-foreground">Chargement...</p>
+      </div>
     );
   }
 
   if (!payment) {
     return (
-      <ConditionalLayout>
-        <div className="p-6 text-center py-12">
-          <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Paiement non trouvé</p>
-          <Button variant="link" onClick={() => navigate('/payments')}>
-            Retour aux paiements
-          </Button>
-        </div>
-      </ConditionalLayout>
+      <div className="p-6 text-center py-12">
+        <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground">Paiement non trouvé</p>
+        <Button variant="link" onClick={() => navigate('/payments')}>
+          Retour aux paiements
+        </Button>
+      </div>
     );
   }
 
   const dueDate = new Date(payment.due_date);
 
   return (
-    <ConditionalLayout>
-      <div className="p-6 space-y-6 animate-fade-in max-w-2xl">
-        <Button variant="ghost" onClick={() => navigate('/payments')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour aux paiements
-        </Button>
+    <div className="p-6 space-y-6 animate-fade-in max-w-2xl">
+      <Button variant="ghost" onClick={() => navigate('/payments')}>
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Retour aux paiements
+      </Button>
 
-        <Card className="shadow-soft">
-          <CardHeader>
-            <div className="flex items-start justify-between">
+      <Card className="shadow-soft">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>{payment.description || `Paiement ${payment.type}`}</CardTitle>
+            </div>
+            <Badge variant={payment.status === 'paid' ? 'secondary' : 'destructive'}>
+              {payment.status === 'paid' ? 'Payé' : 'En attente'}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center py-6 border rounded-lg">
+            <p className="text-4xl font-bold text-foreground">{payment.amount} €</p>
+            <p className="text-muted-foreground mt-1">
+              Échéance: {dueDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+
+          {payment.status === 'pending' ? (
+            <div className="space-y-3">
+              <Button 
+                className="w-full" 
+                size="lg"
+                onClick={handleCardPayment}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="h-4 w-4 mr-2" />
+                )}
+                {isProcessingPayment ? "Redirection..." : "Payer par carte"}
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                size="lg"
+                onClick={handleSepaPayment}
+              >
+                <Euro className="h-4 w-4 mr-2" />
+                Payer par prélèvement SEPA
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-success/10 border border-success/20">
+              <CheckCircle2 className="h-5 w-5 text-success" />
               <div>
-                <CardTitle>{payment.description || `Paiement ${payment.type}`}</CardTitle>
+                <p className="font-medium text-success">Paiement effectué</p>
+                {payment.paid_at && (
+                  <p className="text-sm text-muted-foreground">
+                    Le {new Date(payment.paid_at).toLocaleDateString('fr-FR')}
+                  </p>
+                )}
               </div>
-              <Badge variant={payment.status === 'paid' ? 'secondary' : 'destructive'}>
-                {payment.status === 'paid' ? 'Payé' : 'En attente'}
-              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                onClick={handleDownloadReceipt}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Reçu
+              </Button>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center py-6 border rounded-lg">
-              <p className="text-4xl font-bold text-foreground">{payment.amount} €</p>
-              <p className="text-muted-foreground mt-1">
-                Échéance: {dueDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </p>
-            </div>
-
-            {payment.status === 'pending' ? (
-              <div className="space-y-3">
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={handleCardPayment}
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <CreditCard className="h-4 w-4 mr-2" />
-                  )}
-                  {isProcessingPayment ? "Redirection..." : "Payer par carte"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  size="lg"
-                  onClick={handleSepaPayment}
-                >
-                  <Euro className="h-4 w-4 mr-2" />
-                  Payer par prélèvement SEPA
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-success/10 border border-success/20">
-                <CheckCircle2 className="h-5 w-5 text-success" />
-                <div>
-                  <p className="font-medium text-success">Paiement effectué</p>
-                  {payment.paid_at && (
-                    <p className="text-sm text-muted-foreground">
-                      Le {new Date(payment.paid_at).toLocaleDateString('fr-FR')}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-auto"
-                  onClick={handleDownloadReceipt}
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  Reçu
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </ConditionalLayout>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -683,9 +677,5 @@ export default function Payments() {
     return <PaymentDetail id={id} />;
   }
 
-  return (
-    <ConditionalLayout>
-      <PaymentsContent />
-    </ConditionalLayout>
-  );
+  return <PaymentsContent />;
 }

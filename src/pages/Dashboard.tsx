@@ -18,7 +18,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useAgencyType } from "@/hooks/useAgencyType";
 import { supabase } from "@/integrations/supabase/client";
@@ -184,8 +184,7 @@ export default function Dashboard() {
   const badge = roleBadges[profile.role] || "Utilisateur";
 
   return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <div className="space-y-6 lg:space-y-8 animate-fade-in">
+    <div className="space-y-6 lg:space-y-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -457,7 +456,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </AppLayout>
+    </div>
   );
 }

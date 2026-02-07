@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Bot, Send, Loader2, FileText, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -305,22 +305,5 @@ function AIAssistantContent() {
 }
 
 export default function AIAssistant() {
-  const { user, profile, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
-  if (!user || !profile) {
-    navigate("/auth");
-    return null;
-  }
-
-  return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <AIAssistantContent />
-    </AppLayout>
-  );
+  return <AIAssistantContent />;
 }

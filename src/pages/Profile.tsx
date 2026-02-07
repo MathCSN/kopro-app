@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Mail, Phone, Bell, BellOff, Eye, EyeOff, Shield, Save, Loader2 } from "lucide-react";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,17 +143,14 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <AppLayout userRole={profile?.role} onLogout={handleLogout}>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AppLayout>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <AppLayout userRole={profile?.role} onLogout={handleLogout}>
-      <div className="space-y-6 max-w-2xl mx-auto animate-fade-in">
+    <div className="space-y-6 max-w-2xl mx-auto animate-fade-in">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Mon Profil</h1>
           <p className="text-muted-foreground mt-1">Gérez vos informations personnelles et préférences</p>
@@ -401,8 +398,7 @@ export default function Profile() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
-      </div>
-    </AppLayout>
+      </Tabs>
+    </div>
   );
 }

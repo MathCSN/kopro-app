@@ -9,7 +9,6 @@ export { syndicMenuGroups, bailleurMenuGroups, residentBaseMenuGroups } from "./
 export { AppLayout } from "./AppLayout";
 export { SyndicLayout } from "./SyndicLayout";
 export { BailleurLayout } from "./BailleurLayout";
-export { ConditionalLayout } from "./ConditionalLayout";
 
 // Sidebars (now use GenericSidebar internally)
 export { AppSidebar } from "./AppSidebar";

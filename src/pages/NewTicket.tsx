@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -254,21 +254,5 @@ function NewTicketContent() {
 }
 
 export default function NewTicket() {
-  const { profile, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
-  if (!profile) {
-    return null;
-  }
-
-  return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <NewTicketContent />
-    </AppLayout>
-  );
+  return <NewTicketContent />;
 }

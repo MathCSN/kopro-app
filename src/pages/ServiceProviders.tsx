@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -442,19 +442,5 @@ function ServiceProvidersContent() {
 }
 
 export default function ServiceProviders() {
-  const { user, logout, isManager } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
-  if (!user) return null;
-
-  return (
-    <AppLayout userRole={isManager() ? "manager" : "resident"} onLogout={handleLogout}>
-      <ServiceProvidersContent />
-    </AppLayout>
-  );
+  return <ServiceProvidersContent />;
 }

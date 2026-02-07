@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ResidenceQRDialog } from "@/components/residence/ResidenceQRDialog";
 import { ResidenceShareDialog } from "@/components/residence/ResidenceShareDialog";
 import { InviteUserDialog } from "@/components/admin/users/InviteUserDialog";
-import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
+
 
 interface Tenant {
   id: string;
@@ -324,9 +324,5 @@ function TenantsContent() {
 }
 
 export default function Tenants() {
-  return (
-    <ConditionalLayout>
-      <TenantsContent />
-    </ConditionalLayout>
-  );
+  return <TenantsContent />;
 }

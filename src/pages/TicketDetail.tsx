@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AppLayout } from "@/components/layout/AppLayout";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -385,21 +385,5 @@ function TicketDetailContent() {
 }
 
 export default function TicketDetail() {
-  const { profile, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
-  };
-
-  if (!profile) {
-    return null;
-  }
-
-  return (
-    <AppLayout userRole={profile.role} onLogout={handleLogout}>
-      <TicketDetailContent />
-    </AppLayout>
-  );
+  return <TicketDetailContent />;
 }
